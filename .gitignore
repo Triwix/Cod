@@ -1,0 +1,11 @@
+.DS_Store
+.claude/
+DerivedData/
+.build/
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+
+# XcodeGen cache
+.xcodegen/
