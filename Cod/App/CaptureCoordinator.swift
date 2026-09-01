@@ -1,3 +1,4 @@
+import Combine
 import Photos
 import SwiftUI
 
@@ -40,21 +41,38 @@ final class CaptureCoordinator: ObservableObject {
     let pins: PinManager
     let pip: PiPPinController
 
+    /// `CGRect` only gained `Hashable` conformance in iOS 18. The app targets
+    /// iOS 17, and the actual crop is integral anyway, so key history entries
+    /// by the pixel rectangle that was written rather than the fractional drag
+    /// rectangle.
     /// History entries already written for the crop currently on screen, keyed
     /// by selection rect — so pinning *and then* copying text from the same
     /// selection updates one entry instead of creating two.
-    private var archivedCrops: [CGRect: Snap.ID] = [:]
+    private var archivedCrops: [PixelRectKey: Snap.ID] = [:]
+    private var pipStatusCancellable: AnyCancellable?
+    private var isAwaitingFloatResult = false
+    private var dismissSelectionOnFloatSuccess = false
 
     init(
-        store: SnapStore = .shared,
-        settings: AppSettings = .shared,
-        pins: PinManager = .shared,
-        pip: PiPPinController = .shared
+        store: SnapStore,
+        settings: AppSettings,
+        pins: PinManager,
+        pip: PiPPinController
     ) {
         self.store = store
         self.settings = settings
         self.pins = pins
         self.pip = pip
+        observePiPStatus()
+    }
+
+    convenience init() {
+        self.init(
+            store: .shared,
+            settings: .shared,
+            pins: .shared,
+            pip: .shared
+        )
     }
 
     // MARK: - Ingestion
@@ -77,30 +95,35 @@ final class CaptureCoordinator: ObservableObject {
             let rect = CGRect(origin: .zero, size: normalized.pixelSize)
             run(settings.instantAction, image: normalized, rect: rect, origin: origin, dismiss: false)
         case .library:
-            store.add(image: normalized, origin: origin)
-            toast = .success("Added to library")
+            if settings.historyLimit == .off {
+                // Arrival mode and history can be configured independently.
+                // Falling back to selection avoids claiming an image was filed
+                // when the store immediately discards it.
+                pending = Pending(image: normalized, origin: origin)
+                toast = .info("History is off", "Select a region instead, or enable History in Settings.")
+                if settings.enabledActions.contains(.float) { pip.prewarm() }
+            } else {
+                store.add(image: normalized, origin: origin)
+                toast = .success("Added to library")
+            }
         }
     }
 
     /// Straight to the floating window — no crop surface, no action bar.
     /// This is the path the Shortcuts/share-sheet entries use.
-    func floatImmediately(image: UIImage, minimalUI: Bool = false) {
+    func floatImmediately(
+        image: UIImage,
+        origin: Snap.Origin = .shared,
+        minimalUI: Bool = false
+    ) {
         let normalized = image.normalizedUp()
         pending = nil
+        archivedCrops.removeAll()
         if minimalUI { floatOnlyLaunch = true }
-        pip.float(normalized)
+        startFloating(normalized, dismissSelectionOnSuccess: false)
 
-        switch pip.status {
-        case .unsupported:
-            toast = .failure(
-                "Not available here",
-                "Floating needs Picture in Picture, which the Simulator doesn't have."
-            )
-        case let .failed(message):
-            toast = .failure("Couldn't start floating", message)
-        default:
-            archive(normalized, rect: CGRect(origin: .zero, size: normalized.pixelSize), origin: .shared)
-            toast = .info("Floating", "Swipe home — the snippet stays on screen.")
+        if pip.status != .unsupported {
+            archive(normalized, rect: CGRect(origin: .zero, size: normalized.pixelSize), origin: origin)
         }
     }
 
@@ -110,9 +133,13 @@ final class CaptureCoordinator: ObservableObject {
         pip.prewarm()
         if minimalUI { floatOnlyLaunch = true }
         do {
+            guard await waitForScreenshotSettle() else {
+                floatOnlyLaunch = false
+                return
+            }
             let hit = try await PhotoLibraryService.latestScreenshot()
             settings.lastSeenScreenshotID = hit.localIdentifier
-            floatImmediately(image: hit.image, minimalUI: minimalUI)
+            floatImmediately(image: hit.image, origin: .screenshot, minimalUI: minimalUI)
         } catch {
             floatOnlyLaunch = false
             toast = .failure("Couldn't load screenshot", error.localizedDescription)
@@ -126,16 +153,30 @@ final class CaptureCoordinator: ObservableObject {
     /// Pulls the newest item from the Screenshots album onto the crop surface.
     func captureLatestScreenshot(force: Bool = true) async {
         do {
+            // Give Photos time to commit a screenshot before asking which asset
+            // is newest. Waiting after the fetch only delays an already-stale
+            // result and defeats the setting's purpose.
+            guard await waitForScreenshotSettle() else { return }
             let hit = try await PhotoLibraryService.latestScreenshot()
             if !force, hit.localIdentifier == settings.lastSeenScreenshotID { return }
             settings.lastSeenScreenshotID = hit.localIdentifier
-
-            if settings.captureDelay > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(settings.captureDelay * 1_000_000_000))
-            }
             present(image: hit.image, origin: .screenshot)
         } catch {
             toast = .failure("Couldn't load screenshot", error.localizedDescription)
+        }
+    }
+
+    /// Returns false when the enclosing capture task was cancelled while
+    /// waiting, so a stale intent cannot surface an image later.
+    private func waitForScreenshotSettle() async -> Bool {
+        guard settings.captureDelay > 0 else { return !Task.isCancelled }
+        do {
+            try await Task.sleep(
+                nanoseconds: UInt64(settings.captureDelay * 1_000_000_000)
+            )
+            return !Task.isCancelled
+        } catch {
+            return false
         }
     }
 
@@ -169,9 +210,9 @@ final class CaptureCoordinator: ObservableObject {
         dismiss: Bool = true
     ) {
         // Pinning keeps the crop surface up so you can pull several snippets
-        // out of one screenshot in a row. Floating dismisses it — the whole
-        // point is to get out of Cod and into another app.
-        let keepSurface = action == .pin
+        // out of one screenshot in a row. Floating keeps it only until the
+        // system window confirms success, so a failed attempt is still usable.
+        let keepSurface = action == .pin || action == .float
         if dismiss && !keepSurface { dismissSelection() }
 
         Task { await perform(action, image: image, rect: rect, origin: origin) }
@@ -197,18 +238,7 @@ final class CaptureCoordinator: ObservableObject {
 
         case .float:
             archive(image, rect: rect, origin: origin)
-            pip.float(image)
-            switch pip.status {
-            case .unsupported:
-                toast = .failure(
-                    "Not available here",
-                    "Floating over other apps needs Picture in Picture, which the Simulator doesn't have."
-                )
-            case let .failed(message):
-                toast = .failure("Couldn't start floating", message)
-            default:
-                toast = .info("Floating", "Swipe home — the snippet stays on screen.")
-            }
+            startFloating(image, dismissSelectionOnSuccess: true)
 
         case .pin:
             pins.add(image: image)
@@ -257,10 +287,17 @@ final class CaptureCoordinator: ObservableObject {
         isWorking = true
         defer { isWorking = false }
         do {
-            let album = settings.saveToDedicatedAlbum ? settings.albumName : nil
-            try await PhotoLibraryService.save(image, toAlbumNamed: album)
+            let requestedAlbum = settings.saveToDedicatedAlbum ? settings.albumName : nil
+            let destination = try await PhotoLibraryService.save(image, toAlbumNamed: requestedAlbum)
             archive(image, rect: rect, origin: origin)
-            toast = .success("Saved to Photos", album.map { "Album: \($0)" })
+            switch destination {
+            case let .album(name):
+                toast = .success("Saved to Photos", "Album: \(name)")
+            case .library where requestedAlbum?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false:
+                toast = .success("Saved to Photos", "Dedicated albums need Full Photos Access; saved to Recents instead.")
+            case .library:
+                toast = .success("Saved to Photos")
+            }
             Haptics.success()
         } catch {
             toast = .failure("Couldn't save", error.localizedDescription)
@@ -317,18 +354,64 @@ final class CaptureCoordinator: ObservableObject {
         case .share:
             route = Route(kind: .share([pin.image]))
         case .sendToPiP:
-            pip.float(pin.image)
-            if let error = pip.lastError {
-                toast = .failure("Floating window unavailable", error)
-            } else if pip.status == .unsupported {
-                toast = .failure(
-                    "Not available here",
-                    "Floating over other apps needs Picture in Picture, which the Simulator doesn't have."
-                )
-            }
+            startFloating(pin.image, dismissSelectionOnSuccess: false)
         case .recrop:
             withAnimation { pending = Pending(image: pin.image, origin: .unknown) }
         }
+    }
+
+    // MARK: - Floating
+
+    private func observePiPStatus() {
+        pipStatusCancellable = pip.$status
+            .sink { @MainActor [weak self] status in
+                self?.handlePiPStatus(status)
+            }
+    }
+
+    private func startFloating(_ image: UIImage, dismissSelectionOnSuccess: Bool) {
+        isAwaitingFloatResult = true
+        self.dismissSelectionOnFloatSuccess = dismissSelectionOnSuccess
+        isWorking = true
+        toast = .info("Opening floating window…")
+        pip.float(image)
+    }
+
+    private func handlePiPStatus(_ status: PiPPinController.Status) {
+        guard isAwaitingFloatResult else { return }
+
+        switch status {
+        case .idle:
+            finishFloatAttempt()
+
+        case .preparing:
+            break
+
+        case .active:
+            let shouldDismiss = dismissSelectionOnFloatSuccess
+            finishFloatAttempt()
+            if shouldDismiss { dismissSelection() }
+            toast = .info("Floating", "The snippet is now in the system window.")
+
+        case .unsupported:
+            finishFloatAttempt()
+            floatOnlyLaunch = false
+            toast = .failure(
+                "Not available here",
+                "Floating needs Picture in Picture, which the Simulator doesn't have."
+            )
+
+        case let .failed(message):
+            finishFloatAttempt()
+            floatOnlyLaunch = false
+            toast = .failure("Couldn't start floating", message)
+        }
+    }
+
+    private func finishFloatAttempt() {
+        isAwaitingFloatResult = false
+        dismissSelectionOnFloatSuccess = false
+        isWorking = false
     }
 
     // MARK: - History
@@ -345,7 +428,8 @@ final class CaptureCoordinator: ObservableObject {
     ) {
         guard settings.historyLimit != .off, let rect else { return }
 
-        if let existingID = archivedCrops[rect],
+        let key = PixelRectKey(rect)
+        if let existingID = archivedCrops[key],
            var existing = store.snaps.first(where: { $0.id == existingID }) {
             if let text { existing.recognizedText = text }
             if !barcodes.isEmpty { existing.barcodes = barcodes }
@@ -354,6 +438,6 @@ final class CaptureCoordinator: ObservableObject {
         }
 
         let snap = store.add(image: image, origin: origin, recognizedText: text, barcodes: barcodes)
-        archivedCrops[rect] = snap.id
+        archivedCrops[key] = snap.id
     }
 }

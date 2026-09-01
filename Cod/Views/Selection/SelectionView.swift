@@ -395,7 +395,8 @@ struct SelectionView: View {
             let size = image.pixelSize
             return "Full · \(Int(size.width)) × \(Int(size.height))"
         }
-        return "\(Int(selection.width.rounded())) × \(Int(selection.height.rounded()))"
+        let pixels = effectiveCropRect(selection)
+        return "\(Int(pixels.width)) × \(Int(pixels.height))"
     }
 
     private var bottomBar: some View {
@@ -410,9 +411,18 @@ struct SelectionView: View {
     }
 
     private func crop() -> (UIImage, CGRect)? {
-        let rect = selection ?? CGRect(origin: .zero, size: image.pixelSize)
+        let rect = effectiveCropRect(
+            selection ?? CGRect(origin: .zero, size: image.pixelSize)
+        )
         guard let cropped = image.cropped(toPixelRect: rect) else { return nil }
         return (cropped, rect)
+    }
+
+    /// This is the same integral pixel rectangle the cropper consumes. Using
+    /// it for the readout and history key keeps the dimensions users see
+    /// identical to the image they receive.
+    private func effectiveCropRect(_ rect: CGRect) -> CGRect {
+        rect.integral.intersection(CGRect(origin: .zero, size: image.pixelSize))
     }
 }
 

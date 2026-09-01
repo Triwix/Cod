@@ -15,8 +15,9 @@ final class SnapStore: ObservableObject {
     private let imageCache = NSCache<NSString, UIImage>()
     private let ioQueue = DispatchQueue(label: "com.josh.cod.snapstore", qos: .userInitiated)
 
-    init(directoryName: String = "Snaps") {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    init(directoryName: String = "Snaps", baseDirectory: URL? = nil) {
+        let base = baseDirectory
+            ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         root = base.appendingPathComponent(directoryName, isDirectory: true)
         indexURL = root.appendingPathComponent("index.json")
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
@@ -62,7 +63,7 @@ final class SnapStore: ObservableObject {
 
         write(image: image, for: snap)
         snaps.insert(snap, at: 0)
-        trim(to: limit)
+        trim(to: limit, persist: false)
         persistIndex()
         return snap
     }
@@ -107,7 +108,7 @@ final class SnapStore: ObservableObject {
 
     /// Applies the configured history cap. `.off` keeps nothing on disk — the
     /// snippet you're actively working with is held in memory by the session.
-    func trim(to limit: HistoryLimit) {
+    func trim(to limit: HistoryLimit, persist: Bool = true) {
         let keep: Int
         switch limit {
         case .unlimited: return
@@ -118,6 +119,7 @@ final class SnapStore: ObservableObject {
         let doomed = Array(snaps[keep...])
         snaps = Array(snaps.prefix(keep))
         doomed.forEach(removeFiles(for:))
+        if persist { persistIndex() }
     }
 
     var diskUsage: Int64 {
@@ -170,6 +172,12 @@ final class SnapStore: ObservableObject {
         // Drop entries whose backing file vanished (e.g. a restore or a crash
         // between the index write and the image write).
         snaps = decoded.filter { fileManager.fileExists(atPath: root.appendingPathComponent($0.imageFilename).path) }
+    }
+
+    /// Test/support hook for callers that need a durable snapshot before
+    /// inspecting the store. Production writes remain asynchronous.
+    func waitForPendingWrites() {
+        ioQueue.sync {}
     }
 }
 

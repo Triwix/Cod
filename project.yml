@@ -61,3 +61,29 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_STRICT_CONCURRENCY: minimal
         SKIP_INSTALL: YES
+
+  CodTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: CodTests
+    dependencies:
+      - target: Cod
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
+
+schemes:
+  Cod:
+    build:
+      targets:
+        Cod: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - name: CodTests

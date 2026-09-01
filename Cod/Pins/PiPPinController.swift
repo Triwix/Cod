@@ -27,6 +27,22 @@ final class PiPPinController: NSObject, ObservableObject {
         var isBusy: Bool { self == .preparing }
     }
 
+    enum FloatPreparationPath: Equatable {
+        case replaceActive
+        case reusePrepared
+        case cold
+    }
+
+    nonisolated static func preparationPath(
+        wasActive: Bool,
+        hasPlayer: Bool,
+        hasController: Bool
+    ) -> FloatPreparationPath {
+        if wasActive, hasPlayer { return .replaceActive }
+        if hasPlayer, hasController { return .reusePrepared }
+        return .cold
+    }
+
     @Published private(set) var status: Status = .idle
     @Published private(set) var currentImage: UIImage?
     @Published private(set) var isPossible = false
@@ -37,12 +53,10 @@ final class PiPPinController: NSObject, ObservableObject {
 
     let isSupported = AVPictureInPictureController.isPictureInPictureSupported()
 
-    var isActive: Bool { status == .active }
-
-    var lastError: String? {
-        if case let .failed(message) = status { return message }
-        return nil
-    }
+    /// The controller is the source of truth during a failed in-place
+    /// replacement: the old window may still be active even though the new
+    /// snippet could not be encoded.
+    var isActive: Bool { controller?.isPictureInPictureActive == true }
 
     private var controller: AVPictureInPictureController?
     private var player: AVQueuePlayer?
@@ -59,6 +73,9 @@ final class PiPPinController: NSObject, ObservableObject {
     private var possibleObservation: NSKeyValueObservation?
     private var startTimeout: Task<Void, Never>?
     private var prepareTask: Task<Void, Never>?
+    /// Identifies the task that currently owns preparation state. Cancelling an
+    /// older task is cooperative, so its defer must not clear a newer handle.
+    private var preparationID: UUID?
 
     /// PiP renders into a window a few hundred points wide, so full-resolution
     /// screenshots buy nothing and cost encode time.
@@ -85,19 +102,36 @@ final class PiPPinController: NSObject, ObservableObject {
     func prewarm() {
         guard isSupported, controller == nil, prepareTask == nil, status == .idle else { return }
 
+        let requestID = UUID()
+        preparationID = requestID
         prepareTask = Task { @MainActor in
-            defer { prepareTask = nil }
+            defer {
+                if preparationID == requestID {
+                    preparationID = nil
+                    prepareTask = nil
+                }
+            }
             do {
                 let url = try await FloatingClip.make(from: Self.placeholderImage)
-                guard controller == nil, status == .idle else { return }
+                guard !Task.isCancelled, preparationID == requestID,
+                      controller == nil, status == .idle
+                else {
+                    try? FileManager.default.removeItem(at: url)
+                    return
+                }
 
                 // Only claim the audio session early if doing so is silent.
                 // Otherwise it would cut the user's music the moment they open
                 // the crop surface, before they've asked for anything.
                 if AppSettings.shared.keepOtherAudioPlaying { configureAudioSession() }
                 try startPlayback(with: url)
-                attachHostView()
+                guard attachHostView() else {
+                    discardPlayback()
+                    return
+                }
                 await waitForPlayerReady()
+                guard !Task.isCancelled, preparationID == requestID,
+                      status == .idle else { return }
                 makeController()
                 log("prewarmed, possible=\(controller?.isPictureInPicturePossible ?? false)")
                 observePossible()
@@ -113,28 +147,47 @@ final class PiPPinController: NSObject, ObservableObject {
             return
         }
 
+        let wasActive = controller?.isPictureInPictureActive == true
+        let previousImage = currentImage
         let wasPrewarmed = controller != nil && status == .idle
         currentImage = image
         status = .preparing
         prepareTask?.cancel()
+        let requestID = UUID()
+        preparationID = requestID
         startedAt = CFAbsoluteTimeGetCurrent()
 
         prepareTask = Task { @MainActor in
             // Without this the task handle lingers after a float completes and
             // the `prepareTask == nil` guard blocks every future prewarm.
-            defer { prepareTask = nil }
+            defer {
+                if preparationID == requestID {
+                    preparationID = nil
+                    prepareTask = nil
+                }
+            }
             let prepared = prepare(image)
             log("float() size=\(Int(prepared.size.width))x\(Int(prepared.size.height)) prewarmed=\(wasPrewarmed) +\(elapsed())ms")
 
             do {
                 let url = try await FloatingClip.make(from: prepared)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, preparationID == requestID else {
+                    try? FileManager.default.removeItem(at: url)
+                    return
+                }
                 log("clip encoded +\(elapsed())ms")
+
+                let path = Self.preparationPath(
+                    wasActive: wasActive,
+                    hasPlayer: player != nil,
+                    hasController: controller != nil
+                )
 
                 // Already floating? Swap the clip in place; the PiP window
                 // stays put and just shows the new snippet.
-                if status == .active, let player {
+                if path == .replaceActive, let player {
                     swapClip(to: url, on: player)
+                    status = .active
                     return
                 }
 
@@ -142,9 +195,10 @@ final class PiPPinController: NSObject, ObservableObject {
 
                 // Warm path: player, layer and controller already exist, and
                 // AVKit has had time to decide PiP is possible.
-                if let player, controller != nil {
+                if path == .reusePrepared, let player {
                     swapClip(to: url, on: player)
                     await waitForPlayerReady()
+                    guard !Task.isCancelled, preparationID == requestID else { return }
                     startWhenPossible()
                     return
                 }
@@ -153,12 +207,19 @@ final class PiPPinController: NSObject, ObservableObject {
                 // built player behind; clear it rather than orphaning it.
                 discardPlayback()
                 try startPlayback(with: url)
-                attachHostView()
+                guard attachHostView() else {
+                    discardPlayback()
+                    status = .failed("Cod couldn't find its window to attach the floating layer to.")
+                    return
+                }
                 await waitForPlayerReady()
+                guard !Task.isCancelled, preparationID == requestID else { return }
                 makeController()
                 startWhenPossible()
             } catch {
+                guard !Task.isCancelled, preparationID == requestID else { return }
                 log("PREPARE FAILED: \(error)")
+                if wasActive { currentImage = previousImage }
                 status = .failed(error.localizedDescription)
             }
         }
@@ -400,12 +461,15 @@ final class PiPPinController: NSObject, ObservableObject {
         }
     }
 
-    private func attachHostView() {
-        guard hostView == nil, let playerLayer else { return }
+    private func attachHostView() -> Bool {
+        if hostView != nil { return true }
+        guard let playerLayer else {
+            log("NO PLAYER LAYER — cannot attach the floating host view")
+            return false
+        }
         guard let window = UIApplication.shared.activeWindow else {
             log("NO KEY WINDOW — cannot host the layer")
-            status = .failed("Cod couldn't find its window to attach the floating layer to.")
-            return
+            return false
         }
 
         let width: CGFloat = 140
@@ -423,6 +487,7 @@ final class PiPPinController: NSObject, ObservableObject {
         }
         hostView = container
         log("host view attached probe=\(Self.showsRenderProbe)")
+        return true
     }
 
     /// Releases player-side state without touching status or the audio session.
@@ -445,6 +510,7 @@ final class PiPPinController: NSObject, ObservableObject {
         startTimeout = nil
         prepareTask?.cancel()
         prepareTask = nil
+        preparationID = nil
         possibleObservation = nil
         readyObservation = nil
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }

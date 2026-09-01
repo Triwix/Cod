@@ -1,5 +1,25 @@
 import CoreGraphics
 
+/// Stable, deployment-safe key for a crop's integral pixel rectangle.
+///
+/// CGRect itself only conforms to Hashable on iOS 18+, while Cod supports
+/// iOS 17. Two fractional selections that produce the same pixel crop should
+/// also identify the same history entry.
+struct PixelRectKey: Hashable {
+    var x: Int
+    var y: Int
+    var width: Int
+    var height: Int
+
+    init(_ rect: CGRect) {
+        let pixels = rect.integral
+        x = Int(pixels.minX)
+        y = Int(pixels.minY)
+        width = Int(pixels.width)
+        height = Int(pixels.height)
+    }
+}
+
 /// Maps between the image's pixel space and the on-screen (view) space where
 /// the image is drawn aspect-fit. The selection itself is always stored in
 /// pixels, so the readout is exact and the crop is lossless.

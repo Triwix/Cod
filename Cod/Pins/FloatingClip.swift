@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 
 /// Turns a still snippet into a tiny looping H.264 clip.
@@ -8,6 +8,25 @@ import UIKit
 /// AVKit exactly what it expects: an `AVPlayer` playing a movie. Identical
 /// frames compress to almost nothing, so the file is a few kilobytes.
 enum FloatingClip {
+    /// AVFoundation's writer types predate `Sendable`. This state is created
+    /// before encoding and then touched only by the writer's serial queue.
+    private final class EncodingState: @unchecked Sendable {
+        let input: AVAssetWriterInput
+        let adaptor: AVAssetWriterInputPixelBufferAdaptor
+        let pixelBuffer: CVPixelBuffer
+        var frame = 0
+
+        init(
+            input: AVAssetWriterInput,
+            adaptor: AVAssetWriterInputPixelBufferAdaptor,
+            pixelBuffer: CVPixelBuffer
+        ) {
+            self.input = input
+            self.adaptor = adaptor
+            self.pixelBuffer = pixelBuffer
+        }
+    }
+
     enum ClipError: LocalizedError {
         case noPixelBuffer
         case writerFailed(String)
@@ -61,18 +80,21 @@ enum FloatingClip {
 
         let totalFrames = Int(fps * seconds)
         let queue = DispatchQueue(label: "com.josh.cod.clipwriter")
+        let state = EncodingState(input: input, adaptor: adaptor, pixelBuffer: pixelBuffer)
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            var frame = 0
             input.requestMediaDataWhenReady(on: queue) {
-                while input.isReadyForMoreMediaData {
-                    guard frame < totalFrames else {
-                        input.markAsFinished()
+                while state.input.isReadyForMoreMediaData {
+                    guard state.frame < totalFrames else {
+                        state.input.markAsFinished()
                         continuation.resume()
                         return
                     }
-                    adaptor.append(pixelBuffer, withPresentationTime: CMTime(value: Int64(frame), timescale: fps))
-                    frame += 1
+                    state.adaptor.append(
+                        state.pixelBuffer,
+                        withPresentationTime: CMTime(value: Int64(state.frame), timescale: fps)
+                    )
+                    state.frame += 1
                 }
             }
         }

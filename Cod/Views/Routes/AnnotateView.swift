@@ -93,12 +93,11 @@ private struct DrawingCanvas: UIViewRepresentable {
         canvas.delegate = context.coordinator
         canvas.drawing = drawing
 
-        if let window = UIApplication.shared.activeWindow {
-            let picker = PKToolPicker.shared(for: window)
-            picker?.setVisible(true, forFirstResponder: canvas)
-            picker?.addObserver(canvas)
-            DispatchQueue.main.async { canvas.becomeFirstResponder() }
-        }
+        let picker = PKToolPicker()
+        picker.setVisible(true, forFirstResponder: canvas)
+        picker.addObserver(canvas)
+        context.coordinator.toolPicker = picker
+        DispatchQueue.main.async { canvas.becomeFirstResponder() }
         return canvas
     }
 
@@ -110,6 +109,7 @@ private struct DrawingCanvas: UIViewRepresentable {
 
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         private let drawing: Binding<PKDrawing>
+        var toolPicker: PKToolPicker?
 
         init(drawing: Binding<PKDrawing>) { self.drawing = drawing }
 

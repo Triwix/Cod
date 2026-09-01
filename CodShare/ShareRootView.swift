@@ -63,8 +63,15 @@ struct ShareRootView: View {
             case .save:
                 do {
                     let album = settings.saveToDedicatedAlbum ? settings.albumName : nil
-                    try await PhotoLibraryService.save(cropped, toAlbumNamed: album)
-                    toast = .success("Saved to Photos")
+                    let destination = try await PhotoLibraryService.save(cropped, toAlbumNamed: album)
+                    switch destination {
+                    case let .album(name):
+                        toast = .success("Saved to Photos", "Album: \(name)")
+                    case .library where album?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false:
+                        toast = .success("Saved to Photos", "Saved to Recents; album access is unavailable here.")
+                    case .library:
+                        toast = .success("Saved to Photos")
+                    }
                     Haptics.success()
                     await dismissShortly()
                 } catch {

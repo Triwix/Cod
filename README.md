@@ -15,6 +15,8 @@ Then set your team under **Signing & Capabilities** for both targets (`Cod` and
 iOS 26.3 Simulator with Xcode 26.2.
 
 The project is generated from `project.yml` — edit that, not the `.xcodeproj`.
+The shared `Cod` scheme includes the `CodTests` unit-test bundle; choose an
+installed iOS Simulator and use **Product → Test**.
 
 ## Signing constraints
 
@@ -45,7 +47,7 @@ nothing needs restructuring.
 | QR + barcode scanning from screen | ✅ | Doesn't work in the Simulator (Vision can't load the model there) |
 | Screenshot history | ✅ | Searchable by recognized text |
 | History length none/10/20/50/∞ | ✅ | |
-| Dedicated Photos album | ✅ | Configurable name |
+| Dedicated Photos album | ✅ | Configurable name; requires Full Photos Access, otherwise saves to Recents |
 | Imgur upload | ✅ | Bring your own Client ID; always confirms before uploading |
 | Share sheet integration | ✅ | Share extension runs the same crop surface |
 | Screenshot delay | ✅ | 0–2s |
@@ -80,6 +82,7 @@ Cod/
   Intents/      App Intents for Shortcuts
   Views/        Selection (the crop surface), Home, Library, Settings, Routes
 CodShare/       Self-contained share extension
+CodTests/       Selection geometry, history persistence and PiP state tests
 ```
 
 Selections are stored in **image pixel space** throughout, so the readout is

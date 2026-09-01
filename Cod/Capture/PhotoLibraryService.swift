@@ -2,6 +2,11 @@ import Photos
 import UIKit
 
 enum PhotoLibraryService {
+    enum SaveDestination: Equatable {
+        case library
+        case album(String)
+    }
+
     enum ServiceError: LocalizedError {
         case denied
         case noScreenshots
@@ -32,13 +37,20 @@ enum PhotoLibraryService {
 
     // MARK: - Saving
 
-    static func save(_ image: UIImage, toAlbumNamed albumName: String?) async throws {
+    @discardableResult
+    static func save(_ image: UIImage, toAlbumNamed albumName: String?) async throws -> SaveDestination {
         let status = await requestAccess(for: .addOnly)
         guard status == .authorized || status == .limited else { throw ServiceError.denied }
 
+        let requestedAlbum = albumName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         let album: PHAssetCollection?
-        if let albumName, !albumName.isEmpty {
-            album = try await findOrCreateAlbum(named: albumName)
+        // Limited and add-only access cannot fetch user albums. Saving to the
+        // main library still works, so preserve the user's image and let the
+        // caller explain the fallback instead of failing the entire action.
+        if let requestedAlbum, !requestedAlbum.isEmpty,
+           PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized {
+            album = try await findOrCreateAlbum(named: requestedAlbum)
         } else {
             album = nil
         }
@@ -59,6 +71,11 @@ enum PhotoLibraryService {
                 }
             }
         }
+
+        if let album {
+            return .album(album.localizedTitle ?? requestedAlbum ?? "Cod")
+        }
+        return .library
     }
 
     private static func findOrCreateAlbum(named name: String) async throws -> PHAssetCollection {
@@ -124,9 +141,13 @@ enum PhotoLibraryService {
             asset = PHAsset.fetchAssets(in: screenshots, options: options).firstObject
         }
         if asset == nil {
-            // Limited-access libraries don't expose smart albums; fall back to
-            // the newest image the user has granted us.
-            options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.image.rawValue)
+            // Limited-access libraries don't expose smart albums. Search only
+            // the accessible assets that are actually screenshots; returning
+            // the newest arbitrary photo can surface something unintended.
+            options.predicate = NSPredicate(
+                format: "(mediaSubtype & %d) != 0",
+                PHAssetMediaSubtype.photoScreenshot.rawValue
+            )
             asset = PHAsset.fetchAssets(with: .image, options: options).firstObject
         }
         guard let asset else { throw ServiceError.noScreenshots }

@@ -202,6 +202,8 @@ struct SettingsView: View {
             Toggle("Copy image when pinning", isOn: $settings.autoCopyOnCapture)
         } header: {
             Text("Saving")
+        } footer: {
+            Text("Dedicated albums require Full Photos Access. With Limited or Add-Only access, Cod saves to Recents instead.")
         }
     }
 
