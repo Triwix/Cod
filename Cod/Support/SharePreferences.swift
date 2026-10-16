@@ -4,6 +4,8 @@ import Security
 protocol ShareFloatPreferenceStore {
     var oneTapFloat: Bool { get }
     @discardableResult func setOneTapFloat(_ enabled: Bool) -> Bool
+    var useFloatNotification: Bool { get }
+    @discardableResult func setUseFloatNotification(_ enabled: Bool) -> Bool
 }
 
 /// A single non-secret preference shared only by Cod and CodShare. Personal
@@ -34,6 +36,21 @@ final class SharePreferences: ShareFloatPreferenceStore {
         #endif
     }
 
+    /// Separate from cropping: this changes how the saved image reaches Cod,
+    /// never which image is floated. Existing installations keep their flow.
+    var useFloatNotification: Bool {
+        notificationPreference.readValue(defaultValue: false)
+    }
+
+    @discardableResult
+    func setUseFloatNotification(_ enabled: Bool) -> Bool {
+        notificationPreference.setOneTapFloat(enabled)
+    }
+
+    private var notificationPreference: SharePreferences {
+        SharePreferences(accessGroup: accessGroup, service: service, account: "useFloatNotification")
+    }
+
     private var query: [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -46,6 +63,14 @@ final class SharePreferences: ShareFloatPreferenceStore {
     }
 
     var oneTapFloat: Bool {
+        #if COD_PERSONAL
+        return readValue(defaultValue: false)
+        #else
+        return readValue(defaultValue: true)
+        #endif
+    }
+
+    private func readValue(defaultValue: Bool) -> Bool {
         var request = query
         request[kSecReturnData as String] = true
         request[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -53,11 +78,7 @@ final class SharePreferences: ShareFloatPreferenceStore {
         let status = SecItemCopyMatching(request as CFDictionary, &result)
         guard status == errSecSuccess else {
             if status != errSecItemNotFound { CodDiagnosticLog.record("share preference read failed status=\(status)") }
-            #if COD_PERSONAL
-            return false
-            #else
-            return true
-            #endif
+            return defaultValue
         }
         return Self.decode(result as? Data)
     }
@@ -74,7 +95,7 @@ final class SharePreferences: ShareFloatPreferenceStore {
             item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             status = SecItemAdd(item as CFDictionary, nil)
         }
-        CodDiagnosticLog.record("share preference write oneTapFloat=\(enabled) status=\(status)")
+        CodDiagnosticLog.record("share preference write account=\(account) enabled=\(enabled) status=\(status)")
         return status == errSecSuccess
     }
 }

@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: SnapStore
     @EnvironmentObject private var pip: PiPPinController
+    @State private var isEnablingNotifications = false
 
     var body: some View {
         NavigationStack {
@@ -70,6 +71,35 @@ struct SettingsView: View {
                 get: { settings.oneTapFloat },
                 set: { settings.setOneTapFloat($0) }
             ))
+            #if !COD_PERSONAL
+            Toggle("Tap notification to float", isOn: Binding(
+                get: { settings.useFloatNotification },
+                set: { enabled in
+                    if !enabled {
+                        settings.setUseFloatNotification(false)
+                        ShareFloatNotifications().remove()
+                    } else {
+                        isEnablingNotifications = true
+                        Task { @MainActor in
+                            defer { isEnablingNotifications = false }
+                            do {
+                                if try await ShareFloatNotifications().requestPermission() {
+                                    settings.setUseFloatNotification(true)
+                                } else {
+                                    settings.sharePreferenceError = "Allow notifications for Cod in iPhone Settings to use this launch option."
+                                }
+                            } catch { settings.sharePreferenceError = error.localizedDescription }
+                        }
+                    }
+                }
+            ))
+            .disabled(isEnablingNotifications)
+            #endif
+            NavigationLink {
+                OneTapFloatGuide()
+            } label: {
+                Label("Set up fast floating", systemImage: "bolt")
+            }
             if let error = settings.sharePreferenceError {
                 Text(error).font(.footnote).foregroundStyle(.red)
             }
@@ -79,9 +109,9 @@ struct SettingsView: View {
             #if COD_PERSONAL
             Text("Off by default: tapping Cod in the share sheet opens the cropping screen, where you can select a region and tap Float. Turn on to skip cropping and float the whole image immediately. This only changes Share → Cod, not your Shortcuts.")
             #elseif COD_FAST_SHARE
-            Text("On by default: tapping Cod in the share sheet opens Cod and starts floating the whole image automatically. Turn off to crop in the share sheet and tap Float yourself. No Shortcut setup or separate app-opening step. Explicit Float Shortcuts aren't changed.")
+            Text("One tap float skips cropping. Turn it off to crop in the share sheet and tap Float.\n\nTap notification to float replaces automatic app opening with a notification you tap to launch Cod. It requires notification permission, and Focus or banner settings may delay it. If iOS won't deliver from the share extension, Cod shows an error and keeps the image for manual retry. Explicit Float Shortcuts aren't changed.")
             #else
-            Text("On by default: shared or opened images float as soon as Cod is active, without another Float tap. Turn off to crop first. Selecting Cod in the share sheet prepares the image automatically; this public-only build still requires you to open Cod. Explicit Float Shortcuts aren't changed.")
+            Text("One tap float skips cropping. Tap notification to float asks iOS to show a notification after sharing; tapping it opens Cod and floats that image. Enable notifications first. Availability from a share extension depends on iOS; if delivery fails, the image is kept for manual retry. Without notifications, open Cod manually after sharing. Explicit Float Shortcuts aren't changed.")
             #endif
         }
     }

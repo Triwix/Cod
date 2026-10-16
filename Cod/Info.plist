@@ -69,7 +69,7 @@
 	</array>
 
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Cod reads your Screenshots album so your newest screenshot is ready to crop the moment you open the app.</string>
+	<string>Cod reads screenshots you allow so the latest-screenshot control and actions can float or crop them.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
 

@@ -3,14 +3,15 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Personal builds retain the legacy launch/crop flow. Public builds prepare
-/// the latest image automatically and float it when the containing app opens.
+/// Personal builds retain the legacy launch/crop flow. Other builds can use
+/// an explicit notification handoff; fast builds also retain direct opening.
 final class ShareViewController: UIViewController {
     private var hosting: UIHostingController<ShareRootView>?
     private let state = ShareFloatState()
     private var sharedImage: UIImage?
     private var imageToFloat: UIImage?
     private var oneTapFloat = false
+    private var useFloatNotification = false
     private var hasPresentedSelection = false
     private var hasAppeared = false
     private var completed = false
@@ -56,6 +57,9 @@ final class ShareViewController: UIViewController {
         diagnostic("viewDidLoad")
         diagnostic("build=fast-share-20261015 process=\(ProcessInfo.processInfo.processIdentifier)")
         oneTapFloat = SharePreferences.shared.oneTapFloat
+        #if !COD_PERSONAL
+        useFloatNotification = SharePreferences.shared.useFloatNotification
+        #endif
         diagnostic("share mode oneTapFloat=\(oneTapFloat)")
         view.backgroundColor = .systemBackground
         presentStatus()
@@ -195,6 +199,14 @@ final class ShareViewController: UIViewController {
 
     private func presentImageIfReady() {
         guard hasAppeared, !completed, !hasAttemptedHandoff, let image = sharedImage else { return }
+        if useFloatNotification {
+            if oneTapFloat { startFloat(image) }
+            else if !hasPresentedSelection {
+                hasPresentedSelection = true
+                state.phase = .selecting(image)
+            }
+            return
+        }
         #if COD_PERSONAL || COD_FAST_SHARE
         if oneTapFloat {
             startFloat(image)
@@ -217,6 +229,22 @@ final class ShareViewController: UIViewController {
         state.phase = .opening
         handoffTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            if self.useFloatNotification {
+                do {
+                    let id = try QuickFloatHandoff.shared.store(image, mode: .float)
+                    try await ShareFloatNotifications().schedule(id)
+                    self.handoffTask = nil
+                    guard !self.completed else { return }
+                    self.diagnostic("notification handoff accepted request=\(id)")
+                    self.finish()
+                } catch {
+                    self.handoffTask = nil
+                    guard !self.completed else { return }
+                    self.diagnostic("notification handoff failed: \(error.localizedDescription)")
+                    self.state.phase = .failed(error.localizedDescription)
+                }
+                return
+            }
             #if COD_PERSONAL
             let opened = await self.handoffForFloat(image)
             self.handoffTask = nil

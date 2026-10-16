@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct CodApp: App {
+    @UIApplicationDelegateAdaptor(CodApplicationDelegate.self) private var applicationDelegate
     @StateObject private var settings = AppSettings.shared
     @StateObject private var store = SnapStore.shared
     @StateObject private var pins = PinManager.shared

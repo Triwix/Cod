@@ -13,6 +13,7 @@ final class IntentInbox: ObservableObject {
     @Published var pendingFloatImage: UIImage?
     @Published var wantsLatestScreenshot = false
     @Published var wantsFloatLatest = false
+    @Published var pendingQuickFloatRequestID: UUID?
 
     func deliver(_ image: UIImage) {
         pendingImage = image
@@ -61,7 +62,7 @@ struct CropWithCodIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        guard let decoded = UIImage(data: image.data) else {
+        guard let decoded = UIImage.decodedImage(data: image.data) else {
             throw $image.needsValueError("Cod couldn't read that as an image.")
         }
         IntentInbox.shared.deliver(decoded)
@@ -123,7 +124,7 @@ struct FloatWithCodIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        guard let decoded = UIImage(data: image.data) else {
+        guard let decoded = UIImage.decodedImage(data: image.data) else {
             throw $image.needsValueError("Cod couldn't read that as an image.")
         }
         IntentInbox.shared.deliverForFloat(decoded)

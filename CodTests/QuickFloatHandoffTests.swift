@@ -43,6 +43,22 @@ final class QuickFloatHandoffTests: XCTestCase {
         XCTAssertNil(try handoff.claim(now: now, expectedID: current))
     }
 
+    func testNotificationTapCannotClaimANewerImageAndCanOnlyClaimOnce() throws {
+        let old = try handoff.store(Self.image, now: now)
+        let current = try handoff.store(Self.image, now: now)
+        XCTAssertNil(try handoff.claimNotification(old))
+        XCTAssertEqual(try handoff.claimNotification(current)?.id, current)
+        XCTAssertNil(try handoff.claimNotification(current))
+    }
+
+    func testExplicitNotificationCanResumeExpiredOrFailedImage() throws {
+        let id = try handoff.store(Self.image, now: now.addingTimeInterval(-600))
+        XCTAssertNil(try handoff.claim(now: now))
+        XCTAssertEqual(try handoff.claimNotification(id)?.id, id)
+        try handoff.finish(id, success: false)
+        XCTAssertEqual(try handoff.claimNotification(id)?.id, id)
+    }
+
     func testLaunchURLContainsOnlyItsRequestAndRejectsMalformedInput() throws {
         let route = QuickFloatLaunchRoute(scheme: "cod-test")
         let id = UUID()

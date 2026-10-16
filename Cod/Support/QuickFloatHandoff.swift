@@ -67,6 +67,19 @@ final class QuickFloatHandoff {
         }
     }
 
+    /// A notification tap is an explicit request for this exact saved image,
+    /// unlike ordinary activation. It can resume an older or failed request,
+    /// but never a newer image or one that is already being processed.
+    func claimNotification(_ id: UUID) throws -> Payload? {
+        try coordinate { url in
+            guard var record = try self.read(url), record.id == id,
+                  record.state != .claimed else { return nil }
+            record.state = .claimed
+            try self.write(record, to: url)
+            return try self.payload(record)
+        }
+    }
+
     func preview() throws -> Payload? {
         try coordinate { url in
             guard let record = try self.read(url) else { return nil }

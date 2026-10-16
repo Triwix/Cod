@@ -3,6 +3,18 @@ import ImageIO
 import UIKit
 
 extension UIImage {
+    static func decodedImage(data: Data, maximumEdge: Int = 2_048) -> UIImage? {
+        guard maximumEdge > 0, data.count <= SharedImageInbox.maximumImageBytes,
+              let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: maximumEdge,
+                kCGImageSourceShouldCacheImmediately: true,
+              ] as CFDictionary) else { return nil }
+        return UIImage(cgImage: image, scale: 1, orientation: .up)
+    }
+
     static func decodedImage(at url: URL, maximumEdge: Int = 2_048) -> UIImage? {
         guard maximumEdge > 0 else { return nil }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),

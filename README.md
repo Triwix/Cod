@@ -1,5 +1,13 @@
 # Cod
 
+## Optional fast entry points — build 3
+
+New Control Center / Lock Screen / Action Button control, Back Tap and share
+Shortcut templates, and a selectable Share → notification → Cod handoff.
+See [setup, packaging gate and verification](docs/float-entry-points.md).
+Existing direct-share behavior is preserved; easy Shortcut installation still
+requires approved Apple signing and import verification.
+
 ## Fast-share test candidate — October 15
 
 The **Cod Fast** scheme restores **Share → Cod Test → automatic PiP attempt**,

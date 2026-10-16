@@ -7,7 +7,7 @@ separate app-open step. The documented-only/manual-open fallback is not the MVP.
 
 **Cod Fast** (`FastDebug` / `FastRelease`, `COD_FAST_SHARE`) updates the separate
 **Cod Test** app (`com.josh.cod.store`), not the original `com.josh.cod` app.
-Build number is 2. **Cod** Debug/Release retains the documented-only comparison
+Build number is 3. **Cod** Debug/Release retains the documented-only comparison
 build; **Cod Personal** retains its original implementation and identity.
 
 - With **One tap float on** (default), selecting Cod Test in Share receives the
@@ -16,6 +16,9 @@ build; **Cod Personal** retains its original implementation and identity.
   or separate user app-open action.
 - With the switch off, cropping happens **inside the Share extension**. Float
   launches the selected image directly; it does not ask the user to crop again.
+- Build 3 adds an optional notification launch method, a system control, and
+  Shortcut setup/templates. These do not replace the default direct share.
+  See [entry-point verification and packaging gate](docs/float-entry-points.md).
 - The main app still comes to the foreground to start PiP. This is not invisible
   background PiP, and this build does not automatically return to the source app.
 - Native PiP controls remain. Private source-app inspection, automatic return,

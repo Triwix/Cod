@@ -3,6 +3,37 @@ import XCTest
 @testable import Cod
 
 final class SharePreferenceTests: XCTestCase {
+    func testNotificationChoicePersistsIndependentlyOfCropping() {
+        let store = MemorySharePreferenceStore()
+        let suite = "Cod.NotificationPreferenceTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = AppSettings(defaults: defaults, sharePreferences: store)
+        settings.setUseFloatNotification(true)
+        XCTAssertTrue(AppSettings(defaults: defaults, sharePreferences: store).useFloatNotification)
+        XCTAssertFalse(settings.oneTapFloat)
+        settings.setOneTapFloat(true)
+        settings.setUseFloatNotification(false)
+        XCTAssertTrue(settings.oneTapFloat)
+        XCTAssertFalse(AppSettings(defaults: defaults, sharePreferences: store).useFloatNotification)
+    }
+
+    func testFailedNotificationPreferenceWriteDoesNotEnableIt() {
+        let store = MemorySharePreferenceStore()
+        let suite = "Cod.NotificationPreferenceFailure.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = AppSettings(defaults: defaults, sharePreferences: store)
+        store.allowWrites = false
+        settings.setUseFloatNotification(true)
+        XCTAssertFalse(settings.useFloatNotification)
+        XCTAssertNotNil(settings.sharePreferenceError)
+        store.allowWrites = true
+        settings.setUseFloatNotification(true)
+        XCTAssertTrue(settings.useFloatNotification)
+        XCTAssertNil(settings.sharePreferenceError)
+    }
+
     func testNativeFloatingControlsDefaultAndExplicitPreferencePersistence() {
         let suite = "Cod.FloatingControlsTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
@@ -83,12 +114,27 @@ final class SharePreferenceTests: XCTestCase {
         XCTAssertTrue(reader.oneTapFloat)
         XCTAssertTrue(writer.setOneTapFloat(false))
         XCTAssertFalse(reader.oneTapFloat)
+        XCTAssertFalse(reader.useFloatNotification)
+        XCTAssertTrue(writer.setUseFloatNotification(true))
+        XCTAssertTrue(reader.useFloatNotification)
+        XCTAssertFalse(reader.oneTapFloat, "Launch method must not change cropping")
+        XCTAssertTrue(writer.setUseFloatNotification(false))
+        XCTAssertFalse(reader.useFloatNotification)
+        var notificationCleanup = cleanup
+        notificationCleanup[kSecAttrAccount as String] = "useFloatNotification"
+        SecItemDelete(notificationCleanup as CFDictionary)
     }
 }
 
 private final class MemorySharePreferenceStore: ShareFloatPreferenceStore {
     var oneTapFloat = false
+    var useFloatNotification = false
     var allowWrites = true
+    func setUseFloatNotification(_ enabled: Bool) -> Bool {
+        guard allowWrites else { return false }
+        useFloatNotification = enabled
+        return true
+    }
     func setOneTapFloat(_ enabled: Bool) -> Bool {
         guard allowWrites else { return false }
         oneTapFloat = enabled

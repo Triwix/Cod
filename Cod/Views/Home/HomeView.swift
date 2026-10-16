@@ -73,7 +73,9 @@ struct HomeView: View {
     private var quickShare: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Shared image", systemImage: "pip.enter").font(.headline)
-            Text("A previous attempt didn't finish, or this image was shared more than five minutes ago. It won't reopen automatically.")
+            Text(settings.useFloatNotification
+                 ? "Tap Cod's notification to float this image, or use Try Floating Again below. A newer share replaces this request."
+                 : "A previous attempt didn't finish, or this image was shared more than five minutes ago. It won't reopen automatically.")
                 .font(.footnote).foregroundStyle(.secondary)
             HStack {
                 Button("Try Floating Again") { coordinator.receiveQuickShare(retry: true) }

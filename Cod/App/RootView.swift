@@ -4,6 +4,7 @@ struct RootView: View {
     @EnvironmentObject private var coordinator: CaptureCoordinator
     @EnvironmentObject private var pins: PinManager
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var pip: PiPPinController
 
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var inbox = IntentInbox.shared
@@ -12,6 +13,8 @@ struct RootView: View {
     @State private var sharedFloatInFlight = false
     @State private var quickShareTask: Task<Void, Never>?
     @State private var quickLaunchRequestID: UUID?
+    @State private var quickLaunchIsNotification = false
+    @State private var suppressUnrequestedShare = false
 
     var body: some View {
         ZStack {
@@ -116,6 +119,8 @@ struct RootView: View {
             #if !COD_PERSONAL
             if let id = QuickFloatLaunchRoute.configured?.requestID(in: url) {
                 quickLaunchRequestID = id
+                quickLaunchIsNotification = false
+                suppressUnrequestedShare = true
                 selectedTab = 0
                 scheduleQuickShare()
                 return
@@ -130,6 +135,7 @@ struct RootView: View {
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             quickShareTask?.cancel()
             quickLaunchRequestID = nil
+            quickLaunchIsNotification = false
             coordinator.prioritizeExplicitInput()
             guard let image = UIImage.decodedImage(at: url) else {
                 coordinator.toast = .failure("Couldn't open image")
@@ -144,8 +150,16 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .codQuickFloatRequested)) { _ in
             scheduleQuickShare()
         }
+        .onChange(of: inbox.pendingQuickFloatRequestID) { _, id in
+            guard let id else { return }
+            inbox.pendingQuickFloatRequestID = nil
+            receiveNotificationRequest(id)
+        }
         .onChange(of: coordinator.isWorking) { _, working in
             if !working, quickLaunchRequestID != nil { scheduleQuickShare() }
+        }
+        .onChange(of: pip.status) { _, status in
+            if !status.isBusy, quickLaunchRequestID != nil { scheduleQuickShare() }
         }
         .onChange(of: coordinator.pip.lostToBackgrounding) { _, lost in
             guard lost else { return }
@@ -228,6 +242,11 @@ struct RootView: View {
             coordinator.refreshSharedImages()
             coordinator.refreshQuickSharePreview()
             #endif
+            if let id = inbox.pendingQuickFloatRequestID {
+                inbox.pendingQuickFloatRequestID = nil
+                receiveNotificationRequest(id)
+                return
+            }
             // Cold launch from a Shortcut: the intent may have landed before
             // this view existed.
             if let image = inbox.pendingFloatImage {
@@ -278,6 +297,7 @@ struct RootView: View {
             if phase == .background {
                 wasBackgrounded = true
                 sharedFloatInFlight = false
+                suppressUnrequestedShare = false
             } else if phase == .active, wasBackgrounded {
                 wasBackgrounded = false
                 if !sharedFloatInFlight, !coordinator.pip.status.isBusy {
@@ -305,9 +325,21 @@ struct RootView: View {
             try? await Task.sleep(nanoseconds: 150_000_000)
             guard !Task.isCancelled, scenePhase == .active else { return }
             let id = quickLaunchRequestID
-            if coordinator.receiveQuickShare(expectedID: id) { quickLaunchRequestID = nil }
+            guard id != nil || (!settings.useFloatNotification && !suppressUnrequestedShare) else { return }
+            if coordinator.receiveQuickShare(expectedID: id, fromNotification: quickLaunchIsNotification) {
+                quickLaunchRequestID = nil
+                quickLaunchIsNotification = false
+            }
         }
         #endif
+    }
+
+    private func receiveNotificationRequest(_ id: UUID) {
+        quickLaunchRequestID = id
+        quickLaunchIsNotification = true
+        suppressUnrequestedShare = true
+        selectedTab = 0
+        scheduleQuickShare()
     }
 
     private var workingIndicator: some View {

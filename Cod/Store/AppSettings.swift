@@ -89,6 +89,7 @@ final class AppSettings: ObservableObject {
         self.defaults = defaults
         self.sharePreferences = sharePreferences
         self.oneTapFloat = sharePreferences.oneTapFloat
+        self.useFloatNotification = sharePreferences.useFloatNotification
         self.arrivalMode = defaults.decode(ArrivalMode.self, forKey: Keys.arrivalMode) ?? .selection
         let storedInstant = defaults.decode(SnapAction.self, forKey: Keys.instantAction) ?? .copyImage
         self.instantAction = SnapAction.availableCases.contains(storedInstant) ? storedInstant : .float
@@ -135,6 +136,7 @@ final class AppSettings: ObservableObject {
 
     /// Off by default: Share → Cod opens selection and waits for Float.
     @Published private(set) var oneTapFloat: Bool
+    @Published private(set) var useFloatNotification: Bool
     @Published var sharePreferenceError: String?
 
     func setOneTapFloat(_ enabled: Bool) {
@@ -143,6 +145,15 @@ final class AppSettings: ObservableObject {
             return
         }
         oneTapFloat = enabled
+        sharePreferenceError = nil
+    }
+
+    func setUseFloatNotification(_ enabled: Bool) {
+        guard sharePreferences.setUseFloatNotification(enabled) else {
+            sharePreferenceError = "Couldn't save the notification setting. Please try again."
+            return
+        }
+        useFloatNotification = enabled
         sharePreferenceError = nil
     }
 

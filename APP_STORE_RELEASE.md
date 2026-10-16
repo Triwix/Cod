@@ -1,5 +1,12 @@
 # App Store V1
 
+Build 3 adds a WidgetKit control and an optional notification-based Share
+handoff without changing the direct-share default. See
+[entry points and release/testing gates](docs/float-entry-points.md). The
+documented-only scheme excludes the fast launcher; enabling notifications is
+a one-time permission/setup step, not a private launch workaround. Signed
+Shortcut installer files still require explicit signing approval and import QA.
+
 October 15 update: **Cod Fast** is now a separate fast-launch usability
 candidate; see [FAST_SHARE.md](FAST_SHARE.md). It intentionally retains only the
 unsupported responder-chain app launch, with no private return/control hiding.

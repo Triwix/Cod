@@ -19,7 +19,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "3"
     DEVELOPMENT_TEAM: UE492DNA6V
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -32,12 +32,12 @@ settings:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG COD_FAST_SHARE"
       COD_DISPLAY_NAME: Cod Test
       COD_SHARE_LAUNCH_POLICY: responder-chain
-      CURRENT_PROJECT_VERSION: "2"
+      CURRENT_PROJECT_VERSION: "3"
     FastRelease:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_FAST_SHARE"
       COD_DISPLAY_NAME: Cod Test
       COD_SHARE_LAUNCH_POLICY: responder-chain
-      CURRENT_PROJECT_VERSION: "2"
+      CURRENT_PROJECT_VERSION: "3"
     LaunchProbe:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG COD_LAUNCH_PROBE"
     PersonalDebug:
@@ -51,6 +51,11 @@ targets:
     platform: iOS
     sources:
       - path: Cod
+        excludes:
+          - Resources/Shortcuts
+      - path: Cod/Resources/Shortcuts
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store
@@ -77,6 +82,31 @@ targets:
     dependencies:
       - target: CodShare
         embed: true
+      - target: CodControls
+        embed: true
+
+  CodControls:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: CodControls
+      - path: Cod/Intents/FloatControlIntent.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store.controls
+        PRODUCT_NAME: CodControls
+        INFOPLIST_FILE: CodControls/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_CONTROLS_EXTENSION"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+      configs:
+        PersonalDebug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.controls
+        PersonalRelease:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.controls
 
   CodShare:
     type: app-extension

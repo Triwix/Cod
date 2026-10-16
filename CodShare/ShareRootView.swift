@@ -27,7 +27,6 @@ struct ShareRootView: View {
 
     var body: some View {
         if case .selecting(let image) = state.phase {
-            #if COD_PERSONAL || COD_FAST_SHARE
             SelectionView(
                 image: image,
                 availableActions: [.float],
@@ -36,7 +35,6 @@ struct ShareRootView: View {
                 onAction: { _, cropped, _ in onFloat(cropped) }
             )
             .environmentObject(AppSettings.shared)
-            #endif
         } else {
             statusView
         }
@@ -60,7 +58,7 @@ struct ShareRootView: View {
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
                     .font(.largeTitle)
-                Text("Couldn't receive image")
+                Text("Couldn't start floating")
                     .font(.headline)
                 Text(message)
                     .foregroundStyle(.secondary)

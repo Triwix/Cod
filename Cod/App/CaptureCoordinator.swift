@@ -101,13 +101,20 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     @discardableResult
-    func receiveQuickShare(retry: Bool = false, expectedID: UUID? = nil) -> Bool {
+    func receiveQuickShare(retry: Bool = false, expectedID: UUID? = nil, fromNotification: Bool = false) -> Bool {
         guard !isWorking, !pip.status.isBusy else { return false }
         guard pending == nil || expectedID != nil else { return false }
         do {
-            let payload = try (retry ? quickHandoff.retry() : quickHandoff.claim(expectedID: expectedID))
+            let payload: QuickFloatHandoff.Payload?
+            if fromNotification, let id = expectedID { payload = try quickHandoff.claimNotification(id) }
+            else { payload = try (retry ? quickHandoff.retry() : quickHandoff.claim(expectedID: expectedID)) }
             refreshQuickSharePreview()
-            guard let payload else { return true }
+            guard let payload else {
+                if fromNotification {
+                    toast = .failure("This notification is no longer current", "The image was already handled or replaced by a newer share. No other image was floated.")
+                }
+                return true
+            }
             finishQuickRequest(success: false)
             lastExternalImageSize = payload.image.pixelSize
             quickRequestID = payload.id
