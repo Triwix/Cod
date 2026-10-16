@@ -2,6 +2,7 @@
 .claude/
 DerivedData/
 .build/
+.checkpoints/
 
 # Xcode per-user state
 xcuserdata/
@@ -9,3 +10,22 @@ xcuserdata/
 
 # XcodeGen cache
 .xcodegen/
+
+# Build products and local test results
+build/
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+*.ipa
+*.log
+
+# Local secrets and signing material
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile

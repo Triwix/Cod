@@ -83,16 +83,20 @@ final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
     private let defaults: UserDefaults
+    private let sharePreferences: ShareFloatPreferenceStore
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, sharePreferences: ShareFloatPreferenceStore = SharePreferences.shared) {
         self.defaults = defaults
+        self.sharePreferences = sharePreferences
+        self.oneTapFloat = sharePreferences.oneTapFloat
         self.arrivalMode = defaults.decode(ArrivalMode.self, forKey: Keys.arrivalMode) ?? .selection
-        self.instantAction = defaults.decode(SnapAction.self, forKey: Keys.instantAction) ?? .copyImage
+        let storedInstant = defaults.decode(SnapAction.self, forKey: Keys.instantAction) ?? .copyImage
+        self.instantAction = SnapAction.availableCases.contains(storedInstant) ? storedInstant : .float
         // Preserve the user's ordering, but make sure actions added in a later
         // version still show up instead of silently going missing.
         let storedOrder = defaults.decode([SnapAction].self, forKey: Keys.actionOrder) ?? SnapAction.defaultOrder
-        self.actionOrder = storedOrder + SnapAction.defaultOrder.filter { !storedOrder.contains($0) }
-        self.enabledActions = defaults.decode(Set<SnapAction>.self, forKey: Keys.enabledActions) ?? SnapAction.defaultEnabled
+        self.actionOrder = (storedOrder + SnapAction.defaultOrder.filter { !storedOrder.contains($0) }).filter(SnapAction.availableCases.contains)
+        self.enabledActions = (defaults.decode(Set<SnapAction>.self, forKey: Keys.enabledActions) ?? SnapAction.defaultEnabled).intersection(SnapAction.availableCases)
         self.historyLimit = defaults.decode(HistoryLimit.self, forKey: Keys.historyLimit) ?? .ten
         self.ocrAccuracy = defaults.decode(OCRAccuracy.self, forKey: Keys.ocrAccuracy) ?? .accurate
         self.ocrLanguages = defaults.decode([String].self, forKey: Keys.ocrLanguages) ?? ["en-US"]
@@ -101,8 +105,15 @@ final class AppSettings: ObservableObject {
         self.pinOpacity = defaults.object(forKey: Keys.pinOpacity) as? Double ?? 1.0
         self.pinCornerRadius = defaults.object(forKey: Keys.pinCornerRadius) as? Double ?? 10
         self.keepOtherAudioPlaying = defaults.object(forKey: Keys.keepOtherAudioPlaying) as? Bool ?? true
+        #if COD_PERSONAL
         self.returnAfterFloating = defaults.object(forKey: Keys.returnAfterFloating) as? Bool ?? true
-        self.hideFloatingControls = defaults.object(forKey: Keys.hideFloatingControls) as? Bool ?? true
+        // Hidden AVKit controls can turn an early tap into a restore/stop
+        // gesture on the tested phone. Use native controls unless opted in.
+        self.hideFloatingControls = defaults.object(forKey: Keys.hideFloatingControls) as? Bool ?? false
+        #else
+        self.returnAfterFloating = false
+        self.hideFloatingControls = false
+        #endif
         self.captureDelay = defaults.object(forKey: Keys.captureDelay) as? Double ?? 0
         self.saveToDedicatedAlbum = defaults.object(forKey: Keys.saveToDedicatedAlbum) as? Bool ?? true
         self.albumName = defaults.string(forKey: Keys.albumName) ?? "Cod"
@@ -122,13 +133,26 @@ final class AppSettings: ObservableObject {
     @Published var watchScreenshots: Bool { didSet { defaults.set(watchScreenshots, forKey: Keys.watchScreenshots) } }
     @Published var captureDelay: Double { didSet { defaults.set(captureDelay, forKey: Keys.captureDelay) } }
 
+    /// Off by default: Share → Cod opens selection and waits for Float.
+    @Published private(set) var oneTapFloat: Bool
+    @Published var sharePreferenceError: String?
+
+    func setOneTapFloat(_ enabled: Bool) {
+        guard sharePreferences.setOneTapFloat(enabled) else {
+            sharePreferenceError = "Couldn't save the share-sheet setting. Please try again."
+            return
+        }
+        oneTapFloat = enabled
+        sharePreferenceError = nil
+    }
+
     // MARK: - Actions
 
     @Published var actionOrder: [SnapAction] { didSet { defaults.encode(actionOrder, forKey: Keys.actionOrder) } }
     @Published var enabledActions: Set<SnapAction> { didSet { defaults.encode(enabledActions, forKey: Keys.enabledActions) } }
 
     /// The action bar, in user order, filtered to what's turned on.
-    var visibleActions: [SnapAction] { actionOrder.filter(enabledActions.contains) }
+    var visibleActions: [SnapAction] { actionOrder.filter { enabledActions.contains($0) && SnapAction.availableCases.contains($0) } }
 
     // MARK: - Recognition
 
@@ -190,7 +214,7 @@ final class AppSettings: ObservableObject {
     }
 
     func resetActions() {
-        actionOrder = SnapAction.defaultOrder
+        actionOrder = SnapAction.defaultOrder.filter(SnapAction.availableCases.contains)
         enabledActions = SnapAction.defaultEnabled
     }
 

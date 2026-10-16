@@ -2,10 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CodAppGroup</key>
+    <string>$(COD_APP_GROUP)</string>
+    <key>CodFloatURLScheme</key>
+    <string>$(COD_URL_SCHEME)</string>
+    <key>CodShareLaunchPolicy</key>
+    <string>$(COD_SHARE_LAUNCH_POLICY)</string>
+    <key>CodPrivacyPolicyURL</key>
+    <string>$(COD_PRIVACY_POLICY_URL)</string>
+    <key>CodShareSettingsAccessGroup</key>
+    <string>$(AppIdentifierPrefix)com.josh.cod.share-settings</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Cod</string>
+	<string>$(COD_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,6 +30,34 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.josh.cod</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(COD_URL_SCHEME)</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Image</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.image</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
@@ -34,8 +72,6 @@
 	<string>Cod reads your Screenshots album so your newest screenshot is ready to crop the moment you open the app.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Cod can scan QR codes and text with the camera.</string>
 
 	<key>UILaunchScreen</key>
 	<dict>

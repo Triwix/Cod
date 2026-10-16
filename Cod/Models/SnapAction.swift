@@ -16,6 +16,14 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static var availableCases: [SnapAction] {
+        #if COD_PERSONAL
+        return allCases
+        #else
+        return allCases.filter { $0 != .upload }
+        #endif
+    }
+
     var title: String {
         switch self {
         case .float: return "Float"

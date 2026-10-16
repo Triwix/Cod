@@ -34,7 +34,11 @@ struct RouteView: View {
             }
 
         case let .confirmUpload(image):
+            #if COD_PERSONAL
             UploadConfirmView(image: image)
+            #else
+            Text("Uploads aren't included in this version.")
+            #endif
         }
     }
 }
@@ -177,6 +181,7 @@ private struct SystemTranslationModifier: ViewModifier {
 
 // MARK: - Upload confirmation
 
+#if COD_PERSONAL
 struct UploadConfirmView: View {
     let image: UIImage
 
@@ -278,3 +283,4 @@ struct UploadConfirmView: View {
         }
     }
 }
+#endif

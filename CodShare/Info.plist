@@ -2,10 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CodAppGroup</key>
+    <string>$(COD_APP_GROUP)</string>
+    <key>CodFloatURLScheme</key>
+    <string>$(COD_URL_SCHEME)</string>
+    <key>CodShareLaunchPolicy</key>
+    <string>$(COD_SHARE_LAUNCH_POLICY)</string>
+    <key>CodShareSettingsAccessGroup</key>
+    <string>$(AppIdentifierPrefix)com.josh.cod.share-settings</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Crop with Cod</string>
+	<string>$(COD_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

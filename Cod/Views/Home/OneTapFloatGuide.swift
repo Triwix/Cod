@@ -1,21 +1,36 @@
 import SwiftUI
 
-/// Setup instructions for the three fastest routes to a floating snippet.
+/// Setup instructions for the fastest routes to a floating snippet.
 struct OneTapFloatGuide: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         List {
             Section {
-                step(1, "Open Shortcuts and make a new shortcut")
-                step(2, "Add the action **Float With Cod**")
-                step(3, "Open the shortcut's settings (ⓘ) and turn on **Show in Share Sheet**")
-                step(4, "Back in the editor, tap the **Image** field in the Float With Cod action and choose **Shortcut Input**")
-                step(5, "Name it something short — that name is the button you'll tap")
+                #if COD_PERSONAL
+                step(1, "Open a photo or screenshot and tap **Share**")
+                step(2, "Tap **Cod** in the row of apps, choose a crop, then tap **Float**")
+                step(3, "If Cod isn't visible, swipe to **More**, tap **Edit**, and add Cod to your favourites")
+                #elseif COD_FAST_SHARE
+                step(1, "Open a photo or screenshot, tap **Share**, then **Cod Test**")
+                step(2, "Cod opens and starts the floating window automatically")
+                step(3, "Once the window appears, switch apps when you're ready")
+                #else
+                step(1, "Open a photo or screenshot, tap **Share**, then **Cod**")
+                step(2, "Cod prepares the image and dismisses the share screen automatically")
+                step(3, "Open **Cod**; the image begins floating with no extra button")
+                step(4, "Once the floating window appears, switch to the app you want to use")
+                #endif
             } header: {
-                Label("Share sheet button", systemImage: "square.and.arrow.up")
+                Label("Share sheet floating", systemImage: "square.and.arrow.up")
             } footer: {
-                Text("Step 4 is the one that matters. Without it the action has no image to work with and nothing useful happens.\n\nIf you see a bar at the top of the editor saying it receives input from the share sheet, you can tap the listed types to narrow them to images — but that's optional; Cod ignores anything that isn't an image.\n\nCod's own share extension stays in the list too, but it's for cropping and OCR. An extension runs outside the app and iOS won't give one a Picture in Picture window, so floating has to go through a shortcut.")
+                #if COD_PERSONAL
+                Text("Cropping is the default. For immediate whole-image floating, turn on Settings → Share Sheet → One tap float. No Shortcut setup is needed for either share-sheet mode. Cod briefly opens to create Picture in Picture; automatic return to the source screen is still unresolved on the tested phone and currently falls back to Home.")
+                #elseif COD_FAST_SHARE
+                Text("One tap float defaults on. Turn it off in Settings to crop inside the share sheet before tapping Float. No Shortcut setup is required. This fast-share test uses an unsupported launch workaround; it is not App Store approval. Returning to the previous app is manual in this build.")
+                #else
+                Text("This is the current public-only fallback, not one-tap Share → PiP. If an app offers Open in Cod for an image, that direct route needs no separate app-open or Float button. You can also choose a photo inside Cod to float it directly. Turn off One tap float in Settings to crop first.")
+                #endif
             }
 
             Section {
@@ -25,7 +40,7 @@ struct OneTapFloatGuide: View {
             } header: {
                 Label("Back Tap", systemImage: "iphone.gen3")
             } footer: {
-                Text("Double-tap the back of the phone in any app: it screenshots, opens Cod, and floats it. No cropping — use Crop With Cod instead if you want to pick a region first.")
+                Text("The Shortcut takes a screenshot and opens Cod to float it. Wait for the floating window, then switch apps yourself. Use Crop With Cod instead to select a region first.")
             }
 
             Section {
@@ -34,7 +49,7 @@ struct OneTapFloatGuide: View {
             } header: {
                 Label("Action Button", systemImage: "button.horizontal.top.press")
             } footer: {
-                Text("iPhone 15 Pro and later.")
+                Text("Available on iPhones with an Action Button.")
             }
 
             Section {
@@ -47,7 +62,7 @@ struct OneTapFloatGuide: View {
                 Text("Cod also registers **Float Latest Screenshot** and **Clear Cod Pins** automatically — search for them in Shortcuts or ask Siri.")
             }
         }
-        .navigationTitle("One-Tap Floating")
+        .navigationTitle("Floating Guide")
         .navigationBarTitleDisplayMode(.inline)
     }
 

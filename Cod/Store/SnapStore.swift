@@ -180,17 +180,3 @@ final class SnapStore: ObservableObject {
         ioQueue.sync {}
     }
 }
-
-extension UIImage {
-    /// Aspect-fit resize used for thumbnails. Never upscales.
-    func fitted(within bounds: CGSize) -> UIImage {
-        let ratio = min(bounds.width / size.width, bounds.height / size.height, 1)
-        guard ratio < 1 else { return self }
-        let target = CGSize(width: (size.width * ratio).rounded(), height: (size.height * ratio).rounded())
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
-            draw(in: CGRect(origin: .zero, size: target))
-        }
-    }
-}

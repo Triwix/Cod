@@ -1,3 +1,4 @@
+#if COD_PERSONAL
 import UIKit
 
 /// Anonymous Imgur upload. Requires the user's own Client ID (Settings →
@@ -53,3 +54,4 @@ enum ImgurUploader {
         return link
     }
 }
+#endif

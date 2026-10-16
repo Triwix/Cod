@@ -9,6 +9,9 @@ struct RootView: View {
     @StateObject private var inbox = IntentInbox.shared
     @State private var selectedTab = 0
     @State private var wasBackgrounded = false
+    @State private var sharedFloatInFlight = false
+    @State private var quickShareTask: Task<Void, Never>?
+    @State private var quickLaunchRequestID: UUID?
 
     var body: some View {
         ZStack {
@@ -61,6 +64,89 @@ struct RootView: View {
             }
         }
         .toast($coordinator.toast)
+        .onOpenURL { url in
+            CodDiagnosticLog.record("app: received URL scheme=\(url.scheme ?? "none") host=\(url.host ?? "none")")
+            #if DEBUG && COD_PERSONAL
+            // Controlled browser-to-app return test, without image transfer,
+            // clipboard access, PiP or a guessed app destination.
+            if url.scheme == "cod", url.host == "return-probe" {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    guard UIApplication.shared.applicationState == .active else { return }
+                    SourceAppReturn.shared.capture()
+                    let requested = await SourceAppReturn.shared.returnToSource()
+                    CodDiagnosticLog.record("URL Back-to-only probe requested=\(requested); PiP not tested")
+                }
+                return
+            }
+            #endif
+            #if COD_PERSONAL
+            if ShareFloatHandoff.matches(url) {
+                guard let payload = ShareFloatHandoff.takePayload() else {
+                    coordinator.floatOnlyLaunch = false
+                    coordinator.toast = .failure(
+                        "Couldn't receive image",
+                        "The Share sheet opened Cod, but its image handoff was missing."
+                    )
+                    return
+                }
+                #if DEBUG && targetEnvironment(simulator)
+                if ProcessInfo.processInfo.arguments.contains("--return-probe") {
+                    SourceAppReturn.shared.capture(sourceBundleIdentifier: payload.sourceBundleIdentifier)
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        let accepted = await SourceAppReturn.shared.returnToSource()
+                        CodDiagnosticLog.record("simulator return-only probe accepted=\(accepted); PiP not tested")
+                    }
+                    return
+                }
+                #endif
+                sharedFloatInFlight = true
+                coordinator.floatImmediately(
+                    image: payload.image,
+                    origin: .shared,
+                    minimalUI: true,
+                    reusePreparedPlayback: false,
+                    sourceBundleIdentifier: payload.sourceBundleIdentifier
+                )
+                return
+            }
+            #endif
+
+            #if !COD_PERSONAL
+            if let id = QuickFloatLaunchRoute.configured?.requestID(in: url) {
+                quickLaunchRequestID = id
+                selectedTab = 0
+                scheduleQuickShare()
+                return
+            }
+            #endif
+
+            // A source app may explicitly open an image document in Cod.
+            // This is distinct from selecting our Share extension: not every
+            // image source offers a direct document-opening action.
+            guard url.isFileURL else { return }
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            quickShareTask?.cancel()
+            quickLaunchRequestID = nil
+            coordinator.prioritizeExplicitInput()
+            guard let image = UIImage.decodedImage(at: url) else {
+                coordinator.toast = .failure("Couldn't open image")
+                return
+            }
+            #if COD_PERSONAL
+            coordinator.present(image: image, origin: .shared)
+            #else
+            coordinator.receiveExternalImage(image)
+            #endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .codQuickFloatRequested)) { _ in
+            scheduleQuickShare()
+        }
+        .onChange(of: coordinator.isWorking) { _, working in
+            if !working, quickLaunchRequestID != nil { scheduleQuickShare() }
+        }
         .onChange(of: coordinator.pip.lostToBackgrounding) { _, lost in
             guard lost else { return }
             coordinator.pip.lostToBackgrounding = false
@@ -68,9 +154,15 @@ struct RootView: View {
             coordinator.toast = .failure(
                 "Floating window closed",
                 settings.keepOtherAudioPlaying
-                    ? "iOS stopped it when Cod went to the background. Turn off “Keep other audio playing” in Settings → Pins to fix it."
-                    : "iOS stopped it when Cod went to the background."
+                    ? "The window closed soon after Cod moved to the background. Try floating again. If it keeps happening, try turning off “Keep other audio playing” in Settings → Pins."
+                    : "The window closed soon after Cod moved to the background. Try floating again."
             )
+        }
+        .onChange(of: coordinator.pip.restorationImage) { _, image in
+            guard let image else { return }
+            coordinator.pip.restorationImage = nil
+            sharedFloatInFlight = false
+            coordinator.restoreFloatingSelection(image)
         }
         .sheet(item: $coordinator.route) { route in
             RouteView(route: route)
@@ -82,61 +174,140 @@ struct RootView: View {
         .onChange(of: inbox.pendingImage) { _, image in
             guard let image else { return }
             inbox.pendingImage = nil
+            coordinator.prioritizeExplicitInput()
             coordinator.present(image: image, origin: .screenshot)
         }
         .onChange(of: inbox.pendingFloatImage) { _, image in
             guard let image else { return }
             inbox.pendingFloatImage = nil
+            coordinator.prioritizeExplicitInput()
             coordinator.floatImmediately(image: image, minimalUI: true)
         }
         .onChange(of: inbox.wantsLatestScreenshot) { _, wants in
             guard wants else { return }
             inbox.wantsLatestScreenshot = false
+            coordinator.prioritizeExplicitInput()
             Task { await coordinator.captureLatestScreenshot() }
         }
         .onChange(of: inbox.wantsFloatLatest) { _, wants in
             guard wants else { return }
             inbox.wantsFloatLatest = false
+            coordinator.prioritizeExplicitInput()
             Task { await coordinator.floatLatestScreenshot(minimalUI: true) }
         }
         .task {
+            CodDiagnosticLog.record("app: root ready build=fast-share-20261015 phase=\(scenePhase)")
+            #if COD_PERSONAL
+            CodDiagnosticLog.record("app: private last-app return available=\(UIApplication.shared.responds(to: NSSelectorFromString("suspendReturningToLastApp:")))")
+            #endif
+            #if DEBUG && COD_PERSONAL
+            if ProcessInfo.processInfo.arguments.contains("--return-context-probe") {
+                SourceAppReturn.shared.startNavigationDiagnostics()
+            }
+            if ProcessInfo.processInfo.arguments.contains("--foreground-identity-probe") {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                ShareSourceContext.probeForegroundIdentifier { message in
+                    CodDiagnosticLog.record(message)
+                    print("[CodReturnProbe] \(message)")
+                }
+                return
+            }
+            if ProcessInfo.processInfo.arguments.contains("--navigation-probe") {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                let source = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--return-source=") })
+                    .map { String($0.dropFirst("--return-source=".count)) }
+                SourceAppReturn.shared.capture(sourceBundleIdentifier: source)
+                if source != nil {
+                    let accepted = await SourceAppReturn.shared.returnToSource()
+                    CodDiagnosticLog.record("source-only probe requested=\(accepted); PiP not tested")
+                }
+                return
+            }
+            #endif
+            #if !COD_PERSONAL
+            coordinator.refreshSharedImages()
+            coordinator.refreshQuickSharePreview()
+            #endif
             // Cold launch from a Shortcut: the intent may have landed before
             // this view existed.
             if let image = inbox.pendingFloatImage {
+                coordinator.prioritizeExplicitInput()
                 inbox.pendingFloatImage = nil
                 coordinator.floatImmediately(image: image, minimalUI: true)
             } else if inbox.wantsFloatLatest {
+                coordinator.prioritizeExplicitInput()
                 inbox.wantsFloatLatest = false
                 await coordinator.floatLatestScreenshot(minimalUI: true)
             } else if let image = inbox.pendingImage {
+                coordinator.prioritizeExplicitInput()
                 inbox.pendingImage = nil
                 coordinator.present(image: image, origin: .screenshot)
             } else if inbox.wantsLatestScreenshot {
+                coordinator.prioritizeExplicitInput()
                 inbox.wantsLatestScreenshot = false
                 await coordinator.captureLatestScreenshot()
+            } else {
+                scheduleQuickShare()
             }
         }
         .onChange(of: scenePhase) { _, phase in
+            CodDiagnosticLog.record("app: scene phase=\(phase)")
+            #if DEBUG && COD_PERSONAL
+            SourceAppReturn.shared.inspectNavigationContext(reason: "scene \(phase)")
+            #endif
             // The one-tap float paths go straight from launch to PiP, so there
             // is no crop-surface dwell time to hide AVKit's cold start behind.
             // Warm it as soon as we're on screen.
             if phase == .active, settings.enabledActions.contains(.float) {
                 coordinator.pip.prewarm()
             }
+            #if DEBUG && COD_PERSONAL && targetEnvironment(simulator)
+            if phase == .active, ProcessInfo.processInfo.arguments.contains("--navigation-probe") {
+                SourceAppReturn.shared.capture()
+            }
+            #endif
+            #if !COD_PERSONAL
+            if phase == .active {
+                coordinator.refreshSharedImages()
+                coordinator.refreshQuickSharePreview()
+                scheduleQuickShare()
+            } else { quickShareTask?.cancel() }
+            #endif
             // Coming back to Cod deliberately after a float means the user
             // wants the app, not the confirmation screen.
             if phase == .background {
                 wasBackgrounded = true
+                sharedFloatInFlight = false
             } else if phase == .active, wasBackgrounded {
                 wasBackgrounded = false
-                coordinator.floatOnlyLaunch = false
+                if !sharedFloatInFlight, !coordinator.pip.status.isBusy {
+                    coordinator.floatOnlyLaunch = false
+                }
             }
             // Coming back to the app is the natural moment to notice that a
             // new screenshot has appeared since we were last open.
-            guard phase == .active, settings.watchScreenshots else { return }
+            guard phase == .active, settings.watchScreenshots,
+                  !coordinator.floatOnlyLaunch, !coordinator.pip.status.isBusy else { return }
+            #if !COD_PERSONAL
+            guard coordinator.sharedImages.isEmpty, coordinator.quickSharePreview == nil else { return }
+            #endif
             guard coordinator.pending == nil, PhotoLibraryService.isAuthorized() else { return }
             Task { await coordinator.captureLatestScreenshot(force: false) }
         }
+    }
+
+    private func scheduleQuickShare() {
+        #if !COD_PERSONAL
+        quickShareTask?.cancel()
+        quickShareTask = Task { @MainActor in
+            // Give explicit document/Shortcut input precedence over a queued
+            // share. This wait isn't a PiP retry or an automatic app launch.
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled, scenePhase == .active else { return }
+            let id = quickLaunchRequestID
+            if coordinator.receiveQuickShare(expectedID: id) { quickLaunchRequestID = nil }
+        }
+        #endif
     }
 
     private var workingIndicator: some View {

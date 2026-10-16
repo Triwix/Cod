@@ -7,6 +7,9 @@ struct SelectionView: View {
     /// Overrides the user's configured action bar. The share extension uses
     /// this to hide actions it can't perform out of process.
     var availableActions: [SnapAction]?
+    /// Vision can push a Share extension over its memory limit on large Photos
+    /// assets, so that target disables smart-region scanning.
+    var smartRegionsEnabled = true
     var onCancel: () -> Void
     var onAction: (SnapAction, UIImage, CGRect) -> Void
 
@@ -144,7 +147,7 @@ struct SelectionView: View {
     }
 
     private func loadSmartRegions() {
-        guard settings.smartRegions, smartRegions.isEmpty else { return }
+        guard smartRegionsEnabled, settings.smartRegions, smartRegions.isEmpty else { return }
         Task {
             let regions = await Recognizer.smartRegions(in: image)
             await MainActor.run {
@@ -340,6 +343,8 @@ struct SelectionView: View {
                     .frame(width: 34, height: 34)
                     .background(.ultraThinMaterial, in: Circle())
             }
+            .accessibilityLabel("Cancel crop")
+            .accessibilityIdentifier("cancel-selection")
 
             Spacer(minLength: 0)
 

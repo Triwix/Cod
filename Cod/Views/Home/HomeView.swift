@@ -14,6 +14,16 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    #if DEBUG
+                    if showsLaunchDiagnostics, let size = coordinator.lastExternalImageSize {
+                        Text("Received image \(Int(size.width))x\(Int(size.height))")
+                            .accessibilityIdentifier("received-image-size")
+                    }
+                    #endif
+                    #if !COD_PERSONAL
+                    if coordinator.quickSharePreview != nil { quickShare }
+                    if !coordinator.sharedImages.isEmpty { sharedImages }
+                    #endif
                     primaryCapture
                     if pip.isSupported { floatLatest }
                     secondaryRow
@@ -37,12 +47,101 @@ struct HomeView: View {
                     coordinator.toast = .failure("Couldn't read that image")
                     return
                 }
+                #if COD_PERSONAL
                 coordinator.present(image: image, origin: .imported)
+                #else
+                coordinator.receiveExternalImage(image, origin: .imported)
+                #endif
             }
         }
     }
 
     // MARK: - Primary
+
+    #if DEBUG
+    private var showsLaunchDiagnostics: Bool {
+        #if COD_FAST_SHARE
+        // System URL launches don't inherit XCTest process arguments. Keep
+        // this diagnostic in FastDebug so cold-launch receipt is testable.
+        return true
+        #else
+        return ProcessInfo.processInfo.arguments.contains("--launch-ui-test")
+        #endif
+    }
+    #endif
+
+    private var quickShare: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Shared image", systemImage: "pip.enter").font(.headline)
+            Text("A previous attempt didn't finish, or this image was shared more than five minutes ago. It won't reopen automatically.")
+                .font(.footnote).foregroundStyle(.secondary)
+            HStack {
+                Button("Try Floating Again") { coordinator.receiveQuickShare(retry: true) }
+                    .buttonStyle(.borderedProminent)
+                Button("Remove", role: .destructive) { coordinator.discardQuickShare() }
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var sharedImages: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Shared Images", systemImage: "tray")
+                    .font(.headline)
+                Spacer()
+                Button { coordinator.refreshSharedImages() } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .accessibilityLabel("Refresh shared images")
+            }
+            if let error = coordinator.sharedInboxError {
+                Text(error).font(.footnote).foregroundStyle(.secondary)
+            } else if coordinator.sharedImages.isEmpty {
+                Text("Images from the earlier test build. New shares no longer need inbox buttons.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } else {
+                ForEach(coordinator.sharedImages) { entry in
+                    HStack(spacing: 12) {
+                        Group {
+                            if let thumbnail = entry.thumbnail {
+                                Image(uiImage: thumbnail).resizable().scaledToFit()
+                            } else {
+                                Image(systemName: "photo.badge.exclamationmark")
+                            }
+                        }
+                        .frame(width: 64, height: 64)
+                        .accessibilityLabel("Shared image preview")
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let date = entry.receivedAt {
+                                Text(date, style: .relative).font(.caption).foregroundStyle(.secondary)
+                            } else {
+                                Text("Unreadable image").font(.caption).foregroundStyle(.secondary)
+                            }
+                            HStack {
+                                Button("Float") { coordinator.openSharedImage(entry, float: true) }
+                                    .buttonStyle(.borderedProminent)
+                                Button("Crop") { coordinator.openSharedImage(entry, float: false) }
+                                    .buttonStyle(.bordered)
+                            }
+                            .disabled(entry.thumbnail == nil || coordinator.pip.status.isBusy)
+                        }
+                        Spacer(minLength: 0)
+                        Button(role: .destructive) { coordinator.removeSharedImage(entry) } label: {
+                            Image(systemName: "trash")
+                        }
+                        .accessibilityLabel("Remove this image from Cod's inbox")
+                    }
+                }
+                Text("Images stay here until you remove them. History is separate; clearing it doesn't empty this inbox.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .padding(.top, 4)
+    }
 
     private var primaryCapture: some View {
         Button {
@@ -248,8 +347,13 @@ struct HomeView: View {
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 2) {
+                    #if COD_PERSONAL
                     Text("Set up one-tap floating")
                         .font(.subheadline.weight(.semibold))
+                    #else
+                    Text("How to float an image")
+                        .font(.subheadline.weight(.semibold))
+                    #endif
                     Text("Share sheet, Back Tap and the Action Button")
                         .font(.caption)
                         .foregroundStyle(.secondary)

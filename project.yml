@@ -6,6 +6,15 @@ options:
   createIntermediateGroups: true
   groupSortPosition: top
 
+configs:
+  Debug: debug
+  Release: release
+  PersonalDebug: debug
+  PersonalRelease: release
+  LaunchProbe: debug
+  FastDebug: debug
+  FastRelease: release
+
 settings:
   base:
     SWIFT_VERSION: "5.10"
@@ -15,6 +24,26 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_EMIT_LOC_STRINGS: YES
+    COD_PRIVACY_POLICY_URL: ""
+    COD_DISPLAY_NAME: Cod
+    COD_SHARE_LAUNCH_POLICY: manual-open
+  configs:
+    FastDebug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG COD_FAST_SHARE"
+      COD_DISPLAY_NAME: Cod Test
+      COD_SHARE_LAUNCH_POLICY: responder-chain
+      CURRENT_PROJECT_VERSION: "2"
+    FastRelease:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_FAST_SHARE"
+      COD_DISPLAY_NAME: Cod Test
+      COD_SHARE_LAUNCH_POLICY: responder-chain
+      CURRENT_PROJECT_VERSION: "2"
+    LaunchProbe:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG COD_LAUNCH_PROBE"
+    PersonalDebug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG COD_PERSONAL"
+    PersonalRelease:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_PERSONAL"
 
 targets:
   Cod:
@@ -24,15 +53,27 @@ targets:
       - path: Cod
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store
         PRODUCT_NAME: Cod
         INFOPLIST_FILE: Cod/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Cod/StoreRelease.entitlements
+        COD_URL_SCHEME: cod-store
+        COD_APP_GROUP: group.com.josh.cod.store
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_STRICT_CONCURRENCY: minimal
+      configs:
+        PersonalDebug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod
+          CODE_SIGN_ENTITLEMENTS: Cod/ShareSettings.entitlements
+          COD_URL_SCHEME: cod
+        PersonalRelease:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod
+          CODE_SIGN_ENTITLEMENTS: Cod/ShareSettings.entitlements
+          COD_URL_SCHEME: cod
     dependencies:
       - target: CodShare
         embed: true
@@ -54,13 +95,26 @@ targets:
       - path: Cod/Capture/PhotoLibraryService.swift
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.share
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store.share
         PRODUCT_NAME: CodShare
         INFOPLIST_FILE: CodShare/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Cod/StoreRelease.entitlements
+        COD_APP_GROUP: group.com.josh.cod.store
+        COD_URL_SCHEME: cod-store
+        APPLICATION_EXTENSION_API_ONLY: YES
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_STRICT_CONCURRENCY: minimal
         SKIP_INSTALL: YES
+      configs:
+        PersonalDebug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.share
+          CODE_SIGN_ENTITLEMENTS: Cod/ShareSettings.entitlements
+          COD_URL_SCHEME: cod
+        PersonalRelease:
+          PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.share
+          CODE_SIGN_ENTITLEMENTS: Cod/ShareSettings.entitlements
+          COD_URL_SCHEME: cod
 
   CodTests:
     type: bundle.unit-test
@@ -75,7 +129,75 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_STRICT_CONCURRENCY: minimal
 
+  CodLaunchHarness:
+    type: application
+    platform: iOS
+    sources:
+      - path: CodLaunchHarness
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.launch-harness
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Cod Launch Lab
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - target: Cod
+        embed: false
+
+  CodLaunchUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: CodLaunchUITests
+    dependencies:
+      - target: CodLaunchHarness
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.launch-ui-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: CodLaunchHarness
+
 schemes:
+  Cod Fast:
+    build:
+      targets:
+        Cod: all
+    run:
+      config: FastDebug
+    test:
+      config: FastDebug
+      targets:
+        - name: CodTests
+    archive:
+      config: FastRelease
+  Cod Fast Launch Tests:
+    build:
+      targets:
+        Cod: all
+        CodLaunchHarness: all
+    test:
+      config: FastDebug
+      targets:
+        - name: CodLaunchUITests
+  Cod Launch Tests:
+    build:
+      targets:
+        Cod: all
+        CodLaunchHarness: all
+    test:
+      config: Debug
+      targets:
+        - name: CodLaunchUITests
+  Cod Launch Probe:
+    build:
+      targets:
+        Cod: all
+        CodLaunchHarness: all
+    test:
+      config: LaunchProbe
+      targets:
+        - name: CodLaunchUITests
   Cod:
     build:
       targets:
@@ -87,3 +209,17 @@ schemes:
       gatherCoverageData: true
       targets:
         - name: CodTests
+    archive:
+      config: Release
+  Cod Personal:
+    build:
+      targets:
+        Cod: all
+    run:
+      config: PersonalDebug
+    test:
+      config: PersonalDebug
+      targets:
+        - name: CodTests
+    archive:
+      config: PersonalRelease

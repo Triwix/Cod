@@ -1,127 +1,98 @@
 import SwiftUI
+#if COD_LAUNCH_PROBE
+import AppIntents
+#endif
 
-struct ShareRootView: View {
-    let image: UIImage
-    var onFinish: () -> Void
-
-    @StateObject private var settings = AppSettings.shared
-    @State private var toast: Toast?
-    @State private var isWorking = false
-    @State private var barcodes: [Recognizer.BarcodeHit] = []
-    @State private var showBarcodes = false
-
-    /// Pinning and PiP need the host app's window; an extension can't do
-    /// either, so they're left out of the bar entirely rather than failing.
-    private let actions: [SnapAction] = [.copyImage, .copyText, .save, .qr]
-
-    var body: some View {
-        ZStack {
-            SelectionView(
-                image: image,
-                availableActions: actions,
-                onCancel: onFinish,
-                onAction: handle
-            )
-            .environmentObject(settings)
-
-            if isWorking {
-                ProgressView()
-                    .controlSize(.large)
-                    .padding(22)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-        }
-        .toast($toast)
-        .sheet(isPresented: $showBarcodes) {
-            BarcodeResultsSheet(hits: barcodes)
-        }
+@MainActor
+final class ShareFloatState: ObservableObject {
+    enum Phase {
+        case loading
+        case opening
+        case selecting(UIImage)
+        #if COD_LAUNCH_PROBE
+        case launchProbe
+        #endif
+        case failed(String)
     }
 
-    private func handle(_ action: SnapAction, image cropped: UIImage, rect: CGRect) {
-        Task {
-            isWorking = true
-            defer { isWorking = false }
-
-            switch action {
-            case .copyImage:
-                UIPasteboard.general.image = cropped
-                toast = .success("Image copied")
-                Haptics.success()
-                await dismissShortly()
-
-            case .copyText:
-                guard let result = try? await Recognizer.recognizeText(in: cropped), !result.isEmpty else {
-                    toast = .failure("No text found")
-                    Haptics.warning()
-                    return
-                }
-                UIPasteboard.general.string = result.text
-                toast = .success("Text copied", String(result.text.prefix(60)))
-                Haptics.success()
-                await dismissShortly()
-
-            case .save:
-                do {
-                    let album = settings.saveToDedicatedAlbum ? settings.albumName : nil
-                    let destination = try await PhotoLibraryService.save(cropped, toAlbumNamed: album)
-                    switch destination {
-                    case let .album(name):
-                        toast = .success("Saved to Photos", "Album: \(name)")
-                    case .library where album?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false:
-                        toast = .success("Saved to Photos", "Saved to Recents; album access is unavailable here.")
-                    case .library:
-                        toast = .success("Saved to Photos")
-                    }
-                    Haptics.success()
-                    await dismissShortly()
-                } catch {
-                    toast = .failure("Couldn't save", error.localizedDescription)
-                    Haptics.warning()
-                }
-
-            case .qr:
-                guard let hits = try? await Recognizer.detectBarcodes(in: cropped), !hits.isEmpty else {
-                    toast = .failure("No codes found")
-                    Haptics.warning()
-                    return
-                }
-                barcodes = hits
-                showBarcodes = true
-
-            default:
-                break
-            }
-        }
-    }
-
-    /// Let the toast be read before the sheet disappears.
-    private func dismissShortly() async {
-        try? await Task.sleep(nanoseconds: 900_000_000)
-        onFinish()
-    }
+    @Published var phase: Phase = .loading
 }
 
-private struct BarcodeResultsSheet: View {
-    let hits: [Recognizer.BarcodeHit]
-    @Environment(\.dismiss) private var dismiss
+/// Personal builds can crop here; public builds need no confirmation tap.
+struct ShareRootView: View {
+    @ObservedObject var state: ShareFloatState
+    var onFinish: () -> Void
+    var onRetry: () -> Void
+    var onFloat: (UIImage) -> Void
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(hits) { hit in
-                        BarcodePayloadRow(payload: hit.payload, symbology: hit.symbology)
-                    }
-                }
-                .padding(16)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle(hits.count == 1 ? "1 Code" : "\(hits.count) Codes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
-            }
+        if case .selecting(let image) = state.phase {
+            #if COD_PERSONAL || COD_FAST_SHARE
+            SelectionView(
+                image: image,
+                availableActions: [.float],
+                smartRegionsEnabled: false,
+                onCancel: onFinish,
+                onAction: { _, cropped, _ in onFloat(cropped) }
+            )
+            .environmentObject(AppSettings.shared)
+            #endif
+        } else {
+            statusView
         }
-        .presentationDetents([.medium, .large])
+    }
+
+    private var statusView: some View {
+        VStack(spacing: 20) {
+            switch state.phase {
+            case .loading, .opening:
+                ProgressView()
+                    .controlSize(.large)
+                if case .loading = state.phase {
+                    Text("Loading image…").font(.headline)
+                } else {
+                    #if COD_PERSONAL || COD_FAST_SHARE
+                    Text("Floating image…").font(.headline)
+                    #else
+                    Text("Preparing image…").font(.headline)
+                    #endif
+                }
+            case .failed(let message):
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.largeTitle)
+                Text("Couldn't receive image")
+                    .font(.headline)
+                Text(message)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Try Again", action: onRetry)
+                    .buttonStyle(.borderedProminent)
+            case .selecting:
+                EmptyView()
+            #if COD_LAUNCH_PROBE
+            case .launchProbe:
+                Text("Public launch experiment").font(.headline)
+                Text("The image is ready. This tests whether an app-bound intent can bring Cod forward from the share extension.")
+                Button(intent: FloatPendingWithCodIntent()) { Text("Test system Float") }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("test-system-float")
+            #endif
+            }
+            Button("Cancel", action: onFinish)
+                .buttonStyle(.bordered)
+                .disabled(isSaving)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+    }
+
+    private var isSaving: Bool {
+        #if COD_PERSONAL
+        return false
+        #else
+        if case .opening = state.phase { return true }
+        return false
+        #endif
     }
 }

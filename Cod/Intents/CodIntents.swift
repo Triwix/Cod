@@ -41,12 +41,18 @@ struct CropWithCodIntent: AppIntent {
         categoryName: "Capture"
     )
     static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
 
     /// Required for the same reason as `FloatWithCodIntent` — an unwired
     /// optional silently fell back to "newest thing in the library", which is
     /// indistinguishable from a bug. Use `CropLatestScreenshotIntent` when you
     /// genuinely want the no-input behaviour.
-    @Parameter(title: "Image", supportedTypeIdentifiers: ["public.image"])
+    @Parameter(
+        title: "Image",
+        supportedTypeIdentifiers: ["public.image"],
+        inputConnectionBehavior: .connectToPreviousIntentResult
+    )
     var image: IntentFile
 
     static var parameterSummary: some ParameterSummary {
@@ -72,6 +78,8 @@ struct CropLatestScreenshotIntent: AppIntent {
         categoryName: "Capture"
     )
     static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -94,13 +102,19 @@ struct FloatWithCodIntent: AppIntent {
         categoryName: "Floating"
     )
     static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
 
     /// Deliberately non-optional. As an optional it silently arrived `nil` when
     /// a shortcut didn't wire its input through, and the fallback grabbed the
     /// newest thing in the photo library — which looks exactly like the app
     /// floating a random photo. Required means Shortcuts fills it with the
     /// share-sheet input automatically, and complains if it can't.
-    @Parameter(title: "Image", supportedTypeIdentifiers: ["public.image"])
+    @Parameter(
+        title: "Image",
+        supportedTypeIdentifiers: ["public.image"],
+        inputConnectionBehavior: .connectToPreviousIntentResult
+    )
     var image: IntentFile
 
     static var parameterSummary: some ParameterSummary {
@@ -126,6 +140,8 @@ struct FloatLatestScreenshotIntent: AppIntent {
         categoryName: "Floating"
     )
     static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
 
     @MainActor
     func perform() async throws -> some IntentResult {

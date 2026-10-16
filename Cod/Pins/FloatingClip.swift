@@ -8,6 +8,16 @@ import UIKit
 /// AVKit exactly what it expects: an `AVPlayer` playing a movie. Identical
 /// frames compress to almost nothing, so the file is a few kilobytes.
 enum FloatingClip {
+    /// Share-extension temporary storage is purged when the extension calls
+    /// `completeRequest`. AVKit may still be decoding the clip at that point,
+    /// which leaves a live PiP window with a gray frame. Caches survives the
+    /// handoff; stale clips are removed whenever the next session starts.
+    private static var clipDirectory: URL {
+        let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        return base.appendingPathComponent("CodFloatingClips", isDirectory: true)
+    }
+
     /// AVFoundation's writer types predate `Sendable`. This state is created
     /// before encoding and then touched only by the writer's serial queue.
     private final class EncodingState: @unchecked Sendable {
@@ -15,6 +25,8 @@ enum FloatingClip {
         let adaptor: AVAssetWriterInputPixelBufferAdaptor
         let pixelBuffer: CVPixelBuffer
         var frame = 0
+        var finished = false
+        var appendFailed = false
 
         init(
             input: AVAssetWriterInput,
@@ -50,8 +62,14 @@ enum FloatingClip {
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
 
-        let url = FileManager.default.temporaryDirectory
+        let directory = clipDirectory
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory
             .appendingPathComponent("cod-float-\(UUID().uuidString).mp4")
+        var completed = false
+        defer {
+            if !completed { try? FileManager.default.removeItem(at: url) }
+        }
 
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -84,19 +102,31 @@ enum FloatingClip {
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             input.requestMediaDataWhenReady(on: queue) {
+                guard !state.finished else { return }
                 while state.input.isReadyForMoreMediaData {
                     guard state.frame < totalFrames else {
+                        state.finished = true
                         state.input.markAsFinished()
                         continuation.resume()
                         return
                     }
-                    state.adaptor.append(
+                    guard state.adaptor.append(
                         state.pixelBuffer,
                         withPresentationTime: CMTime(value: Int64(state.frame), timescale: fps)
-                    )
+                    ) else {
+                        state.finished = true
+                        state.appendFailed = true
+                        continuation.resume()
+                        return
+                    }
                     state.frame += 1
                 }
             }
+        }
+
+        guard !state.appendFailed else {
+            writer.cancelWriting()
+            throw ClipError.writerFailed("writer rejected an image frame")
         }
 
         await writer.finishWriting()
@@ -104,6 +134,7 @@ enum FloatingClip {
         guard writer.status == .completed else {
             throw ClipError.writerFailed(writer.error?.localizedDescription ?? "status \(writer.status.rawValue)")
         }
+        completed = true
         return url
     }
 
@@ -111,7 +142,7 @@ enum FloatingClip {
     static func cleanUp(except keep: URL? = nil) {
         let fm = FileManager.default
         guard let files = try? fm.contentsOfDirectory(
-            at: fm.temporaryDirectory, includingPropertiesForKeys: nil
+            at: clipDirectory, includingPropertiesForKeys: nil
         ) else { return }
         for file in files where file.lastPathComponent.hasPrefix("cod-float-") && file != keep {
             try? fm.removeItem(at: file)

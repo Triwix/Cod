@@ -32,6 +32,13 @@ final class CaptureCoordinator: ObservableObject {
     @Published var route: Route?
     @Published var toast: Toast?
     @Published var isWorking = false
+    @Published private(set) var sharedImages: [SharedImageInbox.Entry] = []
+    @Published private(set) var sharedInboxError: String?
+    private let sharedInbox: SharedImageInbox
+    private let quickHandoff: QuickFloatHandoff
+    private var quickRequestID: UUID?
+    @Published private(set) var quickSharePreview: QuickFloatHandoff.Payload?
+    @Published private(set) var lastExternalImageSize: CGSize?
     /// True when Cod was opened purely to float something, so the UI can stay
     /// out of the way instead of flashing the whole app.
     @Published var floatOnlyLaunch = false
@@ -57,12 +64,16 @@ final class CaptureCoordinator: ObservableObject {
         store: SnapStore,
         settings: AppSettings,
         pins: PinManager,
-        pip: PiPPinController
+        pip: PiPPinController,
+        sharedInbox: SharedImageInbox = .shared,
+        quickHandoff: QuickFloatHandoff = .shared
     ) {
         self.store = store
         self.settings = settings
         self.pins = pins
         self.pip = pip
+        self.sharedInbox = sharedInbox
+        self.quickHandoff = quickHandoff
         observePiPStatus()
     }
 
@@ -76,6 +87,97 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     // MARK: - Ingestion
+
+    func receiveExternalImage(_ image: UIImage, origin: Snap.Origin = .shared) {
+        lastExternalImageSize = image.pixelSize
+        finishQuickRequest(success: false)
+        try? quickHandoff.deferAutomaticStart()
+        if settings.oneTapFloat {
+            CodDiagnosticLog.record("direct image received; automatic float \(Int(image.pixelSize.width))x\(Int(image.pixelSize.height))")
+            floatImmediately(image: image, origin: origin, minimalUI: true, reusePreparedPlayback: false)
+        } else {
+            restoreFloatingSelection(image)
+        }
+    }
+
+    @discardableResult
+    func receiveQuickShare(retry: Bool = false, expectedID: UUID? = nil) -> Bool {
+        guard !isWorking, !pip.status.isBusy else { return false }
+        guard pending == nil || expectedID != nil else { return false }
+        do {
+            let payload = try (retry ? quickHandoff.retry() : quickHandoff.claim(expectedID: expectedID))
+            refreshQuickSharePreview()
+            guard let payload else { return true }
+            finishQuickRequest(success: false)
+            lastExternalImageSize = payload.image.pixelSize
+            quickRequestID = payload.id
+            CodDiagnosticLog.record("quick share claimed id=\(payload.id) elapsed=\(Int(Date().timeIntervalSince(payload.createdAt) * 1_000))ms")
+            if payload.mode == .float {
+                floatImmediately(image: payload.image, minimalUI: true, reusePreparedPlayback: false)
+            } else {
+                restoreFloatingSelection(payload.image)
+            }
+        } catch {
+            toast = .failure("Couldn't receive shared image", error.localizedDescription)
+        }
+        return true
+    }
+
+    func refreshQuickSharePreview() {
+        do { quickSharePreview = try quickHandoff.preview() }
+        catch { quickSharePreview = nil }
+    }
+
+    func prioritizeExplicitInput() {
+        finishQuickRequest(success: false)
+        try? quickHandoff.deferAutomaticStart()
+    }
+
+    func discardQuickShare() {
+        do {
+            try quickHandoff.discard()
+            quickRequestID = nil
+            quickSharePreview = nil
+        } catch { toast = .failure("Couldn't remove shared image", error.localizedDescription) }
+    }
+
+    private func finishQuickRequest(success: Bool) {
+        guard let id = quickRequestID else { return }
+        quickRequestID = nil
+        do { try quickHandoff.finish(id, success: success) }
+        catch { CodDiagnosticLog.record("quick share acknowledgement failed: \(error.localizedDescription)") }
+        refreshQuickSharePreview()
+    }
+
+    func refreshSharedImages() {
+        do {
+            sharedImages = try sharedInbox.entries()
+            sharedInboxError = nil
+        } catch {
+            sharedInboxError = error.localizedDescription
+        }
+    }
+
+    func openSharedImage(_ entry: SharedImageInbox.Entry, float: Bool) {
+        do {
+            let image = try sharedInbox.image(for: entry.id)
+            // Explicit user choice takes priority over arrival-mode settings.
+            // Keep the durable inbox original for retries and future crops.
+            if float { floatImmediately(image: image, minimalUI: true) }
+            else { restoreFloatingSelection(image) }
+        } catch {
+            toast = .failure("Couldn't open shared image", error.localizedDescription)
+        }
+    }
+
+    func removeSharedImage(_ entry: SharedImageInbox.Entry) {
+        do {
+            try sharedInbox.remove(entry.id)
+            refreshSharedImages()
+        } catch {
+            toast = .failure("Couldn't remove shared image", error.localizedDescription)
+        }
+    }
 
     func present(image: UIImage, origin: Snap.Origin) {
         let normalized = image.normalizedUp()
@@ -114,13 +216,20 @@ final class CaptureCoordinator: ObservableObject {
     func floatImmediately(
         image: UIImage,
         origin: Snap.Origin = .shared,
-        minimalUI: Bool = false
+        minimalUI: Bool = false,
+        reusePreparedPlayback: Bool = true,
+        sourceBundleIdentifier: String? = nil
     ) {
         let normalized = image.normalizedUp()
         pending = nil
         archivedCrops.removeAll()
         if minimalUI { floatOnlyLaunch = true }
-        startFloating(normalized, dismissSelectionOnSuccess: false)
+        startFloating(
+            normalized,
+            dismissSelectionOnSuccess: false,
+            reusePreparedPlayback: reusePreparedPlayback,
+            sourceBundleIdentifier: sourceBundleIdentifier
+        )
 
         if pip.status != .unsupported {
             archive(normalized, rect: CGRect(origin: .zero, size: normalized.pixelSize), origin: origin)
@@ -147,7 +256,18 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func dismissSelection() {
+        finishQuickRequest(success: false)
         withAnimation(.easeOut(duration: 0.2)) { pending = nil }
+    }
+
+    /// Restore an image for explicit user action, regardless of the configured
+    /// arrival mode. Instant Float must not reopen PiP in a restoration loop.
+    func restoreFloatingSelection(_ image: UIImage) {
+        isAwaitingFloatResult = false
+        dismissSelectionOnFloatSuccess = false
+        floatOnlyLaunch = false
+        archivedCrops.removeAll()
+        pending = Pending(image: image, origin: .shared)
     }
 
     /// Pulls the newest item from the Screenshots album onto the crop surface.
@@ -186,7 +306,11 @@ final class CaptureCoordinator: ObservableObject {
             Haptics.warning()
             return
         }
+        #if COD_PERSONAL
         present(image: image, origin: .pasted)
+        #else
+        receiveExternalImage(image, origin: .pasted)
+        #endif
     }
 
     func reopen(_ snap: Snap) {
@@ -256,8 +380,12 @@ final class CaptureCoordinator: ObservableObject {
             route = Route(kind: .annotate(image))
 
         case .upload:
+            #if COD_PERSONAL
             archive(image, rect: rect, origin: origin)
             route = Route(kind: .confirmUpload(image))
+            #else
+            toast = .failure("Uploads aren't included in this version", "Your images stay on this device unless you choose Share.")
+            #endif
         }
     }
 
@@ -369,12 +497,17 @@ final class CaptureCoordinator: ObservableObject {
             }
     }
 
-    private func startFloating(_ image: UIImage, dismissSelectionOnSuccess: Bool) {
+    private func startFloating(
+        _ image: UIImage,
+        dismissSelectionOnSuccess: Bool,
+        reusePreparedPlayback: Bool = true,
+        sourceBundleIdentifier: String? = nil
+    ) {
         isAwaitingFloatResult = true
         self.dismissSelectionOnFloatSuccess = dismissSelectionOnSuccess
         isWorking = true
         toast = .info("Opening floating window…")
-        pip.float(image)
+        pip.float(image, reusePreparedPlayback: reusePreparedPlayback, sourceBundleIdentifier: sourceBundleIdentifier)
     }
 
     private func handlePiPStatus(_ status: PiPPinController.Status) {
@@ -382,6 +515,7 @@ final class CaptureCoordinator: ObservableObject {
 
         switch status {
         case .idle:
+            finishQuickRequest(success: false)
             finishFloatAttempt()
 
         case .preparing:
@@ -389,11 +523,17 @@ final class CaptureCoordinator: ObservableObject {
 
         case .active:
             let shouldDismiss = dismissSelectionOnFloatSuccess
+            finishQuickRequest(success: true)
             finishFloatAttempt()
             if shouldDismiss { dismissSelection() }
+            #if COD_PERSONAL
             toast = .info("Floating", "The snippet is now in the system window.")
+            #else
+            toast = .info("Floating", "Switch apps when you're ready. The image stays in Picture in Picture.")
+            #endif
 
         case .unsupported:
+            finishQuickRequest(success: false)
             finishFloatAttempt()
             floatOnlyLaunch = false
             toast = .failure(
@@ -402,6 +542,7 @@ final class CaptureCoordinator: ObservableObject {
             )
 
         case let .failed(message):
+            finishQuickRequest(success: false)
             finishFloatAttempt()
             floatOnlyLaunch = false
             toast = .failure("Couldn't start floating", message)
