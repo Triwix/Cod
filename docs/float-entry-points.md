@@ -117,10 +117,14 @@ Center needs a screenshot already saved to Photos and permission to see it;
 the capture Shortcut uses its own new screenshot instead. Assigning Back Tap,
 Lock Screen, or Action Button remains a user-controlled setup step.
 
-Build 4's signed iPhone artifact is built. Installation on the newly paired
-iPhone 16 Pro Max is pending Developer Mode; device-specific preparation
-reported that it was disabled. No installation or physical PiP pass for this
-build is claimed. The original Cod identity remains untouched.
+After the user enabled Developer Mode, device-specific development signing
+succeeded and **Cod Test 0.1.0 (4)** was installed wirelessly on the new iPhone
+16 Pro Max running iOS 27.0.1. The device's installed-app record confirms the
+bundle ID and build. Deep signature verification passed and the development
+profile includes that phone. First launch was denied with iOS's signing/trust
+message; the user was asked to trust their development profile in Settings.
+No successful phone launch or physical PiP pass is claimed yet. The original
+Cod identity remains untouched.
 
 Apple reference: [Creating controls](https://developer.apple.com/documentation/widgetkit/creating-controls-to-perform-actions-across-the-system).
 The [extension notification discussion](https://developer.apple.com/forums/thread/764570)
