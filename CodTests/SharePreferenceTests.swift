@@ -3,6 +3,30 @@ import XCTest
 @testable import Cod
 
 final class SharePreferenceTests: XCTestCase {
+    func testDedicatedAlbumDefaultsOffWithoutOverwritingAnExplicitChoice() {
+        let suite = "Cod.DedicatedAlbumDefault.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = AppSettings(defaults: defaults, sharePreferences: MemorySharePreferenceStore())
+        XCTAssertFalse(settings.saveToDedicatedAlbum)
+        XCTAssertNil(defaults.object(forKey: "saveToDedicatedAlbum"))
+    }
+
+    func testDedicatedAlbumPreservesSavedChoicesAndAlbumName() {
+        let suite = "Cod.DedicatedAlbumPersistence.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = MemorySharePreferenceStore()
+        let settings = AppSettings(defaults: defaults, sharePreferences: preferences)
+        settings.albumName = "My Existing Album"
+        settings.saveToDedicatedAlbum = true
+        let relaunched = AppSettings(defaults: defaults, sharePreferences: preferences)
+        XCTAssertTrue(relaunched.saveToDedicatedAlbum)
+        XCTAssertEqual(relaunched.albumName, "My Existing Album")
+        relaunched.saveToDedicatedAlbum = false
+        XCTAssertFalse(AppSettings(defaults: defaults, sharePreferences: preferences).saveToDedicatedAlbum)
+    }
+
     func testNotificationChoicePersistsIndependentlyOfCropping() {
         let store = MemorySharePreferenceStore()
         let suite = "Cod.NotificationPreferenceTests.\(UUID().uuidString)"

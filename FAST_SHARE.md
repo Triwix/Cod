@@ -7,7 +7,7 @@ separate app-open step. The documented-only/manual-open fallback is not the MVP.
 
 **Cod Fast** (`FastDebug` / `FastRelease`, `COD_FAST_SHARE`) updates the separate
 **Cod Test** app (`com.josh.cod.store`), not the original `com.josh.cod` app.
-Build number is 3. **Cod** Debug/Release retains the documented-only comparison
+Current build number is 5. **Cod** Debug/Release retains the documented-only comparison
 build; **Cod Personal** retains its original implementation and identity.
 
 - With **One tap float on** (default), selecting Cod Test in Share receives the
@@ -40,7 +40,27 @@ stays **YES**, and this compiles under that restriction.
 ordinary Share extensions have no supported containing-app launch contract.
 Their warnings cover runtime workarounds and intended API use. A separate,
 recent public question asks about this exact direct responder-chain variant;
-it had no Apple reply when checked on October 15, 2026. It is not approval.
+it still had no replies when rechecked on October 18, 2026. It is not approval.
+
+Unsupported does **not** establish that App Review will reject Cod. No review
+decision for this app has been received. The accurate distinction is that this
+build restores the fast user experience while retaining an unresolved review
+and future-OS compatibility risk; the added controls/Shortcuts/notification
+options do not make its direct-share launcher officially supported.
+
+### Build 5 settings clarification
+
+- Saving to a dedicated album now defaults off when there is no stored choice.
+  Explicit saved on/off choices and the existing album name are preserved.
+- The action-bar Settings pages now say they apply to Cod's own crop editor.
+  Share-sheet cropping remains intentionally Float-only; it is not a full
+  action-bar implementation and does not mirror those settings.
+- This update does not replace or slow down the working direct-share path.
+- Verification: **68 unit tests passed in each of FastDebug and Debug**. Native
+  settings-scope and crop-first cancellation checks passed. The settings UI
+  test required a selector fix for the row's combined accessibility label;
+  its corrected rerun passed. Cod Test **0.1.0 (5)** was installed, its build
+  record verified, and it launched successfully on the new iPhone.
 
 The candidate deliberately separates:
 

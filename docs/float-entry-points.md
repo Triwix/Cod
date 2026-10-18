@@ -122,9 +122,11 @@ succeeded and **Cod Test 0.1.0 (4)** was installed wirelessly on the new iPhone
 16 Pro Max running iOS 27.0.1. The device's installed-app record confirms the
 bundle ID and build. Deep signature verification passed and the development
 profile includes that phone. First launch was denied with iOS's signing/trust
-message; the user was asked to trust their development profile in Settings.
-No successful phone launch or physical PiP pass is claimed yet. The original
-Cod identity remains untouched.
+message. The user trusted their development profile and confirmed that Cod Test
+opens successfully on October 18. The user then reported the Photos share/PiP
+flow seemed good and explicitly confirmed the Control Center screenshot route
+worked. Physical Back Tap, Lock Screen/Action Button, installed share Shortcut,
+and notification checks remain pending. The original Cod identity remains untouched.
 
 Apple reference: [Creating controls](https://developer.apple.com/documentation/widgetkit/creating-controls-to-perform-actions-across-the-system).
 The [extension notification discussion](https://developer.apple.com/forums/thread/764570)

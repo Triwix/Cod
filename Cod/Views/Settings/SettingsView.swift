@@ -129,9 +129,9 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text("Actions")
+            Text("In-App Actions")
         } footer: {
-            Text("Choose which actions appear after a crop, and in what order.")
+            Text("Choose actions for Cod's own crop editor. The share-sheet crop screen only offers Float.")
         }
     }
 
@@ -371,7 +371,7 @@ struct ActionOrderView: View {
                     settings.actionOrder.move(fromOffsets: source, toOffset: destination)
                 }
             } footer: {
-                Text("Drag to reorder. The order here is the order they appear under a fresh crop.")
+                Text("These actions appear in Cod's crop editor, not in the share sheet. Drag to reorder.")
             }
 
             Section {

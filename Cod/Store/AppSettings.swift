@@ -116,7 +116,7 @@ final class AppSettings: ObservableObject {
         self.hideFloatingControls = false
         #endif
         self.captureDelay = defaults.object(forKey: Keys.captureDelay) as? Double ?? 0
-        self.saveToDedicatedAlbum = defaults.object(forKey: Keys.saveToDedicatedAlbum) as? Bool ?? true
+        self.saveToDedicatedAlbum = defaults.object(forKey: Keys.saveToDedicatedAlbum) as? Bool ?? false
         self.albumName = defaults.string(forKey: Keys.albumName) ?? "Cod"
         self.autoCopyOnCapture = defaults.object(forKey: Keys.autoCopyOnCapture) as? Bool ?? false
         self.watchScreenshots = defaults.object(forKey: Keys.watchScreenshots) as? Bool ?? true

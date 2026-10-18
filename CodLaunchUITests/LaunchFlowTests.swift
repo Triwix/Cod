@@ -70,6 +70,24 @@ final class LaunchFlowTests: XCTestCase {
     }
 
     #if !COD_LAUNCH_PROBE
+    func testSettingsExplainThatTheActionBarOnlyAppliesInsideCod() {
+        cod.launch()
+        let settingsTab = cod.tabBars.buttons["Settings"]
+        expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: settingsTab)
+        waitForExpectations(timeout: 5)
+        settingsTab.tap()
+        let actionBar = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] 'Action bar'")).firstMatch
+        for _ in 0..<6 where !actionBar.isHittable { cod.swipeUp() }
+        XCTAssertTrue(actionBar.isHittable, cod.debugDescription)
+        let explanation = cod.staticTexts["Choose actions for Cod's own crop editor. The share-sheet crop screen only offers Float."]
+        for _ in 0..<3 where !explanation.exists { cod.swipeUp() }
+        XCTAssertTrue(explanation.exists)
+        actionBar.tap()
+        let detail = cod.staticTexts["These actions appear in Cod's crop editor, not in the share sheet. Drag to reorder."]
+        for _ in 0..<6 where !detail.exists { cod.swipeUp() }
+        XCTAssertTrue(detail.exists)
+    }
+
     func testShareWithOneTapOffOpensCropAndDoesNotReplayAfterCancel() {
         cod.launch()
         setOneTapFloat(false)
