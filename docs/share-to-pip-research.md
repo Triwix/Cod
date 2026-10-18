@@ -1,5 +1,9 @@
 # Cod: fewest-tap routes from an image to a floating PiP window — research (Oct 15, 2026, ~6 PM PDT)
 
+> Historical research, not current build instructions. All unsupported
+> launch/return/control implementations were removed in build 6. See
+> float-entry-points.md for current supported-only behavior and verification.
+
 Implementation follow-up (October 18): routes 2–5 now have implementations and
 signed Shortcut installers. See [current setup and runtime verification](float-entry-points.md).
 The original research below describes the earlier repository snapshot; its

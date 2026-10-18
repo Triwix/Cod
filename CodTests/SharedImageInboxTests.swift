@@ -141,7 +141,6 @@ final class SharedImageInboxTests: XCTestCase {
         XCTAssertTrue(coordinator.sharedImages.isEmpty)
     }
 
-    #if !COD_PERSONAL
     func testStoreAppAndExtensionHaveMatchingSharedContainerMetadataAndPrivacyResources() throws {
         let app = Bundle.main
         let plugins = try XCTUnwrap(app.builtInPlugInsURL)
@@ -153,11 +152,7 @@ final class SharedImageInboxTests: XCTestCase {
         XCTAssertEqual(share.object(forInfoDictionaryKey: "CodAppGroup") as? String, group)
         XCTAssertEqual(app.object(forInfoDictionaryKey: "CodFloatURLScheme") as? String, "cod-store")
         XCTAssertEqual(share.object(forInfoDictionaryKey: "CodFloatURLScheme") as? String, "cod-store")
-        #if COD_FAST_SHARE
-        let expectedPolicy = "responder-chain"
-        #else
         let expectedPolicy = "manual-open"
-        #endif
         XCTAssertEqual(app.object(forInfoDictionaryKey: "CodShareLaunchPolicy") as? String, expectedPolicy)
         XCTAssertEqual(share.object(forInfoDictionaryKey: "CodShareLaunchPolicy") as? String, expectedPolicy)
         XCTAssertNotNil(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group))
@@ -170,24 +165,19 @@ final class SharedImageInboxTests: XCTestCase {
         }
     }
 
-    func testStoreSettingsCannotRestorePersonalOnlyFeatures() {
+    func testSettingsCannotRestoreRemovedUploadAction() {
         let suite = "CodStoreSettingsTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(true, forKey: "returnAfterFloating")
-        defaults.set(true, forKey: "hideFloatingControls")
         defaults.set(try! JSONEncoder().encode(SnapAction.upload), forKey: "instantAction")
         defaults.set(try! JSONEncoder().encode([SnapAction.upload, .float]), forKey: "actionOrder")
         defaults.set(try! JSONEncoder().encode(Set([SnapAction.upload, .float])), forKey: "enabledActions")
         let settings = AppSettings(defaults: defaults)
-        XCTAssertFalse(settings.returnAfterFloating)
-        XCTAssertFalse(settings.hideFloatingControls)
         XCTAssertEqual(settings.instantAction, .float)
         XCTAssertFalse(settings.visibleActions.contains(.upload))
         XCTAssertFalse(settings.actionOrder.contains(.upload))
         XCTAssertFalse(SnapAction.availableCases.contains(.upload))
     }
-    #endif
 
     private static var image: UIImage {
         let format = UIGraphicsImageRendererFormat.default()

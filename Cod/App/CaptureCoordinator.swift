@@ -233,8 +233,7 @@ final class CaptureCoordinator: ObservableObject {
         image: UIImage,
         origin: Snap.Origin = .shared,
         minimalUI: Bool = false,
-        reusePreparedPlayback: Bool = true,
-        sourceBundleIdentifier: String? = nil
+        reusePreparedPlayback: Bool = true
     ) {
         let normalized = image.normalizedUp()
         pending = nil
@@ -243,8 +242,7 @@ final class CaptureCoordinator: ObservableObject {
         startFloating(
             normalized,
             dismissSelectionOnSuccess: false,
-            reusePreparedPlayback: reusePreparedPlayback,
-            sourceBundleIdentifier: sourceBundleIdentifier
+            reusePreparedPlayback: reusePreparedPlayback
         )
 
         if pip.status != .unsupported {
@@ -322,11 +320,7 @@ final class CaptureCoordinator: ObservableObject {
             Haptics.warning()
             return
         }
-        #if COD_PERSONAL
-        present(image: image, origin: .pasted)
-        #else
         receiveExternalImage(image, origin: .pasted)
-        #endif
     }
 
     func reopen(_ snap: Snap) {
@@ -396,12 +390,7 @@ final class CaptureCoordinator: ObservableObject {
             route = Route(kind: .annotate(image))
 
         case .upload:
-            #if COD_PERSONAL
-            archive(image, rect: rect, origin: origin)
-            route = Route(kind: .confirmUpload(image))
-            #else
             toast = .failure("Uploads aren't included in this version", "Your images stay on this device unless you choose Share.")
-            #endif
         }
     }
 
@@ -516,14 +505,13 @@ final class CaptureCoordinator: ObservableObject {
     private func startFloating(
         _ image: UIImage,
         dismissSelectionOnSuccess: Bool,
-        reusePreparedPlayback: Bool = true,
-        sourceBundleIdentifier: String? = nil
+        reusePreparedPlayback: Bool = true
     ) {
         isAwaitingFloatResult = true
         self.dismissSelectionOnFloatSuccess = dismissSelectionOnSuccess
         isWorking = true
         toast = .info("Opening floating window…")
-        pip.float(image, reusePreparedPlayback: reusePreparedPlayback, sourceBundleIdentifier: sourceBundleIdentifier)
+        pip.float(image, reusePreparedPlayback: reusePreparedPlayback)
     }
 
     private func handlePiPStatus(_ status: PiPPinController.Status) {
@@ -542,11 +530,7 @@ final class CaptureCoordinator: ObservableObject {
             finishQuickRequest(success: true)
             finishFloatAttempt()
             if shouldDismiss { dismissSelection() }
-            #if COD_PERSONAL
-            toast = .info("Floating", "The snippet is now in the system window.")
-            #else
             toast = .info("Floating", "Switch apps when you're ready. The image stays in Picture in Picture.")
-            #endif
 
         case .unsupported:
             finishQuickRequest(success: false)

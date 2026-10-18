@@ -1,9 +1,9 @@
 # Bundled Shortcut files
 
-`Tools/MakeFloatShortcuts.swift` generates the two workflows for each bundle ID.
-Only Apple-signed `.shortcut` files belong in the `Store` and `Personal` folders.
-Both workflows for both identities are included, signed on October 18, 2026
-with the user's approval. Cod Test uses Store; the original Cod uses Personal.
+`Tools/MakeFloatShortcuts.swift` generates the two workflows for com.josh.cod.store.
+Only Apple-signed `.shortcut` files belong in the `Store` folder.
+Both workflows are included, signed on October 18, 2026 with the user's approval.
+The obsolete personal-identity copies and build configurations have been removed.
 Generate to a temporary directory, then sign using `shortcuts sign --mode anyone`.
 Signing sends the workflow definition to Apple's service, so obtain approval
 before running it. It contains bundle/team identifiers, not images or user data.

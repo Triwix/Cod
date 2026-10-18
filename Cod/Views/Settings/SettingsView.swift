@@ -17,9 +17,6 @@ struct SettingsView: View {
                 pinsSection
                 savingSection
                 feelSection
-                #if COD_PERSONAL
-                integrationsSection
-                #endif
                 aboutSection
             }
             .navigationTitle("Settings")
@@ -71,7 +68,6 @@ struct SettingsView: View {
                 get: { settings.oneTapFloat },
                 set: { settings.setOneTapFloat($0) }
             ))
-            #if !COD_PERSONAL
             Toggle("Tap notification to float", isOn: Binding(
                 get: { settings.useFloatNotification },
                 set: { enabled in
@@ -94,7 +90,6 @@ struct SettingsView: View {
                 }
             ))
             .disabled(isEnablingNotifications)
-            #endif
             NavigationLink {
                 OneTapFloatGuide()
             } label: {
@@ -106,13 +101,7 @@ struct SettingsView: View {
         } header: {
             Text("Share Sheet")
         } footer: {
-            #if COD_PERSONAL
-            Text("Off by default: tapping Cod in the share sheet opens the cropping screen, where you can select a region and tap Float. Turn on to skip cropping and float the whole image immediately. This only changes Share → Cod, not your Shortcuts.")
-            #elseif COD_FAST_SHARE
-            Text("One tap float skips cropping. Turn it off to crop in the share sheet and tap Float.\n\nTap notification to float replaces automatic app opening with a notification you tap to launch Cod. It requires notification permission, and Focus or banner settings may delay it. If iOS won't deliver from the share extension, Cod shows an error and keeps the image for manual retry. Explicit Float Shortcuts aren't changed.")
-            #else
-            Text("One tap float skips cropping. Tap notification to float asks iOS to show a notification after sharing; tapping it opens Cod and floats that image. Enable notifications first. Availability from a share extension depends on iOS; if delivery fails, the image is kept for manual retry. Without notifications, open Cod manually after sharing. Explicit Float Shortcuts aren't changed.")
-            #endif
+            Text("One tap float skips cropping; it does not open Cod automatically. For the fastest supported photo-sharing route, set up Share → Float with Cod in the guide. Tap notification to float offers a notification you tap to open Cod; Focus and banner settings can affect delivery. Without notifications, open Cod yourself after sharing. Explicit Float Shortcuts aren't changed.")
         }
     }
 
@@ -229,24 +218,10 @@ struct SettingsView: View {
             }
 
             Toggle("Keep other audio playing", isOn: $settings.keepOtherAudioPlaying)
-            #if COD_PERSONAL
-            Toggle("Return automatically after floating", isOn: $settings.returnAfterFloating)
-            Toggle("Open without controls", isOn: $settings.hideFloatingControls)
-            #endif
         } header: {
             Text("Pins")
         } footer: {
-            #if COD_PERSONAL
-            Text(pip.isSupported
-                 ? "Floating hands the image to the system Picture in Picture window, which stays visible over other apps.\n\nShare → Cod opens cropping by default; enable “One tap float” above to float the whole image immediately. Neither mode needs a Shortcut. iOS requires Cod's window to be active to start PiP, so Cod appears briefly. “Return automatically” attempts to resume the identified share source, such as Photos. Immediate screenshot previews currently return to Home because their original app cannot be identified reliably. Arbitrary Shortcut-origin return is also unresolved.\n\n“Open without controls” is experimental and off by default. It hides buttons during appearance, but tapping before the window settles can close PiP. Leave it off for reliable early tapping; native controls fade on their own.\n\nAutomatic return and control hiding rely on undocumented system behaviour. They aren't suitable for an App Store build.\n\n“Keep other audio playing” avoids interrupting music. If floating stops after leaving Cod, try turning it off; background playback depends on iOS's audio-session handling."
-                 : "Pins float above Cod. Floating over other apps needs Picture in Picture, which the Simulator doesn't provide — that part only works on a real device.")
-            #else
-            #if COD_FAST_SHARE
-            Text("Share → Cod opens the app and starts Picture in Picture automatically, with no extra button when One tap float is on. Once the window appears, switch apps when you're ready. This build doesn't automatically return to the previous app.\n\nFast share launching is a compatibility workaround, not an officially supported extension behavior or App Store approval. Native controls determine PiP's size and movement; no private return or control-hiding methods are used.")
-            #else
-            Text("New images float immediately when opened in Cod. Share → Cod prepares the image automatically; opening Cod starts it with no Save, Done or Float buttons. This remaining manual-open step is a fallback, not a solved one-tap share launch. Once Picture in Picture appears, switch apps yourself.\n\nSystem controls determine PiP's size and movement. Shadow, opacity and corner radius only affect pins inside Cod.")
-            #endif
-            #endif
+            Text("Once Picture in Picture appears, switch apps yourself. Cod does not automatically return to another app. System controls determine PiP's size and movement. Shadow, opacity and corner radius only affect pins inside Cod.")
         }
     }
 
@@ -288,25 +263,6 @@ struct SettingsView: View {
 
     // MARK: - Integrations
 
-    #if COD_PERSONAL
-    private var integrationsSection: some View {
-        Section {
-            HStack {
-                Text("Imgur Client ID")
-                Spacer()
-                SecureField("Optional", text: $settings.imgurClientID)
-                    .multilineTextAlignment(.trailing)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-            }
-        } header: {
-            Text("Integrations")
-        } footer: {
-            Text("Register an application at imgur.com/oauth2/addclient to get a Client ID. Uploads are anonymous and always ask before they leave your device.")
-        }
-    }
-
-    #endif
 
     // MARK: - About
 
@@ -317,13 +273,11 @@ struct SettingsView: View {
             } label: {
                 Label("What Cod can and can't do", systemImage: "info.circle")
             }
-            #if !COD_PERSONAL
             NavigationLink {
                 PrivacyView()
             } label: {
                 Label("Privacy", systemImage: "hand.raised")
             }
-            #endif
         }
     }
 }
@@ -458,9 +412,6 @@ struct CapabilitiesView: View {
                 row("QR and barcode scanning", true)
                 row("Screenshot history, searchable by text", true)
                 row("Dedicated Photos album", true)
-                #if COD_PERSONAL
-                row("Imgur upload", true)
-                #endif
                 row("Save shared images to Cod", true)
                 row("One-gesture capture via Back Tap + Shortcuts", true)
             }

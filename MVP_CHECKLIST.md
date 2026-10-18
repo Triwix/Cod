@@ -1,5 +1,9 @@
 # Image-floating MVP reliability
 
+> Historical checklist through build 5. Build 6 removed unsupported mechanisms
+> and their build configurations. The current supported-only release gates
+> are in APP_STORE_RELEASE.md; setup is in docs/float-entry-points.md.
+
 October 18, build 4: system controls, notification handoff, and signed Back Tap /
 Share-sheet Shortcut installers are implemented. Both native Shortcut import
 and actual-image handoff tests pass in the simulator; physical PiP acceptance

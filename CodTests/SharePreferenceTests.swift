@@ -58,24 +58,6 @@ final class SharePreferenceTests: XCTestCase {
         XCTAssertNil(settings.sharePreferenceError)
     }
 
-    func testNativeFloatingControlsDefaultAndExplicitPreferencePersistence() {
-        let suite = "Cod.FloatingControlsTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let store = MemorySharePreferenceStore()
-        let settings = AppSettings(defaults: defaults, sharePreferences: store)
-        XCTAssertFalse(settings.hideFloatingControls)
-        settings.hideFloatingControls = true
-        #if COD_PERSONAL
-        XCTAssertTrue(AppSettings(defaults: defaults, sharePreferences: store).hideFloatingControls)
-        #else
-        XCTAssertFalse(AppSettings(defaults: defaults, sharePreferences: store).hideFloatingControls)
-        XCTAssertFalse(AppSettings(defaults: defaults, sharePreferences: store).returnAfterFloating)
-        #endif
-        settings.hideFloatingControls = false
-        XCTAssertFalse(AppSettings(defaults: defaults, sharePreferences: store).hideFloatingControls)
-    }
-
     func testMissingOrMalformedPreferenceDefaultsToCrop() {
         for data in [nil, Data(), Data([0]), Data([2]), Data([1, 0])] {
             XCTAssertFalse(SharePreferences.decode(data))
@@ -127,13 +109,8 @@ final class SharePreferenceTests: XCTestCase {
         defer { SecItemDelete(cleanup as CFDictionary) } // This test's unique item only.
         let writer = SharePreferences(accessGroup: group, service: service, account: account)
         let reader = SharePreferences(accessGroup: group, service: service, account: account)
-        #if COD_PERSONAL
-        XCTAssertFalse(reader.oneTapFloat)
-        XCTAssertEqual(SharePreferences.defaultAccount, "oneTapFloat")
-        #else
         XCTAssertTrue(reader.oneTapFloat, "The public fast-flow build defaults to whole-image Float")
         XCTAssertEqual(SharePreferences.defaultAccount, "quickFloatWholeImage")
-        #endif
         XCTAssertTrue(writer.setOneTapFloat(true))
         XCTAssertTrue(reader.oneTapFloat)
         XCTAssertTrue(writer.setOneTapFloat(false))

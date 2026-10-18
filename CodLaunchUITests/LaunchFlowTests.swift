@@ -8,9 +8,7 @@ final class LaunchFlowTests: XCTestCase {
         continueAfterFailure = false
         cod.launchArguments = ["--launch-ui-test"]
         cod.launch() // Seed UI-test arguments, then background it.
-        #if !COD_LAUNCH_PROBE
         setOneTapFloat(true)
-        #endif
         lab = XCUIApplication()
         lab.launch()
     }
@@ -18,26 +16,12 @@ final class LaunchFlowTests: XCTestCase {
     func testShareAutomaticallyPreparesAndAppActivationNeedsNoFloatTap() {
         lab.buttons["Share Test Image"].tap()
         selectCod()
-        #if COD_LAUNCH_PROBE
-        let probe = lab.buttons["test-system-float"]
-        XCTAssertTrue(probe.waitForExistence(timeout: 10))
-        probe.tap()
-        let launched = cod.wait(for: .runningForeground, timeout: 8)
-        print("PUBLIC SHARE INTENT FOREGROUND RESULT: \(launched)")
-        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        shot.name = "Public intent result"
-        shot.lifetime = .keepAlways
-        add(shot)
-        // This is a diagnostic, not an assertion that this surface is supported.
-        #elseif COD_FAST_SHARE
-        assertAutomaticLaunch(size: "300x200")
-        #else
         waitForShareToFinish()
         XCTAssertFalse(lab.buttons["Save to Cod"].exists)
+        XCTAssertNotEqual(cod.state, .runningForeground, "A Share extension must not launch its containing app")
         cod.activate()
         XCTAssertTrue(cod.staticTexts["received-image-size"].waitForExistence(timeout: 10))
         XCTAssertEqual(cod.staticTexts["received-image-size"].label, "Received image 300x200")
-        #endif
     }
 
     func testDocumentOpenRoute() {
@@ -47,9 +31,6 @@ final class LaunchFlowTests: XCTestCase {
         initial.lifetime = .keepAlways
         add(initial)
         selectCod()
-        #if COD_FAST_SHARE
-        assertAutomaticLaunch(size: "300x200")
-        #else
         let launched = cod.wait(for: .runningForeground, timeout: 10)
         print("PUBLIC DOCUMENT OPEN FOREGROUND RESULT: \(launched)")
         if launched {
@@ -58,18 +39,12 @@ final class LaunchFlowTests: XCTestCase {
         } else {
             // iOS may show the Share extension even for this public Open In
             // menu. Record that distinction; don't label it a direct launch.
-            #if COD_LAUNCH_PROBE
-            XCTAssertTrue(lab.buttons["test-system-float"].waitForExistence(timeout: 10))
-            #else
             waitForShareToFinish()
             cod.activate()
             XCTAssertTrue(cod.staticTexts["received-image-size"].waitForExistence(timeout: 10))
-            #endif
         }
-        #endif
     }
 
-    #if !COD_LAUNCH_PROBE
     func testSettingsExplainThatTheActionBarOnlyAppliesInsideCod() {
         cod.launch()
         let settingsTab = cod.tabBars.buttons["Settings"]
@@ -94,63 +69,18 @@ final class LaunchFlowTests: XCTestCase {
         lab.launch()
         lab.buttons["Share Test Image"].tap()
         selectCod()
-        #if COD_FAST_SHARE
-        let cancel = lab.buttons["cancel-selection"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Cropping must happen in the share extension")
-        cancel.tap()
-        #else
         waitForShareToFinish()
         cod.launch()
         let cancel = cod.buttons["cancel-selection"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 10), "The shared setting must open cropping, not auto-PiP")
         cancel.tap()
-        #endif
         lab.launch()
         cod.launch()
         XCTAssertFalse(cancel.exists, "Cancelled images must not replay on activation")
-        #if !COD_FAST_SHARE
         XCTAssertTrue(cod.buttons["Try Floating Again"].waitForExistence(timeout: 5))
-        #endif
         setOneTapFloat(true)
     }
 
-    #if COD_FAST_SHARE
-    func testColdShareLaunchesWithoutOpeningCodManually() {
-        cod.terminate()
-        lab.buttons["Share Test Image"].tap()
-        selectCod()
-        assertAutomaticLaunch(size: "300x200")
-    }
-
-    func testSecondShareUsesTheNewImageWithoutAnotherAppOpen() {
-        lab.buttons["Share Test Image"].tap()
-        selectCod()
-        assertAutomaticLaunch(size: "300x200")
-        lab.launch()
-        lab.buttons["Share Second Image"].tap()
-        selectCod()
-        assertAutomaticLaunch(size: "148x92")
-    }
-
-    func testCropThenFloatLaunchesWithoutCroppingTwice() {
-        cod.launch()
-        setOneTapFloat(false)
-        lab.launch()
-        lab.buttons["Share Test Image"].tap()
-        selectCod()
-        XCTAssertTrue(lab.buttons["cancel-selection"].waitForExistence(timeout: 10))
-        lab.buttons["Float"].tap()
-        assertAutomaticLaunch(size: "300x200")
-        XCTAssertFalse(cod.buttons["cancel-selection"].exists)
-        setOneTapFloat(true)
-    }
-
-    private func assertAutomaticLaunch(size: String) {
-        XCTAssertTrue(cod.wait(for: .runningForeground, timeout: 10), "Share must launch Cod; the test must NOT activate it manually")
-        XCTAssertTrue(cod.staticTexts["received-image-size"].waitForExistence(timeout: 10))
-        XCTAssertEqual(cod.staticTexts["received-image-size"].label, "Received image \(size)")
-    }
-    #endif
 
     private func setOneTapFloat(_ enabled: Bool) {
         let settings = cod.tabBars.buttons["Settings"]
@@ -168,7 +98,6 @@ final class LaunchFlowTests: XCTestCase {
         waitForExpectations(timeout: 5)
         cod.tabBars.buttons["Capture"].tap()
     }
-    #endif
 
     private func selectCod() {
         let predicate = NSPredicate(format: "label CONTAINS[c] %@", "Cod Test")

@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Personal builds retain the legacy launch/crop flow. Other builds can use
-/// an explicit notification handoff; fast builds also retain direct opening.
+/// Prepares the shared image using an App Group. Opening Cod is always the
+/// user's action, either manually or by tapping an optional notification.
 final class ShareViewController: UIViewController {
     private var hosting: UIHostingController<ShareRootView>?
     private let state = ShareFloatState()
@@ -55,11 +55,9 @@ final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         diagnostic("viewDidLoad")
-        diagnostic("build=fast-share-20261015 process=\(ProcessInfo.processInfo.processIdentifier)")
+        diagnostic("build=supported-only-6 process=\(ProcessInfo.processInfo.processIdentifier)")
         oneTapFloat = SharePreferences.shared.oneTapFloat
-        #if !COD_PERSONAL
         useFloatNotification = SharePreferences.shared.useFloatNotification
-        #endif
         diagnostic("share mode oneTapFloat=\(oneTapFloat)")
         view.backgroundColor = .systemBackground
         presentStatus()
@@ -69,8 +67,7 @@ final class ShareViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         hasAppeared = true
-        // The responder chain is only usable once this view is attached to
-        // the host window. Loading can finish before OR after that happens.
+        // Loading may finish before the extension's crop/status UI appears.
         presentImageIfReady()
     }
 
@@ -207,18 +204,8 @@ final class ShareViewController: UIViewController {
             }
             return
         }
-        #if COD_PERSONAL || COD_FAST_SHARE
-        if oneTapFloat {
-            startFloat(image)
-        } else if !hasPresentedSelection {
-            hasPresentedSelection = true
-            diagnostic("presenting crop surface; waiting for manual Float")
-            state.phase = .selecting(image)
-        }
-        #else
         // Selecting Cod is already the user's request. No extra Save/Done tap.
         startFloat(image)
-        #endif
     }
 
     private func startFloat(_ image: UIImage) {
@@ -245,135 +232,20 @@ final class ShareViewController: UIViewController {
                 }
                 return
             }
-            #if COD_PERSONAL
-            let opened = await self.handoffForFloat(image)
-            self.handoffTask = nil
-            guard !self.completed else { return }
-            if !opened {
-                self.state.phase = .failed("iOS couldn't open Cod. Try again, or open Cod once before sharing.")
-            }
-            #else
             do {
-                #if COD_FAST_SHARE
-                // Crop-first mode already selected its image in this extension.
-                // Each explicit retry gets a fresh ID, so old completions can
-                // neither delete nor acknowledge the user's latest attempt.
-                let id = try QuickFloatHandoff.shared.store(image, mode: .float)
-                guard let url = QuickFloatLaunchRoute.configured?.url(for: id) else {
-                    throw SharedImageInbox.InboxError.unavailable
-                }
-                self.diagnostic("fast share stored; opening containing app request=\(id)")
-                let accepted = await FastShareAppLauncher.open(url, from: self)
-                self.handoffTask = nil
-                guard !self.completed else { return }
-                if accepted { self.finish() }
-                else {
-                    self.state.phase = .failed("iOS couldn't open Cod. Try Again will retry this image. You can also open Cod directly to float it.")
-                }
-                #else
                 try QuickFloatHandoff.shared.store(image, mode: self.oneTapFloat ? .float : .crop)
                 self.handoffTask = nil
                 guard !self.completed else { return }
                 self.diagnostic("image queued automatically; no app launch requested")
-                #if COD_LAUNCH_PROBE
-                self.state.phase = .launchProbe
-                #else
                 self.finish()
-                #endif
-                #endif
             } catch {
                 self.handoffTask = nil
                 guard !self.completed else { return }
                 self.state.phase = .failed(error.localizedDescription)
             }
-            #endif
         }
     }
 
-    #if COD_PERSONAL
-    /// The extension cannot own durable PiP. Cod briefly comes forward to
-    /// start the window; returning to the source app is best-effort private API.
-    private func handoffForFloat(_ image: UIImage) async -> Bool {
-        diagnostic("Float oneTap=\(oneTapFloat); image=\(Int(image.pixelSize.width))x\(Int(image.pixelSize.height))")
-        let host = ShareSourceContext.bundleIdentifier(from: self, diagnostic: diagnostic)
-        let screenshotOrigin = host == "com.apple.ScreenshotServicesService"
-            ? ShareSourceContext.screenshotOrigin(from: extensionContext?.inputItems as? [NSExtensionItem] ?? [], diagnostic: diagnostic)
-            : nil
-        let source = screenshotOrigin ?? host
-        diagnostic("share source=\(source ?? "unknown")")
-        guard ShareFloatHandoff.store(image, sourceBundleIdentifier: source) else {
-            diagnostic("float handoff image encoding failed")
-            return false
-        }
-        diagnostic("float handoff stored; requesting containing app")
-
-        // This is the public request. Share extensions usually receive false,
-        // but trying it first keeps the supported path available on any system
-        // version that elects to honor it.
-        let publiclyOpened = await requestOpen(label: "extension context") { completion in
-            guard let context = extensionContext else {
-                completion(false)
-                return
-            }
-            context.open(ShareFloatHandoff.url, completionHandler: completion)
-        }
-        guard !completed else { return false }
-        if publiclyOpened {
-            diagnostic("containing app opened through extension context")
-            finish()
-            return true
-        }
-
-        // Cod is a sideloaded personal utility and already uses the private
-        // UIApplication selectors to background itself. The
-        // responder-chain launch is the inverse operation. It may stop working
-        // on a future iOS release, so failure is surfaced rather than hidden.
-        let privatelyOpened = await openThroughResponderChain(ShareFloatHandoff.url)
-        diagnostic("responder-chain containing-app request=\(privatelyOpened)")
-        if privatelyOpened { finish() }
-        return privatelyOpened
-    }
-
-    private func openThroughResponderChain(_ url: URL) async -> Bool {
-        var responder: UIResponder? = self
-        var visited = Set<ObjectIdentifier>()
-        while let candidate = responder,
-              visited.insert(ObjectIdentifier(candidate)).inserted, visited.count <= 32 {
-            diagnostic("launch responder=\(String(describing: type(of: candidate)))")
-            if let application = candidate as? UIApplication {
-                return await requestOpen(label: "responder-chain UIApplication") { completion in
-                    application.open(url, options: [:], completionHandler: completion)
-                }
-            }
-            responder = candidate.next
-        }
-        diagnostic("no UIApplication found in responder chain")
-        return false
-    }
-
-    /// Finding a responder is not evidence that iOS accepted the launch. Read
-    /// the real callback, and release the share UI if the callback never comes.
-    private func requestOpen(
-        label: String,
-        perform: (@escaping @Sendable (Bool) -> Void) -> Void
-    ) async -> Bool {
-        await withCheckedContinuation { continuation in
-            let attempt = URLLaunchAttempt(continuation: continuation)
-            attempt.timeout = Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 3_000_000_000)
-                guard !Task.isCancelled else { return }
-                self?.diagnostic("\(label) launch callback timed out")
-                attempt.finish(false)
-            }
-            perform { [weak self] opened in
-                Task { @MainActor in
-                    self?.diagnostic("\(label) launch callback accepted=\(opened)")
-                    attempt.finish(opened)
-                }
-            }
-        }
-    }
-    #endif
 
     private func finish() {
         guard !completed else { return }
@@ -387,23 +259,3 @@ final class ShareViewController: UIViewController {
         extensionContext?.completeRequest(returningItems: nil)
     }
 }
-
-#if COD_PERSONAL
-@MainActor
-private final class URLLaunchAttempt {
-    private var continuation: CheckedContinuation<Bool, Never>?
-    var timeout: Task<Void, Never>?
-
-    init(continuation: CheckedContinuation<Bool, Never>) {
-        self.continuation = continuation
-    }
-
-    func finish(_ opened: Bool) {
-        guard let continuation else { return }
-        self.continuation = nil
-        timeout?.cancel()
-        timeout = nil
-        continuation.resume(returning: opened)
-    }
-}
-#endif

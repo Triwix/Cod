@@ -7,11 +7,7 @@ enum FloatShortcut: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var fileURL: URL? {
-        #if COD_PERSONAL
-        let folder = "Personal"
-        #else
         let folder = "Store"
-        #endif
         return Bundle.main.url(forResource: rawValue, withExtension: "shortcut", subdirectory: "Shortcuts/\(folder)")
     }
 }

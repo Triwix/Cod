@@ -1,18 +1,13 @@
 import AVFoundation
 import AVKit
 import Combine
-#if COD_PERSONAL
-import ObjectiveC
-#endif
 import UIKit
 
 /// Floats a single snippet over *every* app using Picture in Picture.
 ///
 /// The snippet is encoded as a short looping clip and played by an `AVPlayer`,
-/// because that is the path PiP is actually built for. The
-/// `AVSampleBufferDisplayLayer` route works for genuine live streams but needs
-/// a control timebase to drain its queue; without one AVKit silently refuses to
-/// open the window — no error, no delegate callback.
+/// using the documented AVKit video playback APIs. There are no extension-side
+/// video-call experiments or private control/navigation overrides.
 ///
 /// What comes with PiP either way: one window at a time, Apple's chrome, and
 /// nothing at all in the Simulator.
@@ -50,14 +45,10 @@ final class PiPPinController: NSObject, ObservableObject {
     @Published private(set) var status: Status = .idle
     @Published private(set) var currentImage: UIImage?
     @Published private(set) var isPossible = false
-    /// Set when a floating window died because Cod lost background time, so the
-    /// UI can explain the audio-session trade instead of the window silently
-    /// vanishing.
-    @Published var lostToBackgrounding = false
     /// Hand the image back to the crop UI when the user restores PiP, including
     /// a tap during its opening animation. Do not treat restoration as failure.
     @Published var restorationImage: UIImage?
-    private var returnPolicy = PiPReturnPolicy()
+    private var restorationState = PiPRestorationState()
 
     let isSupported = AVPictureInPictureController.isPictureInPictureSupported()
 
@@ -71,72 +62,28 @@ final class PiPPinController: NSObject, ObservableObject {
     private var loopObserver: NSObjectProtocol?
     private var readinessWait: PiPReadinessWait?
     private var playerLayer: AVPlayerLayer?
-    private var sampleBufferLayer: AVSampleBufferDisplayLayer?
-    private var sampleBufferTimebase: CMTimebase?
-    #if APP_EXTENSION
-    private var videoCallContentController: ImagePiPViewController?
-    #endif
     /// Start of the current float request, for stage timings.
     private var startedAt = CFAbsoluteTimeGetCurrent()
-    /// When Cod last backgrounded itself, so we can tell a window the user
-    /// closed from one iOS killed because the app lost background time.
-    private var suspendedAt: CFAbsoluteTime?
     private var hostView: UIView?
-    /// Share extensions can't query `UIApplication.shared`, so they explicitly
-    /// provide their own visible root view as the player-layer host.
-    private weak var explicitHostView: UIView?
     private var clipURL: URL?
     private var possibleObservation: NSKeyValueObservation?
     private var startTimeout: Task<Void, Never>?
     private var startRetry: Task<Void, Never>?
-    private var returnTask: Task<Void, Never>?
     private var foregroundObservation: NSObjectProtocol?
     private var prepareTask: Task<Void, Never>?
     /// Identifies the task that currently owns preparation state. Cancelling an
     /// older task is cooperative, so its defer must not clear a newer handle.
     private var preparationID: UUID?
-    /// The Share extension supplies a file-backed sink because its stdout is
-    /// not attached to Cod's normal device console.
-    private var diagnosticsHandler: ((String) -> Void)?
 
     /// PiP renders into a window a few hundred points wide, so full-resolution
     /// screenshots buy nothing and cost encode time.
     private let maxRenderEdge: CGFloat = 1200
-
-    /// Draws the player layer on screen while debugging. Off for normal use —
-    /// the layer only has to exist and render, not be seen.
-    #if APP_EXTENSION
-    /// Visible in the current device diagnostic build. This proves whether the
-    /// extension's AVPlayer is rendering the shared photo before AVKit takes
-    /// ownership of it.
-    static let showsRenderProbe = true
-    #else
-    static let showsRenderProbe = false
-    #endif
 
     override init() {
         super.init()
     }
 
     // MARK: - Public
-
-    func setHostView(_ view: UIView?) {
-        explicitHostView = view
-    }
-
-    /// A Share extension process may be reused after its UI is dismissed.
-    /// Controllers created for the previous host scene cannot be started from
-    /// the next one, so each share begins with completely fresh AVKit state.
-    func resetForNewShareSession(hostView view: UIView) {
-        controller?.delegate = nil
-        controller?.stopPictureInPicture()
-        teardown()
-        explicitHostView = view
-    }
-
-    func setDiagnosticsHandler(_ handler: ((String) -> Void)?) {
-        diagnosticsHandler = handler
-    }
 
     /// Builds the player, layer and PiP controller ahead of time on a throwaway
     /// clip.
@@ -188,21 +135,14 @@ final class PiPPinController: NSObject, ObservableObject {
         }
     }
 
-    func float(_ image: UIImage, reusePreparedPlayback: Bool = true, sourceBundleIdentifier: String? = nil) {
+    func float(_ image: UIImage, reusePreparedPlayback: Bool = true) {
         guard isSupported else {
             status = .unsupported
             return
         }
 
-        #if APP_EXTENSION
-        floatUsingVideoCallContent(image)
-        #else
-        returnPolicy.beginFloat()
+        restorationState.beginFloat()
         restorationImage = nil
-        #if COD_PERSONAL
-        SourceAppReturn.shared.capture(sourceBundleIdentifier: sourceBundleIdentifier)
-        #endif
-        returnTask?.cancel()
         startTimeout?.cancel()
         startRetry?.cancel()
         possibleObservation = nil
@@ -256,7 +196,6 @@ final class PiPPinController: NSObject, ObservableObject {
                 if path == .replaceActive, let player {
                     swapClip(to: url, on: player)
                     status = .active
-                    returnToPreviousApp()
                     return
                 }
 
@@ -292,143 +231,8 @@ final class PiPPinController: NSObject, ObservableObject {
                 status = .failed(error.localizedDescription)
             }
         }
-        #endif
     }
 
-    #if APP_EXTENSION
-    /// A video-call content source is AVKit's view-based PiP path. Unlike the
-    /// player and sample-buffer paths, it doesn't ask the Share extension's
-    /// media layer to cross into the system PiP scene.
-    private func floatUsingVideoCallContent(_ image: UIImage) {
-        currentImage = image
-        status = .preparing
-        prepareTask?.cancel()
-        startedAt = CFAbsoluteTimeGetCurrent()
-
-        let prepared = prepare(image)
-        log("view-content float size=\(Int(prepared.size.width))x\(Int(prepared.size.height)) +\(elapsed())ms")
-        configureAudioSession()
-        discardPlayback()
-
-        guard let window = explicitHostView else {
-            status = .failed("Cod couldn't attach the floating view to the share screen.")
-            return
-        }
-
-        let sourceView = UIView(frame: CGRect(x: 12, y: window.safeAreaInsets.top + 12, width: 2, height: 2))
-        sourceView.backgroundColor = .clear
-        sourceView.isUserInteractionEnabled = false
-        window.addSubview(sourceView)
-        hostView = sourceView
-
-        let contentController = ImagePiPViewController(image: prepared)
-        let source = AVPictureInPictureController.ContentSource(
-            activeVideoCallSourceView: sourceView,
-            contentViewController: contentController
-        )
-        let pip = AVPictureInPictureController(contentSource: source)
-        pip.delegate = self
-        pip.canStartPictureInPictureAutomaticallyFromInline = false
-        controller = pip
-        videoCallContentController = contentController
-        log("view-content controller created +\(elapsed())ms possible=\(pip.isPictureInPicturePossible)")
-        startWhenPossible()
-    }
-
-    /// The AVPlayerLayer PiP handoff renders gray when its owner is a Share
-    /// extension. A sample-buffer content source gives AVKit the actual still
-    /// frame directly and avoids that player/scene handoff.
-    private func floatUsingSampleBuffer(_ image: UIImage) {
-        currentImage = image
-        status = .preparing
-        prepareTask?.cancel()
-        startedAt = CFAbsoluteTimeGetCurrent()
-
-        let prepared = prepare(image)
-        log("sample-buffer float size=\(Int(prepared.size.width))x\(Int(prepared.size.height)) +\(elapsed())ms")
-        configureAudioSession()
-        discardPlayback()
-
-        guard let sample = Self.makeStillSampleBuffer(from: prepared) else {
-            status = .failed("Cod couldn't create a video frame from that image.")
-            return
-        }
-
-        let layer = AVSampleBufferDisplayLayer()
-        layer.videoGravity = .resizeAspect
-        layer.preventsDisplaySleepDuringVideoPlayback = false
-
-        var timebase: CMTimebase?
-        let timebaseStatus = CMTimebaseCreateWithSourceClock(
-            allocator: kCFAllocatorDefault,
-            sourceClock: CMClockGetHostTimeClock(),
-            timebaseOut: &timebase
-        )
-        guard timebaseStatus == noErr, let timebase else {
-            status = .failed("Cod couldn't create the timing source for Picture in Picture.")
-            return
-        }
-        CMTimebaseSetTime(timebase, time: .zero)
-        CMTimebaseSetRate(timebase, rate: 1)
-        layer.controlTimebase = timebase
-
-        sampleBufferLayer = layer
-        sampleBufferTimebase = timebase
-        guard attachHostView() else {
-            discardPlayback()
-            status = .failed("Cod couldn't attach the floating frame to the share screen.")
-            return
-        }
-
-        layer.sampleBufferRenderer.enqueue(sample)
-        log("sample buffer enqueued +\(elapsed())ms")
-
-        prepareTask = Task { @MainActor in
-            defer { prepareTask = nil }
-            await waitForSampleBufferReady(layer)
-            guard !Task.isCancelled, status == .preparing else { return }
-            makeController()
-            startWhenPossible()
-        }
-    }
-
-    private static func makeStillSampleBuffer(from image: UIImage) -> CMSampleBuffer? {
-        guard let pixelBuffer = image.pixelBuffer() else { return nil }
-
-        var description: CMVideoFormatDescription?
-        guard CMVideoFormatDescriptionCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            formatDescriptionOut: &description
-        ) == noErr, let description else { return nil }
-
-        var timing = CMSampleTimingInfo(
-            duration: .positiveInfinity,
-            presentationTimeStamp: .zero,
-            decodeTimeStamp: .invalid
-        )
-        var sample: CMSampleBuffer?
-        guard CMSampleBufferCreateReadyWithImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            formatDescription: description,
-            sampleTiming: &timing,
-            sampleBufferOut: &sample
-        ) == noErr else { return nil }
-        return sample
-    }
-
-    private func waitForSampleBufferReady(_ layer: AVSampleBufferDisplayLayer) async {
-        for _ in 0..<40 {
-            if #available(iOS 17.4, *), layer.isReadyForDisplay {
-                log("sample layer ready +\(elapsed())ms")
-                return
-            }
-            try? await Task.sleep(nanoseconds: 50_000_000)
-        }
-        log("sample layer readiness timed out; renderer=\(layer.sampleBufferRenderer.status.rawValue) error=\(layer.sampleBufferRenderer.error?.localizedDescription ?? "none")")
-    }
-    #endif
 
     /// A small black frame — never seen, it just gives AVKit something real to
     /// initialise against.
@@ -472,21 +276,8 @@ final class PiPPinController: NSObject, ObservableObject {
     }
 
     func stop() {
-        keepCodOpenAfterFloating()
         controller?.stopPictureInPicture()
         teardown()
-    }
-
-    /// A deliberate Open Cod/restore/stop action takes precedence over the
-    /// delayed automatic return. The next Float resets this per-request policy.
-    func keepCodOpenAfterFloating() {
-        returnPolicy.keepCodOpen()
-        returnTask?.cancel()
-        returnTask = nil
-        suspendedAt = nil
-        #if COD_PERSONAL && !APP_EXTENSION
-        SourceAppReturn.shared.discard()
-        #endif
     }
 
     // MARK: - Playback
@@ -542,17 +333,8 @@ final class PiPPinController: NSObject, ObservableObject {
     }
 
     private func makeController() {
-        #if APP_EXTENSION
-        guard let sampleBufferLayer, controller == nil else { return }
-        let source = AVPictureInPictureController.ContentSource(
-            sampleBufferDisplayLayer: sampleBufferLayer,
-            playbackDelegate: self
-        )
-        let pip: AVPictureInPictureController? = AVPictureInPictureController(contentSource: source)
-        #else
         guard let playerLayer, controller == nil else { return }
         let pip = AVPictureInPictureController(playerLayer: playerLayer)
-        #endif
         pip?.delegate = self
         // A looping still has no meaningful timeline; hide the scrubber.
         pip?.requiresLinearPlayback = true
@@ -560,37 +342,8 @@ final class PiPPinController: NSObject, ObservableObject {
         controller = pip
         log("controller created +\(elapsed())ms nil=\(pip == nil)")
 
-        // Suppress the overlay *before* the window opens, otherwise iOS shows
-        // the full control set on appearance and takes seconds to fade it out.
-        #if COD_PERSONAL && !APP_EXTENSION
-        if AppSettings.shared.hideFloatingControls { applyControlsStyle(.hidden) }
-        #endif
     }
 
-    #if COD_PERSONAL
-    private enum ControlsStyle: Int {
-        case standard = 0
-        case hidden = 2
-    }
-
-    /// Undocumented `AVPictureInPictureController.controlsStyle`. There is no
-    /// public way to hide the play/close/restore overlay — `requiresLinearPlayback`
-    /// only drops the skip buttons.
-    ///
-    /// Guarded on the setter existing: a bare `setValue(_:forKey:)` against a
-    /// missing key raises `NSUnknownKeyException`, which Swift cannot catch, so
-    /// a future iOS dropping this would be an uncatchable crash rather than a
-    /// cosmetic regression.
-    private func applyControlsStyle(_ style: ControlsStyle) {
-        guard let controller else { return }
-        guard controller.responds(to: NSSelectorFromString("setControlsStyle:")) else {
-            log("controlsStyle unavailable — leaving the system overlay alone")
-            return
-        }
-        controller.setValue(style.rawValue, forKey: "controlsStyle")
-        log("controlsStyle=\(style.rawValue)")
-    }
-    #endif
 
     /// Watches eligibility during prewarm so the log shows how long AVKit
     /// really takes, without anything waiting on it.
@@ -639,11 +392,10 @@ final class PiPPinController: NSObject, ObservableObject {
     }
 
     /// AVKit occasionally accepts `startPictureInPicture()` without producing
-    /// either a delegate callback or an error in a Share extension. Retrying
+    /// either a delegate callback or an error. Retrying
     /// the same active controller works; do that automatically while the
     /// request is still preparing.
     private func requestPiPStart(_ controller: AVPictureInPictureController) {
-        #if !APP_EXTENSION
         guard let sourceScene = hostView?.window?.windowScene else {
             log("PiP source view has no window scene")
             status = .failed("Cod's floating view isn't attached to its window yet.")
@@ -672,7 +424,6 @@ final class PiPPinController: NSObject, ObservableObject {
             }
             return
         }
-        #endif
         log("starting PiP +\(elapsed())ms")
         controller.startPictureInPicture()
 
@@ -683,9 +434,7 @@ final class PiPPinController: NSObject, ObservableObject {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 guard !Task.isCancelled, self.controller === controller, self.status == .preparing,
                       !controller.isPictureInPictureActive else { return }
-                #if !APP_EXTENSION
                 guard self.hostView?.window?.windowScene?.activationState == .foregroundActive else { continue }
-                #endif
                 self.log("retrying PiP start (\(attempt)/3) +\(self.elapsed())ms")
                 controller.startPictureInPicture()
             }
@@ -695,14 +444,7 @@ final class PiPPinController: NSObject, ObservableObject {
     private func scheduleStartTimeout() {
         startTimeout?.cancel()
         startTimeout = Task { @MainActor in
-            #if APP_EXTENSION
-            // Extensions get a short foreground lifetime. If AVKit still says
-            // PiP is impossible after this window, waiting longer only makes
-            // the share sheet look frozen.
-            let timeout: UInt64 = 8_000_000_000
-            #else
             let timeout: UInt64 = 25_000_000_000
-            #endif
             try? await Task.sleep(nanoseconds: timeout)
             guard !Task.isCancelled, self.status == .preparing else { return }
             self.log("TIMED OUT — PiP never started")
@@ -751,43 +493,26 @@ final class PiPPinController: NSObject, ObservableObject {
 
     private func attachHostView() -> Bool {
         if hostView != nil { return true }
-        let renderingLayer: CALayer?
-        if let sampleBufferLayer {
-            renderingLayer = sampleBufferLayer
-        } else {
-            renderingLayer = playerLayer
-        }
-        guard let renderingLayer else {
+        guard let renderingLayer = playerLayer else {
             log("NO RENDERING LAYER — cannot attach the floating host view")
             return false
         }
-        #if APP_EXTENSION
-        guard let window = explicitHostView else {
-            log("NO EXTENSION HOST VIEW — cannot host the layer")
-            return false
-        }
-        #else
-        guard let window = explicitHostView ?? UIApplication.shared.activeWindow else {
+        guard let window = UIApplication.shared.activeWindow else {
             log("NO KEY WINDOW — cannot host the layer")
             return false
         }
-        #endif
 
         let width: CGFloat = 140
         let container = UIView(frame: CGRect(x: 12, y: window.safeAreaInsets.top + 12, width: width, height: width))
         container.isUserInteractionEnabled = false
         container.backgroundColor = .black
-        container.alpha = Self.showsRenderProbe ? 1.0 : 0.02
+        container.alpha = 0.02
         renderingLayer.frame = container.bounds
         container.layer.addSublayer(renderingLayer)
         window.addSubview(container)
-        if Self.showsRenderProbe {
-            window.bringSubviewToFront(container)
-        } else {
-            window.sendSubviewToBack(container)
-        }
+        window.sendSubviewToBack(container)
         hostView = container
-        log("host view attached probe=\(Self.showsRenderProbe)")
+        log("host view attached")
         return true
     }
 
@@ -801,13 +526,6 @@ final class PiPPinController: NSObject, ObservableObject {
         player = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
-        sampleBufferLayer?.sampleBufferRenderer.flush(removingDisplayedImage: true) {}
-        sampleBufferLayer?.removeFromSuperlayer()
-        sampleBufferLayer = nil
-        sampleBufferTimebase = nil
-        #if APP_EXTENSION
-        videoCallContentController = nil
-        #endif
         hostView?.removeFromSuperview()
         hostView = nil
         if let clipURL { try? FileManager.default.removeItem(at: clipURL) }
@@ -815,8 +533,6 @@ final class PiPPinController: NSObject, ObservableObject {
     }
 
     private func teardown(keepStatus: Bool = false) {
-        returnTask?.cancel()
-        returnTask = nil
         if let foregroundObservation {
             NotificationCenter.default.removeObserver(foregroundObservation)
         }
@@ -838,17 +554,9 @@ final class PiPPinController: NSObject, ObservableObject {
         player = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
-        sampleBufferLayer?.sampleBufferRenderer.flush(removingDisplayedImage: true) {}
-        sampleBufferLayer?.removeFromSuperlayer()
-        sampleBufferLayer = nil
-        sampleBufferTimebase = nil
-        #if APP_EXTENSION
-        videoCallContentController = nil
-        #endif
         hostView?.removeFromSuperview()
         hostView = nil
         controller = nil
-        suspendedAt = nil
         isPossible = false
         if let clipURL { try? FileManager.default.removeItem(at: clipURL) }
         clipURL = nil
@@ -860,90 +568,6 @@ final class PiPPinController: NSObject, ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 
-    /// The overlay is suppressed only for the appearance animation. Once the
-    /// window has settled, normal controls go back so tapping it still gives
-    /// you close and restore — hidden by default, revealed on demand.
-    private func restoreControlsAfterAppearance() {
-        #if COD_PERSONAL
-        guard AppSettings.shared.hideFloatingControls else { return }
-        let appearingController = controller
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            guard status == .active, controller === appearingController else { return }
-            applyControlsStyle(.standard)
-        }
-        #endif
-    }
-
-    /// Best-effort return after PiP. Restore the identified share host or an
-    /// available system Back-to destination before the legacy Home fallback.
-    /// These private APIs are not a public navigation contract.
-    private func returnToPreviousApp() {
-        #if !COD_PERSONAL || APP_EXTENSION
-        // Public builds leave navigation to the user. No suspension, source
-        // app activation, or synthetic system Back-to action is attempted.
-        return
-        #else
-        guard AppSettings.shared.returnAfterFloating, returnPolicy.allowsAutomaticReturn else { return }
-        returnTask?.cancel()
-        returnTask = Task { @MainActor in
-            // Let the handover animation finish before yanking the app away.
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            guard !Task.isCancelled, returnPolicy.allowsAutomaticReturn, status == .active,
-                  controller?.isPictureInPictureActive == true,
-                  UIApplication.shared.applicationState == .active else { return }
-
-            let application = UIApplication.shared
-            let returnHome = SourceAppReturn.shared.shouldReturnHome
-            let returned = await SourceAppReturn.shared.returnToSource()
-            guard !Task.isCancelled, returnPolicy.allowsAutomaticReturn else { return }
-            if returned {
-                log("source-screen return request accepted; visual destination needs confirmation")
-                suspendedAt = CFAbsoluteTimeGetCurrent()
-                return
-            }
-            guard !Task.isCancelled, returnPolicy.allowsAutomaticReturn, status == .active,
-                  controller?.isPictureInPictureActive == true,
-                  application.applicationState == .active else { return }
-            let lastAppSelector = NSSelectorFromString("suspendReturningToLastApp:")
-            if !returnHome, application.responds(to: lastAppSelector),
-               let method = class_getInstanceMethod(type(of: application), lastAppSelector),
-               method_getNumberOfArguments(method) == 3,
-               let argumentType = method_copyArgumentType(method, 2) {
-                let resultType = method_copyReturnType(method)
-                defer { free(resultType); free(argumentType) }
-                // Verify the signature before invoking an undocumented IMP.
-                // BOOL uses B on current arm64, c on some older runtimes.
-                let result = String(cString: resultType)
-                let argument = String(cString: argumentType)
-                if result == "v", argument == "B" || argument == "c" {
-                    log("requesting return to last app (private API; destination unconfirmed)")
-                    suspendedAt = CFAbsoluteTimeGetCurrent()
-                    let implementation = method_getImplementation(method)
-                    if argument == "B" {
-                        typealias ReturnToLastApp = @convention(c) (UIApplication, Selector, Bool) -> Void
-                        unsafeBitCast(implementation, to: ReturnToLastApp.self)(application, lastAppSelector, true)
-                    } else {
-                        typealias ReturnToLastApp = @convention(c) (UIApplication, Selector, Int8) -> Void
-                        unsafeBitCast(implementation, to: ReturnToLastApp.self)(application, lastAppSelector, 1)
-                    }
-                    return
-                }
-                log("last-app return signature unsupported: \(result)/\(argument)")
-            }
-
-            let selector = NSSelectorFromString("suspend")
-            guard application.responds(to: selector) else {
-                log("suspend unavailable on this iOS — staying in the app")
-                return
-            }
-            log(returnHome ? "temporary screenshot/Home source; returning directly to Home" : "last-app return unavailable; falling back to Home")
-            suspendedAt = CFAbsoluteTimeGetCurrent()
-            application.perform(selector)
-        }
-        #endif
-    }
-
     private func log(_ message: String) {
         // Plain stdout so `devicectl device process launch --console` picks it
         // up without needing root. stdout block-buffers when redirected, so
@@ -951,25 +575,18 @@ final class PiPPinController: NSObject, ObservableObject {
         print("[CodPiP] \(message)")
         fflush(stdout)
         CodDiagnosticLog.record("PiP \(message)")
-        diagnosticsHandler?(message)
     }
 }
 
-/// User interaction wins over delayed navigation, including out-of-order
-/// lifecycle events while PiP is still appearing.
-struct PiPReturnPolicy {
-    private(set) var allowsAutomaticReturn = true
+/// Ignore out-of-order start/failure events after the user restores PiP.
+struct PiPRestorationState {
     private(set) var isRestoring = false
 
     mutating func beginFloat() {
-        allowsAutomaticReturn = true
         isRestoring = false
     }
 
-    mutating func keepCodOpen() { allowsAutomaticReturn = false }
-
     mutating func beginRestoration() {
-        allowsAutomaticReturn = false
         isRestoring = true
     }
 }
@@ -1029,22 +646,18 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
     nonisolated func pictureInPictureControllerDidStartPictureInPicture(_ controller: AVPictureInPictureController) {
         Task { @MainActor in
             guard let owned = self.controller, owned === controller else { return }
-            guard !self.returnPolicy.isRestoring else { return }
+            guard !self.restorationState.isRestoring else { return }
             self.log("DID START PiP +\(self.elapsed())ms")
             self.startTimeout?.cancel()
             self.startRetry?.cancel()
             self.status = .active
             Haptics.success()
-            self.restoreControlsAfterAppearance()
-            self.returnToPreviousApp()
         }
     }
 
     nonisolated func pictureInPictureControllerWillStopPictureInPicture(_ controller: AVPictureInPictureController) {
         Task { @MainActor in
             guard let owned = self.controller, owned === controller else { return }
-            self.returnPolicy.keepCodOpen()
-            self.returnTask?.cancel()
             self.startRetry?.cancel()
             self.log("WILL STOP PiP")
         }
@@ -1056,25 +669,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
                 self.log("ignoring stop callback from replaced controller")
                 return
             }
-            // Timing alone cannot identify a background failure: restoring the
-            // window also brings Cod forward and stops PiP. Record foreground
-            // state before suggesting that background playback was lost.
-            if let suspendedAt = self.suspendedAt {
-                let delta = Int((CFAbsoluteTimeGetCurrent() - suspendedAt) * 1000)
-                self.log("DID STOP PiP — \(delta)ms after backgrounding")
-                var isForeground = false
-                #if !APP_EXTENSION
-                isForeground = UIApplication.shared.applicationState == .active
-                #endif
-                self.log("stop context: foreground=\(isForeground)")
-                if delta < 2500, !isForeground {
-                    self.log("early background stop; cause unconfirmed. mixWithOthers=\(AppSettings.shared.keepOtherAudioPlaying)")
-                    self.lostToBackgrounding = true
-                }
-            } else {
-                self.log("DID STOP PiP (user dismissed)")
-            }
-            self.suspendedAt = nil
+            self.log("DID STOP PiP")
             self.teardown()
         }
     }
@@ -1085,7 +680,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
     ) {
         Task { @MainActor in
             guard let owned = self.controller, owned === controller else { return }
-            if self.returnPolicy.isRestoring {
+            if self.restorationState.isRestoring {
                 self.log("PiP start ended during user restoration; preserving restored image UI")
                 self.teardown()
                 return
@@ -1107,8 +702,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
                 return
             }
             self.log("PiP requested app interface restoration")
-            self.keepCodOpenAfterFloating()
-            self.returnPolicy.beginRestoration()
+            self.restorationState.beginRestoration()
             self.startRetry?.cancel()
             self.startTimeout?.cancel()
             self.restorationImage = self.currentImage
@@ -1117,92 +711,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
     }
 }
 
-#if APP_EXTENSION
-@MainActor
-private final class ImagePiPViewController: AVPictureInPictureVideoCallViewController {
-    private let imageView: UIImageView
 
-    init(image: UIImage) {
-        imageView = UIImageView(image: image)
-        super.init(nibName: nil, bundle: nil)
-
-        // AVKit owns the actual discrete window sizes. This communicates only
-        // the image's natural aspect ratio, preserving every resize step iOS
-        // offers instead of forcing a fixed window size.
-        let aspect = image.size.width / max(image.size.height, 1)
-        let width: CGFloat = 500
-        preferredContentSize = CGSize(width: width, height: width / max(aspect, 0.05))
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .black
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(imageView)
-        NSLayoutConstraint.activate([
-            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            imageView.topAnchor.constraint(equalTo: view.topAnchor),
-            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
-    }
-}
-
-extension PiPPinController: AVPictureInPictureSampleBufferPlaybackDelegate {
-    nonisolated func pictureInPictureController(
-        _ pictureInPictureController: AVPictureInPictureController,
-        setPlaying playing: Bool
-    ) {
-        Task { @MainActor in
-            guard let timebase = self.sampleBufferTimebase else { return }
-            CMTimebaseSetRate(timebase, rate: playing ? 1 : 0)
-            pictureInPictureController.invalidatePlaybackState()
-        }
-    }
-
-    nonisolated func pictureInPictureControllerTimeRangeForPlayback(
-        _ pictureInPictureController: AVPictureInPictureController
-    ) -> CMTimeRange {
-        CMTimeRange(start: .zero, duration: .positiveInfinity)
-    }
-
-    nonisolated func pictureInPictureControllerIsPlaybackPaused(
-        _ pictureInPictureController: AVPictureInPictureController
-    ) -> Bool {
-        false
-    }
-
-    nonisolated func pictureInPictureController(
-        _ pictureInPictureController: AVPictureInPictureController,
-        didTransitionToRenderSize newRenderSize: CMVideoDimensions
-    ) {
-        Task { @MainActor in
-            self.log("sample PiP render size=\(newRenderSize.width)x\(newRenderSize.height)")
-        }
-    }
-
-    nonisolated func pictureInPictureController(
-        _ pictureInPictureController: AVPictureInPictureController,
-        skipByInterval skipInterval: CMTime,
-        completion completionHandler: @escaping () -> Void
-    ) {
-        completionHandler()
-    }
-
-    nonisolated func pictureInPictureControllerShouldProhibitBackgroundAudioPlayback(
-        _ pictureInPictureController: AVPictureInPictureController
-    ) -> Bool {
-        true
-    }
-}
-#endif
-
-#if !APP_EXTENSION
 extension UIApplication {
     var activeWindow: UIWindow? {
         connectedScenes
@@ -1211,4 +720,3 @@ extension UIApplication {
             .first { $0.isKeyWindow }
     }
 }
-#endif

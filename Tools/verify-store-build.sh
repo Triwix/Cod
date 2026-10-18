@@ -6,6 +6,10 @@ set -euo pipefail
 app_path="${1:?Pass the absolute path to the built Cod.app}"
 extension_path="$app_path/PlugIns/CodShare.appex"
 check_mode="${2:-}"
+[[ -z "$check_mode" || "$check_mode" == --submission ]] || {
+    print -u2 'Only the documented-only audit is available; optional flag: --submission.'
+    exit 1
+}
 private_patterns='LSApplicationWorkspace|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle:|controlsStyle|ShareSourceContext|SourceAppReturn|BSProcessHandle|_FBSScene|SSEnvironmentDescription|com\.josh\.cod\.float-image|openThroughResponderChain|responder-chain|api\.imgur\.com'
 
 for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.appex"; do
@@ -17,26 +21,22 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
     fi
     if [[ "$bundle_id" != com.josh.cod.store.controls ]]; then
         launch_policy=$(/usr/libexec/PlistBuddy -c 'Print :CodShareLaunchPolicy' "$bundle_path/Info.plist")
-        if [[ "$check_mode" == --fast-candidate ]]; then
-            [[ "$launch_policy" == responder-chain ]] || { print -u2 'Not the fast-share candidate'; exit 1; }
-        else
-            [[ "$launch_policy" == manual-open ]] || {
-                print -u2 'Fast-share uses an unsupported launch workaround. Use --fast-candidate for its audit, not the documented-only check.'
-                exit 1
-            }
-        fi
+        [[ "$launch_policy" == manual-open ]] || {
+            print -u2 'The Share extension must use user-mediated app opening.'
+            exit 1
+        }
     fi
     for binary_path in "$bundle_path/$executable_name" "$bundle_path/$executable_name.debug.dylib"; do
         [[ -f "$binary_path" ]] || continue
         if /usr/bin/strings "$binary_path" | rg "$private_patterns"; then
-            print -u2 "Personal-only code found in $bundle_id"
+            print -u2 "Removed implementation found in $bundle_id"
             exit 1
         fi
         if /usr/bin/strings "$binary_path" | rg 'FloatPendingWithCodIntent|Public launch experiment|Test system Float'; then
             print -u2 "Simulator launch-probe code found in $bundle_id"
             exit 1
         fi
-        if [[ "$check_mode" != --fast-candidate ]] && /usr/bin/strings "$binary_path" | rg 'FastShareAppLauncher|FastShareLaunchAttempt'; then
+        if /usr/bin/strings "$binary_path" | rg 'FastShareAppLauncher|FastShareLaunchAttempt'; then
             print -u2 "Fast-share workaround unexpectedly present in $bundle_id"
             exit 1
         fi
@@ -50,11 +50,6 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
     fi
     print "Checked $bundle_id: privacy resource present; known private methods absent."
 done
-
-if [[ "$check_mode" == --fast-candidate ]]; then
-    print 'Fast-share audit passed: known private code absent, unsupported launch explicitly declared. This is NOT App Review approval or a supported extension launch contract.'
-    exit 0
-fi
 
 if [[ "${2:-}" == --submission ]]; then
     policy_url=$(/usr/libexec/PlistBuddy -c 'Print :CodPrivacyPolicyURL' "$app_path/Info.plist")

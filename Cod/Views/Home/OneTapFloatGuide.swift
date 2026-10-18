@@ -8,6 +8,9 @@ struct OneTapFloatGuide: View {
     var body: some View {
         List {
             Section {
+                Text("For photos in another app, use Share → Float with Cod in the action list. Add that Shortcut below once. The Cod app icon cannot open Cod automatically.")
+            }
+            Section {
                 step(1, "Take a screenshot and let it finish saving to **Photos**")
                 step(2, "Open **Control Center**, hold an empty area, then **Add a Control**")
                 step(3, "Search for **Cod** and add **Float Latest Screenshot**")
@@ -28,30 +31,14 @@ struct OneTapFloatGuide: View {
                 Text("iOS 18 or later. The Action Button is hardware-dependent; it isn't on every iPhone. These controls open Cod and require a saved screenshot plus Photos permission. They don't automatically return to the previous app.")
             }
             Section {
-                #if COD_PERSONAL
-                step(1, "Open a photo or screenshot and tap **Share**")
-                step(2, "Tap **Cod** in the row of apps, choose a crop, then tap **Float**")
-                step(3, "If Cod isn't visible, swipe to **More**, tap **Edit**, and add Cod to your favourites")
-                #elseif COD_FAST_SHARE
-                step(1, "Open a photo or screenshot, tap **Share**, then **Cod Test**")
-                step(2, "Cod opens and starts the floating window automatically")
-                step(3, "Once the window appears, switch apps when you're ready")
-                #else
                 step(1, "Open a photo or screenshot, tap **Share**, then **Cod**")
                 step(2, "Cod prepares the image and dismisses the share screen automatically")
                 step(3, "Open **Cod**; the image begins floating with no extra button")
                 step(4, "Once the floating window appears, switch to the app you want to use")
-                #endif
             } header: {
-                Label("Share sheet floating", systemImage: "square.and.arrow.up")
+                Label("Share app icon · manual fallback", systemImage: "square.and.arrow.up")
             } footer: {
-                #if COD_PERSONAL
-                Text("Cropping is the default. For immediate whole-image floating, turn on Settings → Share Sheet → One tap float. No Shortcut setup is needed for either share-sheet mode. Cod briefly opens to create Picture in Picture; automatic return to the source screen is still unresolved on the tested phone and currently falls back to Home.")
-                #elseif COD_FAST_SHARE
-                Text("One tap float defaults on. Turn it off in Settings to crop inside the share sheet before tapping Float. No Shortcut setup is required. This fast-share test uses an unsupported launch workaround; it is not App Store approval. Returning to the previous app is manual in this build.")
-                #else
-                Text("This is the current public-only fallback, not one-tap Share → PiP. If an app offers Open in Cod for an image, that direct route needs no separate app-open or Float button. You can also choose a photo inside Cod to float it directly. Turn off One tap float in Settings to crop first.")
-                #endif
+                Text("For fewer steps, use the Float with Cod Shortcut in the share action list instead. If an app offers a direct Open in Cod image action, that can also open Cod. Choose Photo inside Cod floats directly. Turn off One tap float in Settings to crop first.")
             }
 
             Section {
@@ -84,7 +71,6 @@ struct OneTapFloatGuide: View {
                 Text("The installed Shortcut already enables Show in Share Sheet, accepts Images, and connects Float With Cod's Image field to Shortcut Input. It appears in the action list, not the row of app icons. First-run permission prompts are controlled by iOS; Allow Once repeats the prompt on the next run. After permission, Cod opens and starts floating. If you build it manually, long-press Image and choose Shortcut Input—don't choose a file.")
             }
 
-            #if !COD_PERSONAL
             Section {
                 step(1, "In **Cod → Settings → Share Sheet**, turn on **Tap notification to float** and allow notifications")
                 step(2, "From an image, tap **Share → Cod**; then tap Cod's notification")
@@ -94,7 +80,6 @@ struct OneTapFloatGuide: View {
             } footer: {
                 Text("This path doesn't use automatic app-opening workarounds. Delivery from the Share extension must be supported by your iOS version. If it fails, Cod shows an error and preserves the image: open Cod and tap Try Floating Again. Focus, notification summaries and disabled banners can delay or hide a notification. No image preview is included.")
             }
-            #endif
 
             Section {
                 Button {

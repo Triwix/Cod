@@ -8,8 +8,8 @@ protocol ShareFloatPreferenceStore {
     @discardableResult func setUseFloatNotification(_ enabled: Bool) -> Bool
 }
 
-/// A single non-secret preference shared only by Cod and CodShare. Personal
-/// profiles allow this narrowly scoped keychain group without an App Group.
+/// Non-secret preferences shared only by Cod and CodShare through the
+/// narrowly scoped keychain access group in their matching entitlements.
 /// No clipboard transport: copying something else must not reset the switch.
 final class SharePreferences: ShareFloatPreferenceStore {
     static let shared = SharePreferences()
@@ -29,11 +29,7 @@ final class SharePreferences: ShareFloatPreferenceStore {
     }
 
     static var defaultAccount: String {
-        #if COD_PERSONAL
-        return "oneTapFloat"
-        #else
         return "quickFloatWholeImage"
-        #endif
     }
 
     /// Separate from cropping: this changes how the saved image reaches Cod,
@@ -63,11 +59,7 @@ final class SharePreferences: ShareFloatPreferenceStore {
     }
 
     var oneTapFloat: Bool {
-        #if COD_PERSONAL
-        return readValue(defaultValue: false)
-        #else
         return readValue(defaultValue: true)
-        #endif
     }
 
     private func readValue(defaultValue: Bool) -> Bool {

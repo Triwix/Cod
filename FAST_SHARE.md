@@ -1,5 +1,9 @@
 # Fast share candidate — October 15, 2026
 
+> Historical experiment. Build 6 removed this implementation, its flags and
+> schemes at the user's request. Do not follow the build/install instructions
+> below. See README.md for current supported-only behavior.
+
 Product requirement: **Share → Cod → PiP**, no user-created Shortcut and no
 separate app-open step. The documented-only/manual-open fallback is not the MVP.
 

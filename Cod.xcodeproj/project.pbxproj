@@ -15,14 +15,12 @@
 		10F89808EF79032284E27DDA /* MagnifierLoupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA6296F3699703A3454C430 /* MagnifierLoupe.swift */; };
 		12CC9C4559C4CBC0D78CA5F1 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F724EFA8EF460B18B70636F0 /* PrivacyInfo.xcprivacy */; };
 		15278FFD497CC85204C20BDC /* CodApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6043D3DFA759051E5469CA56 /* CodApp.swift */; };
-		177A1930B55E084951B1B771 /* FastShareAppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F165604803B549CD974A924 /* FastShareAppLauncher.swift */; };
 		1C948CD5EAC1B24EBC2D050C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FC3AE2F4B8162DAE1F917763 /* PrivacyInfo.xcprivacy */; };
 		1EB4DB724ED070265709EBE5 /* LiveTextImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE6F55710ED7223B7FC865A /* LiveTextImageView.swift */; };
 		1F2D1E89CCE8687C1D658347 /* LaunchHarnessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42BB1CD98B9B39562A829F0B /* LaunchHarnessApp.swift */; };
 		20AD784831C5D4FCD62A1192 /* LiveTextImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE6F55710ED7223B7FC865A /* LiveTextImageView.swift */; };
 		20C849A33E3F533003A3F116 /* PinOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17606400DA4CE19AC9435CE0 /* PinOverlay.swift */; };
 		255C9CE2EF80EE397226BAA9 /* Recognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F748A97FCF187E270B1B5D1E /* Recognizer.swift */; };
-		25D95902435B7B906B64C505 /* ShareReturnTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B10FA752B6D997FEF5F75DE /* ShareReturnTests.swift */; };
 		26C32D7C0C30CAEA82E8A620 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DECC961B6DD22C6A3E7E56 /* Haptics.swift */; };
 		2DDA7014C5911F35D57C944D /* SharePreferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04DEF5948DBF5BA96FE8C89B /* SharePreferenceTests.swift */; };
 		2DFC4A577A448DFC1985D45F /* ShareFloatNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E7FDB07C677FFBBC98F40BB /* ShareFloatNotifications.swift */; };
@@ -30,11 +28,11 @@
 		316F83D7115B154B054D9D75 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC027F9F113795CA7605052 /* ShareViewController.swift */; };
 		35CCC6D850A19E0A7E4D71EA /* BarcodePayloadRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B6ABD3BE82288D69A8878B /* BarcodePayloadRow.swift */; };
 		36CFD5B94A4D6B118D46E2A1 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 704DC4B1C13DDAA612FD9DDD /* PrivacyInfo.xcprivacy */; };
+		39D1C7D830AA832FD9B3713C /* CodDiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADEA52E31C498DAB1CFCDCCD /* CodDiagnosticLog.swift */; };
 		402CF7A139A6B106AFD85759 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC5269C36AA0421B94E85371 /* AppSettings.swift */; };
 		463613DACBB75108DD97A748 /* CaptureCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A5EEAD8A59176C9C8311E99 /* CaptureCoordinator.swift */; };
 		47DE7A3249F2C76F88DD3F29 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54274FECD14B5E0D244A3C41 /* RootView.swift */; };
 		49DF333AADE9998C1487E825 /* RouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7306D1C76118D1B3C738898 /* RouteView.swift */; };
-		5FF943F6C2A1AF1EA5DAD51E /* ShareFloatHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB24802E8C8FF3EFD327C73 /* ShareFloatHandoff.swift */; };
 		6638D1B1A22B339270F785CB /* ImageProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 762966348587F6EA134E4A24 /* ImageProcessing.swift */; };
 		6669D23E4F1BCEB1B8B5CE71 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A87A0B44E5262C924442F9E8 /* Assets.xcassets */; };
 		6737785855BA4163C8878E34 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 393E75AE53318A41E189678F /* LibraryView.swift */; };
@@ -57,6 +55,7 @@
 		877FBACAD6EFC8FB24F25640 /* ImageProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 762966348587F6EA134E4A24 /* ImageProcessing.swift */; };
 		904FA07DA3E2737A24A3CCD9 /* QuickFloatHandoffTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A29ECC458474D88FE30900E /* QuickFloatHandoffTests.swift */; };
 		9126943E2923AA79E829D8D5 /* CodIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB33ADB8430128051E65D6D /* CodIntents.swift */; };
+		93E020A1714D1102BAC2BC5C /* CodDiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADEA52E31C498DAB1CFCDCCD /* CodDiagnosticLog.swift */; };
 		9646EC3FD2E85CDF48CBC28E /* SnapStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4590654ABF056775689D0E8 /* SnapStoreTests.swift */; };
 		96505893410C06EDB778B69A /* SharePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68BA39B5C92B1B4BB7A681DA /* SharePreferences.swift */; };
 		97CC40974EDD410C069E9488 /* FloatingClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4FAC67581B2199C1A31CD11 /* FloatingClip.swift */; };
@@ -73,16 +72,10 @@
 		C209F5A0B7C9855C907BD405 /* SnapStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6366B822B82C56FED4800146 /* SnapStore.swift */; };
 		C53E2ABD87884E857F938AC2 /* PinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5ED009F49D7F4916595F05C /* PinManager.swift */; };
 		C7C30C2E1FB90E636395DA45 /* QuickFloatLaunchRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919BF7B4F37E572AA582B91 /* QuickFloatLaunchRoute.swift */; };
-		C7CB929341B57209BBB3D2E3 /* ShareFloatHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB24802E8C8FF3EFD327C73 /* ShareFloatHandoff.swift */; };
-		CA87C25BDCE850F2E679E12D /* SourceAppReturn.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE29B45D70AC513008294580 /* SourceAppReturn.swift */; };
 		CD7FB1FA2DD78A6D8974C788 /* SelectionGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC5CD87EF60BD9915E1687D /* SelectionGeometry.swift */; };
-		CEC432D2D85815BD74B0C5B4 /* FloatPendingWithCodIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A06C610984426CA9DCB349 /* FloatPendingWithCodIntent.swift */; };
-		D04FBD293D224A0EDC1798B7 /* FloatPendingWithCodIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A06C610984426CA9DCB349 /* FloatPendingWithCodIntent.swift */; };
 		D17FD34E481B7344E3F3E5BF /* Shortcuts in Resources */ = {isa = PBXBuildFile; fileRef = 1E850B0A1EAC0889AD7A4980 /* Shortcuts */; };
 		D1E2792A86CE545BE458FB5A /* ControlLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */; };
-		D4058B7851B8061F078D81C0 /* ShareSourceContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67236CBE294BE3F81C221351 /* ShareSourceContext.swift */; };
 		D56B838063EEC8FCE1E6DF01 /* PiPPinController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 936E5D575F764091F4514631 /* PiPPinController.swift */; };
-		D858FFDDA78807CD35567A39 /* ShareSourceContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67236CBE294BE3F81C221351 /* ShareSourceContext.swift */; };
 		DB94C1EFD760EEF8D7DAA9F0 /* PhotoLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94358DCA24F7BED0795149FC /* PhotoLibraryService.swift */; };
 		DC4C06A88807A6FAAE2301FA /* FloatingLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1A69AC90327DD549C57FC2 /* FloatingLaunchView.swift */; };
 		DD8EE474949B9DCEE0525F23 /* CodControls.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEAF28A0F446BE8EBC685D86 /* CodControls.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -94,7 +87,6 @@
 		F3E9455BD2A05286B811DD9B /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF6A9E824A47E70519A7194 /* Toast.swift */; };
 		F3EE34E433CEF25BA88F81B4 /* SnapAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7BB940A8D0E98B7C13907D /* SnapAction.swift */; };
 		F4FDF11EA39643D454997E38 /* MagnifierLoupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA6296F3699703A3454C430 /* MagnifierLoupe.swift */; };
-		F5BBB64B455AB2E378BA6283 /* ImgurUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FD1EEE030B5EC2745A3CD3 /* ImgurUploader.swift */; };
 		F847969086FCFB3F44BD5FD3 /* Snap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570A4EAF4FA4FB7AA8EF3004 /* Snap.swift */; };
 		F982FA608877F88AD2519049 /* FloatControlIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067431D645C015A3232CA725 /* FloatControlIntent.swift */; };
 		FC670F10BB3FBBB028101466 /* FloatControlIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067431D645C015A3232CA725 /* FloatControlIntent.swift */; };
@@ -167,8 +159,6 @@
 		1E850B0A1EAC0889AD7A4980 /* Shortcuts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Shortcuts; path = Cod/Resources/Shortcuts; sourceTree = SOURCE_ROOT; };
 		28FDFAA2B0DE2C7082035270 /* PiPStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPStateTests.swift; sourceTree = "<group>"; };
 		2A5EEAD8A59176C9C8311E99 /* CaptureCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCoordinator.swift; sourceTree = "<group>"; };
-		2EB24802E8C8FF3EFD327C73 /* ShareFloatHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFloatHandoff.swift; sourceTree = "<group>"; };
-		30FD1EEE030B5EC2745A3CD3 /* ImgurUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImgurUploader.swift; sourceTree = "<group>"; };
 		393E75AE53318A41E189678F /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		3B4A21E8B5136C82D591BCF1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3BA6296F3699703A3454C430 /* MagnifierLoupe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagnifierLoupe.swift; sourceTree = "<group>"; };
@@ -185,14 +175,11 @@
 		54274FECD14B5E0D244A3C41 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatEntryPointTests.swift; sourceTree = "<group>"; };
 		570A4EAF4FA4FB7AA8EF3004 /* Snap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap.swift; sourceTree = "<group>"; };
-		5B10FA752B6D997FEF5F75DE /* ShareReturnTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareReturnTests.swift; sourceTree = "<group>"; };
 		5D7BB940A8D0E98B7C13907D /* SnapAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapAction.swift; sourceTree = "<group>"; };
-		5F165604803B549CD974A924 /* FastShareAppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastShareAppLauncher.swift; sourceTree = "<group>"; };
 		5F3F1EEBD0851E97868A321C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		6043D3DFA759051E5469CA56 /* CodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodApp.swift; sourceTree = "<group>"; };
 		633D067508EA8F41B434B242 /* SharedImageInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedImageInboxTests.swift; sourceTree = "<group>"; };
 		6366B822B82C56FED4800146 /* SnapStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapStore.swift; sourceTree = "<group>"; };
-		67236CBE294BE3F81C221351 /* ShareSourceContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSourceContext.swift; sourceTree = "<group>"; };
 		68BA39B5C92B1B4BB7A681DA /* SharePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharePreferences.swift; sourceTree = "<group>"; };
 		704DC4B1C13DDAA612FD9DDD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		739E62ED49B390D5613B1DBA /* SelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionView.swift; sourceTree = "<group>"; };
@@ -200,7 +187,6 @@
 		7CACB40C2BF2CBF2DC7855BE /* CodControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodControls.swift; sourceTree = "<group>"; };
 		7CC5CD87EF60BD9915E1687D /* SelectionGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionGeometry.swift; sourceTree = "<group>"; };
 		7D64F83FEEC1C72F6749055F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		839E0EB303526E1703D3FBB5 /* ShareSettings.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareSettings.entitlements; sourceTree = "<group>"; };
 		8E1A69AC90327DD549C57FC2 /* FloatingLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingLaunchView.swift; sourceTree = "<group>"; };
 		936E5D575F764091F4514631 /* PiPPinController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPPinController.swift; sourceTree = "<group>"; };
 		93DECC961B6DD22C6A3E7E56 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -209,9 +195,9 @@
 		A059949EED8FA17AC8D8C4A2 /* NotificationFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFlowTests.swift; sourceTree = "<group>"; };
 		A6F2BF37796499C13424B3D0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A87A0B44E5262C924442F9E8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		ADEA52E31C498DAB1CFCDCCD /* CodDiagnosticLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodDiagnosticLog.swift; sourceTree = "<group>"; };
 		B54DEF76C895E9B9DD36ACEB /* ShareRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareRootView.swift; sourceTree = "<group>"; };
 		B5ED009F49D7F4916595F05C /* PinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinManager.swift; sourceTree = "<group>"; };
-		B8A06C610984426CA9DCB349 /* FloatPendingWithCodIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatPendingWithCodIntent.swift; sourceTree = "<group>"; };
 		C4FAC67581B2199C1A31CD11 /* FloatingClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingClip.swift; sourceTree = "<group>"; };
 		C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlLaunchTests.swift; sourceTree = "<group>"; };
 		C7A2A193101E7AA0421BB825 /* QuickFloatHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFloatHandoff.swift; sourceTree = "<group>"; };
@@ -220,7 +206,6 @@
 		D3205D012BEC1EB67CED854E /* SharedImageInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedImageInbox.swift; sourceTree = "<group>"; };
 		DAB33ADB8430128051E65D6D /* CodIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodIntents.swift; sourceTree = "<group>"; };
 		DDF6A9E824A47E70519A7194 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
-		DE29B45D70AC513008294580 /* SourceAppReturn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppReturn.swift; sourceTree = "<group>"; };
 		E7306D1C76118D1B3C738898 /* RouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteView.swift; sourceTree = "<group>"; };
 		E77686AB62AA2F8EA42B8297 /* OneTapFloatGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneTapFloatGuide.swift; sourceTree = "<group>"; };
 		E842C07869A1A35001BF0BDC /* PrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyView.swift; sourceTree = "<group>"; };
@@ -241,14 +226,6 @@
 				E7306D1C76118D1B3C738898 /* RouteView.swift */,
 			);
 			path = Routes;
-			sourceTree = "<group>";
-		};
-		054B5F8C165864AA2DE556FF /* Actions */ = {
-			isa = PBXGroup;
-			children = (
-				30FD1EEE030B5EC2745A3CD3 /* ImgurUploader.swift */,
-			);
-			path = Actions;
 			sourceTree = "<group>";
 		};
 		076F03FA63E879E56957B5D2 /* Home */ = {
@@ -282,7 +259,6 @@
 				6043D3DFA759051E5469CA56 /* CodApp.swift */,
 				164A85EFAB1FFD9489BC7E93 /* FloatNotificationDelegate.swift */,
 				54274FECD14B5E0D244A3C41 /* RootView.swift */,
-				DE29B45D70AC513008294580 /* SourceAppReturn.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -299,7 +275,6 @@
 		6F4C0F2020DB232C32118802 /* Cod */ = {
 			isa = PBXGroup;
 			children = (
-				054B5F8C165864AA2DE556FF /* Actions */,
 				1A121744808A1A809C448654 /* App */,
 				86F1100C2560BBCDD4E54558 /* Capture */,
 				D7FDE2E3EF3E3A6DB3B7856A /* Intents */,
@@ -313,7 +288,6 @@
 				A87A0B44E5262C924442F9E8 /* Assets.xcassets */,
 				A6F2BF37796499C13424B3D0 /* Info.plist */,
 				F724EFA8EF460B18B70636F0 /* PrivacyInfo.xcprivacy */,
-				839E0EB303526E1703D3FBB5 /* ShareSettings.entitlements */,
 				F209FD74C2AF920C95A3D436 /* StoreRelease.entitlements */,
 			);
 			path = Cod;
@@ -351,7 +325,6 @@
 				15C8E41F359131CC83F9FED0 /* SelectionGeometryTests.swift */,
 				633D067508EA8F41B434B242 /* SharedImageInboxTests.swift */,
 				04DEF5948DBF5BA96FE8C89B /* SharePreferenceTests.swift */,
-				5B10FA752B6D997FEF5F75DE /* ShareReturnTests.swift */,
 				F4590654ABF056775689D0E8 /* SnapStoreTests.swift */,
 			);
 			path = CodTests;
@@ -377,7 +350,6 @@
 		8C6466216DE70AD2B941DD77 /* CodShare */ = {
 			isa = PBXGroup;
 			children = (
-				5F165604803B549CD974A924 /* FastShareAppLauncher.swift */,
 				7D64F83FEEC1C72F6749055F /* Info.plist */,
 				704DC4B1C13DDAA612FD9DDD /* PrivacyInfo.xcprivacy */,
 				B54DEF76C895E9B9DD36ACEB /* ShareRootView.swift */,
@@ -487,15 +459,13 @@
 		EE2B48B16E717CDE66DE7860 /* Support */ = {
 			isa = PBXGroup;
 			children = (
-				B8A06C610984426CA9DCB349 /* FloatPendingWithCodIntent.swift */,
+				ADEA52E31C498DAB1CFCDCCD /* CodDiagnosticLog.swift */,
 				93DECC961B6DD22C6A3E7E56 /* Haptics.swift */,
 				C7A2A193101E7AA0421BB825 /* QuickFloatHandoff.swift */,
 				4919BF7B4F37E572AA582B91 /* QuickFloatLaunchRoute.swift */,
 				D3205D012BEC1EB67CED854E /* SharedImageInbox.swift */,
-				2EB24802E8C8FF3EFD327C73 /* ShareFloatHandoff.swift */,
 				3E7FDB07C677FFBBC98F40BB /* ShareFloatNotifications.swift */,
 				68BA39B5C92B1B4BB7A681DA /* SharePreferences.swift */,
-				67236CBE294BE3F81C221351 /* ShareSourceContext.swift */,
 				DDF6A9E824A47E70519A7194 /* Toast.swift */,
 			);
 			path = Support;
@@ -729,8 +699,7 @@
 				AD54D96AC906D303998A4E8A /* ActionBar.swift in Sources */,
 				E989FE5E231477784184933B /* AppSettings.swift in Sources */,
 				35CCC6D850A19E0A7E4D71EA /* BarcodePayloadRow.swift in Sources */,
-				177A1930B55E084951B1B771 /* FastShareAppLauncher.swift in Sources */,
-				D04FBD293D224A0EDC1798B7 /* FloatPendingWithCodIntent.swift in Sources */,
+				93E020A1714D1102BAC2BC5C /* CodDiagnosticLog.swift in Sources */,
 				9E11AB1A78E3385ADEAEA578 /* Haptics.swift in Sources */,
 				877FBACAD6EFC8FB24F25640 /* ImageProcessing.swift in Sources */,
 				20AD784831C5D4FCD62A1192 /* LiveTextImageView.swift in Sources */,
@@ -741,11 +710,9 @@
 				E80CEA3948B9DFEAC1FBCFCF /* Recognizer.swift in Sources */,
 				2EB3ED87586833BB1F1829FC /* SelectionGeometry.swift in Sources */,
 				0378CABA66E463424E9CFFDB /* SelectionView.swift in Sources */,
-				C7CB929341B57209BBB3D2E3 /* ShareFloatHandoff.swift in Sources */,
 				6B4B10DDEF8C39A0B5976731 /* ShareFloatNotifications.swift in Sources */,
 				851A6ED08550AC8D6AF95188 /* SharePreferences.swift in Sources */,
 				6AC58F9E3A583B10FFAEF987 /* ShareRootView.swift in Sources */,
-				D4058B7851B8061F078D81C0 /* ShareSourceContext.swift in Sources */,
 				316F83D7115B154B054D9D75 /* ShareViewController.swift in Sources */,
 				9DE344399B0B7A915B81A34D /* SharedImageInbox.swift in Sources */,
 				F847969086FCFB3F44BD5FD3 /* Snap.swift in Sources */,
@@ -764,16 +731,15 @@
 				027CB813156841D1468C7326 /* BarcodePayloadRow.swift in Sources */,
 				463613DACBB75108DD97A748 /* CaptureCoordinator.swift in Sources */,
 				15278FFD497CC85204C20BDC /* CodApp.swift in Sources */,
+				39D1C7D830AA832FD9B3713C /* CodDiagnosticLog.swift in Sources */,
 				9126943E2923AA79E829D8D5 /* CodIntents.swift in Sources */,
 				FC670F10BB3FBBB028101466 /* FloatControlIntent.swift in Sources */,
 				81AEF8B79936690BC92297C5 /* FloatNotificationDelegate.swift in Sources */,
-				CEC432D2D85815BD74B0C5B4 /* FloatPendingWithCodIntent.swift in Sources */,
 				97CC40974EDD410C069E9488 /* FloatingClip.swift in Sources */,
 				DC4C06A88807A6FAAE2301FA /* FloatingLaunchView.swift in Sources */,
 				26C32D7C0C30CAEA82E8A620 /* Haptics.swift in Sources */,
 				EAF0C460D23087FCDFCFB184 /* HomeView.swift in Sources */,
 				6638D1B1A22B339270F785CB /* ImageProcessing.swift in Sources */,
-				F5BBB64B455AB2E378BA6283 /* ImgurUploader.swift in Sources */,
 				6737785855BA4163C8878E34 /* LibraryView.swift in Sources */,
 				1EB4DB724ED070265709EBE5 /* LiveTextImageView.swift in Sources */,
 				F4FDF11EA39643D454997E38 /* MagnifierLoupe.swift in Sources */,
@@ -791,16 +757,13 @@
 				CD7FB1FA2DD78A6D8974C788 /* SelectionGeometry.swift in Sources */,
 				8347B875007B14D14B391E3C /* SelectionView.swift in Sources */,
 				794880A8F35B139BACEE8F7F /* SettingsView.swift in Sources */,
-				5FF943F6C2A1AF1EA5DAD51E /* ShareFloatHandoff.swift in Sources */,
 				2DFC4A577A448DFC1985D45F /* ShareFloatNotifications.swift in Sources */,
 				96505893410C06EDB778B69A /* SharePreferences.swift in Sources */,
-				D858FFDDA78807CD35567A39 /* ShareSourceContext.swift in Sources */,
 				79C7F8FDAB7EFB129C80F427 /* SharedImageInbox.swift in Sources */,
 				B21B587A0AC24F189222D745 /* ShortcutInstaller.swift in Sources */,
 				7350157A3CD11D1B4AF5C395 /* Snap.swift in Sources */,
 				F3EE34E433CEF25BA88F81B4 /* SnapAction.swift in Sources */,
 				C209F5A0B7C9855C907BD405 /* SnapStore.swift in Sources */,
-				CA87C25BDCE850F2E679E12D /* SourceAppReturn.swift in Sources */,
 				7A2988172E99BAF0141658AE /* Toast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -822,7 +785,6 @@
 				904FA07DA3E2737A24A3CCD9 /* QuickFloatHandoffTests.swift in Sources */,
 				0907932E66A993D3F4F23AC7 /* SelectionGeometryTests.swift in Sources */,
 				2DDA7014C5911F35D57C944D /* SharePreferenceTests.swift in Sources */,
-				25D95902435B7B906B64C505 /* ShareReturnTests.swift in Sources */,
 				0E60E2ACB791083462FBDF8F /* SharedImageInboxTests.swift in Sources */,
 				9646EC3FD2E85CDF48CBC28E /* SnapStoreTests.swift in Sources */,
 			);
@@ -870,53 +832,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		00DF6C03C987B5A4504F33FB /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Cod/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store;
-				PRODUCT_NAME = Cod;
-				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastDebug;
-		};
-		1167D5C30A26FC42855A2AD8 /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CodShare/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.share;
-				PRODUCT_NAME = CodShare;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = LaunchProbe;
-		};
 		11C0CCF907CA6B3F24D5465D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -935,24 +850,6 @@
 			};
 			name = Debug;
 		};
-		1447C8C163BF3A92D81188CF /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.tests;
-				SDKROOT = iphoneos;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cod.app/Cod";
-			};
-			name = LaunchProbe;
-		};
 		28EB0B34BACB78497E35BC6E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -969,166 +866,6 @@
 				TEST_TARGET_NAME = CodLaunchHarness;
 			};
 			name = Release;
-		};
-		2F09B62A1855E3E71A47A6F8 /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodControls/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.controls;
-				PRODUCT_NAME = CodControls;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalDebug;
-		};
-		303440A59707369A43252849 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodControls/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.controls;
-				PRODUCT_NAME = CodControls;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastRelease;
-		};
-		391ED890AAFD16428C2ECD8C /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Cod Launch Lab";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = LaunchProbe;
-		};
-		4754B58A1F5A13D903FA0CAC /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-ui-tests";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CodLaunchHarness;
-			};
-			name = LaunchProbe;
-		};
-		4E76AFE50166D7BE0AAE6243 /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.tests;
-				SDKROOT = iphoneos;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cod.app/Cod";
-			};
-			name = PersonalRelease;
-		};
-		4EE007890874DA3F8BE1D483 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.tests;
-				SDKROOT = iphoneos;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cod.app/Cod";
-			};
-			name = FastRelease;
-		};
-		582717D5A9F5F9C1FF5595B3 /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CodShare/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.share;
-				PRODUCT_NAME = CodShare;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastDebug;
-		};
-		5BD5E9B7E82436F799C3E526 /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Cod/ShareSettings.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = cod;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Cod/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod;
-				PRODUCT_NAME = Cod;
-				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalRelease;
 		};
 		603D1961838A116A34AEC845 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1150,123 +887,6 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
-		};
-		60A8A0E862D3C34604ECC00F /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Cod/ShareSettings.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = cod;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Cod/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod;
-				PRODUCT_NAME = Cod;
-				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalDebug;
-		};
-		67D93B006DA25890C24BFD8C /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = Cod;
-				COD_PRIVACY_POLICY_URL = "";
-				COD_SHARE_LAUNCH_POLICY = "manual-open";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = UE492DNA6V;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"DEBUG=1",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG COD_LAUNCH_PROBE";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.10;
-			};
-			name = LaunchProbe;
-		};
-		6D2071BA043787E9976EAD5C /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodControls/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.controls;
-				PRODUCT_NAME = CodControls;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastDebug;
 		};
 		6E7B999E6B42CBC6C9521200 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1302,11 +922,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = Cod;
+				COD_DISPLAY_NAME = "Cod Test";
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1339,23 +959,6 @@
 				SWIFT_VERSION = 5.10;
 			};
 			name = Debug;
-		};
-		782F72C96A12A02F0F5E5A8F /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-ui-tests";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CodLaunchHarness;
-			};
-			name = PersonalDebug;
 		};
 		7CAEA54478E72117534F94A8 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1396,96 +999,6 @@
 			};
 			name = Release;
 		};
-		91C818C2059AFF637D350082 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = "Cod Test";
-				COD_PRIVACY_POLICY_URL = "";
-				COD_SHARE_LAUNCH_POLICY = "responder-chain";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = UE492DNA6V;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_FAST_SHARE";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.10;
-			};
-			name = FastRelease;
-		};
-		941F6448B3109AC0A093406D /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Cod/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store;
-				PRODUCT_NAME = Cod;
-				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = LaunchProbe;
-		};
 		94B2023B65C5C2E0C57D33D7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1509,59 +1022,6 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
-		};
-		96D319C26DC4EA711B93B5C5 /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-ui-tests";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CodLaunchHarness;
-			};
-			name = FastDebug;
-		};
-		985DCCE667BB5DB9F9B3EE3A /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Cod Launch Lab";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalRelease;
-		};
-		9D44C71ECA5D862FCFEB4554 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Cod Launch Lab";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastRelease;
 		};
 		A82EB54A7F9A2051D2A6EC68 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1598,213 +1058,6 @@
 			};
 			name = Debug;
 		};
-		AC9ECFF6EE444D7E50434911 /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Cod Launch Lab";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalDebug;
-		};
-		BA0DED53E91603FFB0B4D3C0 /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.tests;
-				SDKROOT = iphoneos;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cod.app/Cod";
-			};
-			name = PersonalDebug;
-		};
-		C1C70866A690178EE7B5BB48 /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.tests;
-				SDKROOT = iphoneos;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cod.app/Cod";
-			};
-			name = FastDebug;
-		};
-		C521F1755230254B2AC8CD98 /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/ShareSettings.entitlements;
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = cod;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CodShare/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.share;
-				PRODUCT_NAME = CodShare;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalRelease;
-		};
-		C72F7869991371CCC7EAB8F8 /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = Cod;
-				COD_PRIVACY_POLICY_URL = "";
-				COD_SHARE_LAUNCH_POLICY = "manual-open";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = UE492DNA6V;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_PERSONAL";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.10;
-			};
-			name = PersonalRelease;
-		};
-		C855C37675694E65DFF14159 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Cod/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store;
-				PRODUCT_NAME = Cod;
-				SDKROOT = iphoneos;
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastRelease;
-		};
-		C8BDA79311E1151782FC1CC8 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-ui-tests";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CodLaunchHarness;
-			};
-			name = FastRelease;
-		};
-		CA5B30C2C41898217ECCB0A9 /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/ShareSettings.entitlements;
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = cod;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CodShare/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.share;
-				PRODUCT_NAME = CodShare;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalDebug;
-		};
 		CC06B1114013C98142FD60FA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1827,78 +1080,6 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
-		};
-		D0D12E717574326F42D88CA5 /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = "Cod Test";
-				COD_PRIVACY_POLICY_URL = "";
-				COD_SHARE_LAUNCH_POLICY = "responder-chain";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = UE492DNA6V;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"DEBUG=1",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG COD_FAST_SHARE";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.10;
-			};
-			name = FastDebug;
 		};
 		D90DEC669440FDDE210B8DB3 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -1934,11 +1115,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = Cod;
+				COD_DISPLAY_NAME = "Cod Test";
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1988,117 +1169,6 @@
 			};
 			name = Debug;
 		};
-		DF534072DE3CBB12AF3635C3 /* PersonalDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COD_DISPLAY_NAME = Cod;
-				COD_PRIVACY_POLICY_URL = "";
-				COD_SHARE_LAUNCH_POLICY = "manual-open";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = UE492DNA6V;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"DEBUG=1",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG COD_PERSONAL";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.10;
-			};
-			name = PersonalDebug;
-		};
-		E130CA646CD6E8373BDA5846 /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodControls/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.controls;
-				PRODUCT_NAME = CodControls;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = PersonalRelease;
-		};
-		E850B34AFDE82CD0D9E80402 /* FastDebug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Cod Launch Lab";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastDebug;
-		};
 		EC2D14851A4A0238DCDC7CDD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2141,67 +1211,6 @@
 			};
 			name = Release;
 		};
-		EDF4478A9FE14DA9CC2C03DE /* PersonalRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-ui-tests";
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CodLaunchHarness;
-			};
-			name = PersonalRelease;
-		};
-		F82D31222E68DA97C1D8BA39 /* LaunchProbe */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = CodControls/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.controls;
-				PRODUCT_NAME = CodControls;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = LaunchProbe;
-		};
-		FE6FAB26D7F19198CF595973 /* FastRelease */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
-				COD_APP_GROUP = group.com.josh.cod.store;
-				COD_URL_SCHEME = "cod-store";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = CodShare/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.josh.cod.store.share;
-				PRODUCT_NAME = CodShare;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = FastRelease;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -2209,11 +1218,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DAA16B1674F2C6CECDB34456 /* Debug */,
-				582717D5A9F5F9C1FF5595B3 /* FastDebug */,
-				FE6FAB26D7F19198CF595973 /* FastRelease */,
-				1167D5C30A26FC42855A2AD8 /* LaunchProbe */,
-				CA5B30C2C41898217ECCB0A9 /* PersonalDebug */,
-				C521F1755230254B2AC8CD98 /* PersonalRelease */,
 				CC06B1114013C98142FD60FA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2223,11 +1227,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7CAEA54478E72117534F94A8 /* Debug */,
-				6D2071BA043787E9976EAD5C /* FastDebug */,
-				303440A59707369A43252849 /* FastRelease */,
-				F82D31222E68DA97C1D8BA39 /* LaunchProbe */,
-				2F09B62A1855E3E71A47A6F8 /* PersonalDebug */,
-				E130CA646CD6E8373BDA5846 /* PersonalRelease */,
 				603D1961838A116A34AEC845 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2237,11 +1236,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				11C0CCF907CA6B3F24D5465D /* Debug */,
-				E850B34AFDE82CD0D9E80402 /* FastDebug */,
-				9D44C71ECA5D862FCFEB4554 /* FastRelease */,
-				391ED890AAFD16428C2ECD8C /* LaunchProbe */,
-				AC9ECFF6EE444D7E50434911 /* PersonalDebug */,
-				985DCCE667BB5DB9F9B3EE3A /* PersonalRelease */,
 				ECAD77F4653401C042435623 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2251,11 +1245,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A82EB54A7F9A2051D2A6EC68 /* Debug */,
-				96D319C26DC4EA711B93B5C5 /* FastDebug */,
-				C8BDA79311E1151782FC1CC8 /* FastRelease */,
-				4754B58A1F5A13D903FA0CAC /* LaunchProbe */,
-				782F72C96A12A02F0F5E5A8F /* PersonalDebug */,
-				EDF4478A9FE14DA9CC2C03DE /* PersonalRelease */,
 				28EB0B34BACB78497E35BC6E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2265,11 +1254,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6E7B999E6B42CBC6C9521200 /* Debug */,
-				D0D12E717574326F42D88CA5 /* FastDebug */,
-				91C818C2059AFF637D350082 /* FastRelease */,
-				67D93B006DA25890C24BFD8C /* LaunchProbe */,
-				DF534072DE3CBB12AF3635C3 /* PersonalDebug */,
-				C72F7869991371CCC7EAB8F8 /* PersonalRelease */,
 				D90DEC669440FDDE210B8DB3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2279,11 +1263,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				94B2023B65C5C2E0C57D33D7 /* Debug */,
-				00DF6C03C987B5A4504F33FB /* FastDebug */,
-				C855C37675694E65DFF14159 /* FastRelease */,
-				941F6448B3109AC0A093406D /* LaunchProbe */,
-				60A8A0E862D3C34604ECC00F /* PersonalDebug */,
-				5BD5E9B7E82436F799C3E526 /* PersonalRelease */,
 				EC2D14851A4A0238DCDC7CDD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2293,11 +1272,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA923B85B2F7F3115E110D62 /* Debug */,
-				C1C70866A690178EE7B5BB48 /* FastDebug */,
-				4EE007890874DA3F8BE1D483 /* FastRelease */,
-				1447C8C163BF3A92D81188CF /* LaunchProbe */,
-				BA0DED53E91603FFB0B4D3C0 /* PersonalDebug */,
-				4E76AFE50166D7BE0AAE6243 /* PersonalRelease */,
 				8BBD19490C446FDCA0A12EDF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;

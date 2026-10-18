@@ -1,5 +1,9 @@
 # Fast image → PiP experiments
 
+> Historical experiment log, not current build instructions. Unsupported
+> launch/return/control implementations and configurations were removed in
+> build 6. See README.md and docs/float-entry-points.md for the current routes.
+
 **October 15 follow-up:** see [FAST_SHARE.md](FAST_SHARE.md) for the isolated
 fast-launch candidate. This document records the October 7 public-only baseline
 and its manual-open fallback; it is not the latest candidate's workflow.

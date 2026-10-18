@@ -1,5 +1,9 @@
 # Returning beneath a screenshot preview
 
+> Historical research. All private automatic-return and origin-probing code
+> was removed in build 6. Cod now leaves app switching to the user; this record
+> is retained as evidence, not an implementation guide.
+
 ## Outcome
 
 Research and physical tests on October 6, 2026 did **not** establish reliable

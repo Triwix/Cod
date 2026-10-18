@@ -20,10 +20,8 @@ struct HomeView: View {
                             .accessibilityIdentifier("received-image-size")
                     }
                     #endif
-                    #if !COD_PERSONAL
                     if coordinator.quickSharePreview != nil { quickShare }
                     if !coordinator.sharedImages.isEmpty { sharedImages }
-                    #endif
                     primaryCapture
                     if pip.isSupported { floatLatest }
                     secondaryRow
@@ -47,11 +45,7 @@ struct HomeView: View {
                     coordinator.toast = .failure("Couldn't read that image")
                     return
                 }
-                #if COD_PERSONAL
-                coordinator.present(image: image, origin: .imported)
-                #else
                 coordinator.receiveExternalImage(image, origin: .imported)
-                #endif
             }
         }
     }
@@ -60,13 +54,9 @@ struct HomeView: View {
 
     #if DEBUG
     private var showsLaunchDiagnostics: Bool {
-        #if COD_FAST_SHARE
-        // System URL launches don't inherit XCTest process arguments. Keep
-        // this diagnostic in FastDebug so cold-launch receipt is testable.
+        // System-launched Shortcut tests cannot supply app launch arguments.
+        // Image dimensions only; this label is absent from Release builds.
         return true
-        #else
-        return ProcessInfo.processInfo.arguments.contains("--launch-ui-test")
-        #endif
     }
     #endif
 
@@ -349,13 +339,8 @@ struct HomeView: View {
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 2) {
-                    #if COD_PERSONAL
-                    Text("Set up one-tap floating")
-                        .font(.subheadline.weight(.semibold))
-                    #else
                     Text("How to float an image")
                         .font(.subheadline.weight(.semibold))
-                    #endif
                     Text("Share sheet, Back Tap and the Action Button")
                         .font(.caption)
                         .foregroundStyle(.secondary)

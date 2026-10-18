@@ -74,7 +74,6 @@ struct FloatingLaunchView: View {
                     }
 
                     Button {
-                        pip.keepCodOpenAfterFloating()
                         onOpenApp()
                     } label: {
                         Text("Open Cod")
@@ -121,13 +120,7 @@ struct FloatingLaunchView: View {
     private var statusDetail: String {
         switch pip.status {
         case .active:
-            #if COD_PERSONAL
-            return settings.returnAfterFloating
-                ? "Returning to the previous app if iOS permits; otherwise Home. The image stays floating."
-                : "Swipe home — the snippet stays on top of whatever you open."
-            #else
             return "Switch to another app when you're ready. The image stays floating. Cod doesn't automatically change your screen."
-            #endif
         case .preparing:
             return "Handing the snippet to the system window."
         case .unsupported:

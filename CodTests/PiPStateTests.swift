@@ -5,27 +5,18 @@ import UIKit
 @testable import Cod
 
 final class PiPStateTests: XCTestCase {
-    func testEarlyRestorationCancelsAutomaticReturn() {
-        var policy = PiPReturnPolicy()
+    func testEarlyRestorationIgnoresLateStartEvents() {
+        var policy = PiPRestorationState()
         policy.beginFloat()
-        XCTAssertTrue(policy.allowsAutomaticReturn)
+        XCTAssertFalse(policy.isRestoring)
         policy.beginRestoration()
-        XCTAssertFalse(policy.allowsAutomaticReturn)
         XCTAssertTrue(policy.isRestoring)
     }
 
     func testNextFloatDoesNotInheritAnEarlierRestoration() {
-        var policy = PiPReturnPolicy()
+        var policy = PiPRestorationState()
         policy.beginRestoration()
         policy.beginFloat()
-        XCTAssertTrue(policy.allowsAutomaticReturn)
-        XCTAssertFalse(policy.isRestoring)
-    }
-
-    func testExplicitOpenCodSuppressesReturnWithoutPretendingPiPWasRestored() {
-        var policy = PiPReturnPolicy()
-        policy.keepCodOpen()
-        XCTAssertFalse(policy.allowsAutomaticReturn)
         XCTAssertFalse(policy.isRestoring)
     }
 
@@ -177,14 +168,6 @@ final class PiPStateTests: XCTestCase {
             XCTAssertLessThanOrEqual(max(fitted.pixelSize.width, fitted.pixelSize.height), 1_200)
         }
     }
-    #if COD_PERSONAL
-    func testShareFloatURLAcceptsOnlyCodFloatRoute() {
-        XCTAssertTrue(ShareFloatHandoff.matches(URL(string: "cod://float-shared-image")!))
-        XCTAssertTrue(ShareFloatHandoff.matches(URL(string: "COD://FLOAT-SHARED-IMAGE")!))
-        XCTAssertFalse(ShareFloatHandoff.matches(URL(string: "https://float-shared-image")!))
-        XCTAssertFalse(ShareFloatHandoff.matches(URL(string: "cod://something-else")!))
-    }
-    #endif
 
     func testActiveWindowTakesReplacementPathEvenAfterStatusMovesToPreparing() {
         let path = PiPPinController.preparationPath(

@@ -106,15 +106,6 @@ final class AppSettings: ObservableObject {
         self.pinOpacity = defaults.object(forKey: Keys.pinOpacity) as? Double ?? 1.0
         self.pinCornerRadius = defaults.object(forKey: Keys.pinCornerRadius) as? Double ?? 10
         self.keepOtherAudioPlaying = defaults.object(forKey: Keys.keepOtherAudioPlaying) as? Bool ?? true
-        #if COD_PERSONAL
-        self.returnAfterFloating = defaults.object(forKey: Keys.returnAfterFloating) as? Bool ?? true
-        // Hidden AVKit controls can turn an early tap into a restore/stop
-        // gesture on the tested phone. Use native controls unless opted in.
-        self.hideFloatingControls = defaults.object(forKey: Keys.hideFloatingControls) as? Bool ?? false
-        #else
-        self.returnAfterFloating = false
-        self.hideFloatingControls = false
-        #endif
         self.captureDelay = defaults.object(forKey: Keys.captureDelay) as? Double ?? 0
         self.saveToDedicatedAlbum = defaults.object(forKey: Keys.saveToDedicatedAlbum) as? Bool ?? false
         self.albumName = defaults.string(forKey: Keys.albumName) ?? "Cod"
@@ -123,7 +114,6 @@ final class AppSettings: ObservableObject {
         self.hapticsEnabled = defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
         self.smartRegions = defaults.object(forKey: Keys.smartRegions) as? Bool ?? true
         self.showMagnifier = defaults.object(forKey: Keys.showMagnifier) as? Bool ?? true
-        self.imgurClientID = defaults.string(forKey: Keys.imgurClientID) ?? ""
         self.lastSeenScreenshotID = defaults.string(forKey: Keys.lastSeenScreenshotID)
     }
 
@@ -134,7 +124,7 @@ final class AppSettings: ObservableObject {
     @Published var watchScreenshots: Bool { didSet { defaults.set(watchScreenshots, forKey: Keys.watchScreenshots) } }
     @Published var captureDelay: Double { didSet { defaults.set(captureDelay, forKey: Keys.captureDelay) } }
 
-    /// Off by default: Share → Cod opens selection and waits for Float.
+    /// On by default: skip cropping when the prepared share opens in Cod.
     @Published private(set) var oneTapFloat: Bool
     @Published private(set) var useFloatNotification: Bool
     @Published var sharePreferenceError: String?
@@ -188,20 +178,6 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(keepOtherAudioPlaying, forKey: Keys.keepOtherAudioPlaying) }
     }
 
-    /// Drop Cod back to the background as soon as the floating window opens, so
-    /// you land where you started instead of sitting in Cod. iOS won't let an
-    /// app start PiP from the background, so it has to come forward for a
-    /// moment either way — this just makes the moment as short as possible.
-    @Published var returnAfterFloating: Bool {
-        didSet { defaults.set(returnAfterFloating, forKey: Keys.returnAfterFloating) }
-    }
-
-    /// Suppress the play/close/restore overlay when the floating window first
-    /// appears, so a pinned snippet just looks like a picture.
-    @Published var hideFloatingControls: Bool {
-        didSet { defaults.set(hideFloatingControls, forKey: Keys.hideFloatingControls) }
-    }
-
     // MARK: - Saving
 
     @Published var saveToDedicatedAlbum: Bool { didSet { defaults.set(saveToDedicatedAlbum, forKey: Keys.saveToDedicatedAlbum) } }
@@ -213,10 +189,6 @@ final class AppSettings: ObservableObject {
     @Published var hapticsEnabled: Bool { didSet { defaults.set(hapticsEnabled, forKey: Keys.hapticsEnabled) } }
     @Published var smartRegions: Bool { didSet { defaults.set(smartRegions, forKey: Keys.smartRegions) } }
     @Published var showMagnifier: Bool { didSet { defaults.set(showMagnifier, forKey: Keys.showMagnifier) } }
-
-    // MARK: - Integrations
-
-    @Published var imgurClientID: String { didSet { defaults.set(imgurClientID, forKey: Keys.imgurClientID) } }
 
     /// Local identifier of the newest screenshot we've already offered, so we
     /// don't re-surface the same one every time the app comes forward.
@@ -242,8 +214,6 @@ final class AppSettings: ObservableObject {
         static let pinOpacity = "pinOpacity"
         static let pinCornerRadius = "pinCornerRadius"
         static let keepOtherAudioPlaying = "keepOtherAudioPlaying"
-        static let returnAfterFloating = "returnAfterFloating"
-        static let hideFloatingControls = "hideFloatingControls"
         static let captureDelay = "captureDelay"
         static let saveToDedicatedAlbum = "saveToDedicatedAlbum"
         static let albumName = "albumName"
@@ -252,7 +222,6 @@ final class AppSettings: ObservableObject {
         static let hapticsEnabled = "hapticsEnabled"
         static let smartRegions = "smartRegions"
         static let showMagnifier = "showMagnifier"
-        static let imgurClientID = "imgurClientID"
         static let lastSeenScreenshotID = "lastSeenScreenshotID"
     }
 }

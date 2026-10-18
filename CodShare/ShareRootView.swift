@@ -1,7 +1,4 @@
 import SwiftUI
-#if COD_LAUNCH_PROBE
-import AppIntents
-#endif
 
 @MainActor
 final class ShareFloatState: ObservableObject {
@@ -9,16 +6,14 @@ final class ShareFloatState: ObservableObject {
         case loading
         case opening
         case selecting(UIImage)
-        #if COD_LAUNCH_PROBE
-        case launchProbe
-        #endif
         case failed(String)
     }
 
     @Published var phase: Phase = .loading
 }
 
-/// Personal builds can crop here; public builds need no confirmation tap.
+/// Notification handoffs can crop here; the manual-open fallback prepares its
+/// request without a confirmation tap and opens cropping in Cod when needed.
 struct ShareRootView: View {
     @ObservedObject var state: ShareFloatState
     var onFinish: () -> Void
@@ -49,11 +44,7 @@ struct ShareRootView: View {
                 if case .loading = state.phase {
                     Text("Loading image…").font(.headline)
                 } else {
-                    #if COD_PERSONAL || COD_FAST_SHARE
-                    Text("Floating image…").font(.headline)
-                    #else
                     Text("Preparing image…").font(.headline)
-                    #endif
                 }
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle")
@@ -67,14 +58,6 @@ struct ShareRootView: View {
                     .buttonStyle(.borderedProminent)
             case .selecting:
                 EmptyView()
-            #if COD_LAUNCH_PROBE
-            case .launchProbe:
-                Text("Public launch experiment").font(.headline)
-                Text("The image is ready. This tests whether an app-bound intent can bring Cod forward from the share extension.")
-                Button(intent: FloatPendingWithCodIntent()) { Text("Test system Float") }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("test-system-float")
-            #endif
             }
             Button("Cancel", action: onFinish)
                 .buttonStyle(.bordered)
@@ -86,11 +69,7 @@ struct ShareRootView: View {
     }
 
     private var isSaving: Bool {
-        #if COD_PERSONAL
-        return false
-        #else
         if case .opening = state.phase { return true }
         return false
-        #endif
     }
 }
