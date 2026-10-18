@@ -1,12 +1,13 @@
 # Cod
 
-## Optional fast entry points — build 3
+## Optional fast entry points — build 4
 
 New Control Center / Lock Screen / Action Button control, Back Tap and share
-Shortcut templates, and a selectable Share → notification → Cod handoff.
-See [setup, packaging gate and verification](docs/float-entry-points.md).
-Existing direct-share behavior is preserved; easy Shortcut installation still
-requires approved Apple signing and import verification.
+Shortcut installers, and a selectable Share → notification → Cod handoff.
+See [setup and verification](docs/float-entry-points.md).
+Existing direct-share behavior is preserved. Apple-signed Shortcut files are
+included for both Cod Test and the original Cod; users approve installation
+and assign Back Tap themselves.
 
 ## Fast-share test candidate — October 15
 
@@ -101,9 +102,13 @@ uses a shared App Group and a different image-transfer/navigation workflow.
 | Replace the volume-up + side button gesture | ❌ | Not possible without a jailbreak |
 | Draw a crop box directly over another app | ❌ | Same |
 | Silently intercept every screenshot | ❌ | Same |
-| Control Center modules | ⚠️ | Shortcuts + Back Tap / Action Button instead |
+| Control Center / Lock Screen / Action Button | ⚠️ | iOS 18+ Float Latest Screenshot control implemented; native launch tested, physical PiP check pending |
 
 ## One-gesture capture
+
+For immediate floating, open **Settings → Set up fast floating** in Cod and add
+the signed **Screenshot and Float with Cod** Shortcut, then assign it to Back
+Tap. For the optional crop-first personal workflow, use the steps below.
 
 The closest thing to Snapper's activation gesture:
 

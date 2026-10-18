@@ -1,5 +1,10 @@
 # Cod: fewest-tap routes from an image to a floating PiP window — research (Oct 15, 2026, ~6 PM PDT)
 
+Implementation follow-up (October 18): routes 2–5 now have implementations and
+signed Shortcut installers. See [current setup and runtime verification](float-entry-points.md).
+The original research below describes the earlier repository snapshot; its
+review-risk statements are not App Store approval.
+
 Scope: read-only research for josh. Nothing posted, bought or changed. Code facts come from the read-only copy of github.com/Triwix/Cod at files/apple-forum/cod-src (commit 1764945). Every claim has a URL; anything I could not verify is marked **unverified**. "Taps" count what the user does after the image is on screen (share-sheet scrolling not counted; a swipe counts as a gesture, noted separately).
 
 ## TL;DR ranking (fewest taps × most likely to pass review)

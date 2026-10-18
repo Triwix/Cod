@@ -194,8 +194,7 @@ struct RootView: View {
         .onChange(of: inbox.pendingFloatImage) { _, image in
             guard let image else { return }
             inbox.pendingFloatImage = nil
-            coordinator.prioritizeExplicitInput()
-            coordinator.floatImmediately(image: image, minimalUI: true)
+            coordinator.receiveFloatIntentImage(image)
         }
         .onChange(of: inbox.wantsLatestScreenshot) { _, wants in
             guard wants else { return }
@@ -250,9 +249,8 @@ struct RootView: View {
             // Cold launch from a Shortcut: the intent may have landed before
             // this view existed.
             if let image = inbox.pendingFloatImage {
-                coordinator.prioritizeExplicitInput()
                 inbox.pendingFloatImage = nil
-                coordinator.floatImmediately(image: image, minimalUI: true)
+                coordinator.receiveFloatIntentImage(image)
             } else if inbox.wantsFloatLatest {
                 coordinator.prioritizeExplicitInput()
                 inbox.wantsFloatLatest = false

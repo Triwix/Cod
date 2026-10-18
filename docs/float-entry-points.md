@@ -1,7 +1,8 @@
-# Fast floating entry points — October 15, 2026
+# Fast floating entry points — October 18, 2026
 
-Build 3 adds optional entry points; it does not replace the working fast share
-flow or silently install Shortcuts/change Back Tap settings.
+Build 4 packages signed Shortcut installers for the optional entry points added
+in build 3. It does not replace the working fast share flow or silently install
+Shortcuts/change Back Tap settings.
 
 ## Implemented
 
@@ -35,7 +36,7 @@ shows an error and keeps the image for explicit retry in Cod. No silent fallback
 to an unsupported app launch, no remote push server, sound, image attachment,
 clipboard transport, or time-sensitive privilege is used.
 
-## Shortcut packaging gate
+## Signed Shortcut packaging
 
 `Tools/MakeFloatShortcuts.swift` generates the two workflows for the store/test
 bundle ID and the separate personal bundle ID. The App Intent descriptor and
@@ -43,14 +44,21 @@ input binding are based on a workflow created using the real iOS 26.5 Shortcuts
 editor, not a guessed action identifier. The editor also confirmed that
 long-pressing the Image parameter exposes Shortcut Input.
 
-Easy installation requires Apple-signed `.shortcut` files in
-`Cod/Resources/Shortcuts/{Store,Personal}`. Signing sends workflow definitions
-(including bundle/team identifiers, but no images, credentials or contact data)
-to Apple's service. Security review blocked that upload pending explicit user
-approval. Do not bypass it, publish an iCloud shortcut link, or claim the
-installers are complete before approval and successful import testing. The app
-shows truthful manual setup when signed files are absent. The simulator's own
-file exporter additionally requires an iCloud sign-in; no sign-in was attempted.
+All four Apple-signed `.shortcut` files are bundled in
+`Cod/Resources/Shortcuts/{Store,Personal}`. The user approved sending these
+definitions to Apple's signing service on October 18. They include bundle/team
+identifiers, but no images, clipboard, credentials or contact data. Host signing
+with `shortcuts sign --mode anyone` succeeded without signing the simulator into
+iCloud or publishing an iCloud link. The in-app guide offers Add Shortcut
+buttons; the user chooses Shortcuts and approves installation. They still assign
+Back Tap themselves in Settings. The guide retains manual instructions only as
+a fallback when files are absent.
+
+iOS 26.5 shows an initial **Allow [Shortcut] to share [item] with Cod Test?**
+dialog. This is a system data-sharing permission, not a manual Open Cod step or
+file picker. Allow Once repeats it on subsequent runs; Always Allow is the
+user's option for avoiding repeated prompts. Tests use Allow Once and never
+grant persistent access on the user's behalf.
 
 ## Correctness and privacy
 
@@ -71,25 +79,48 @@ file exporter additionally requires an iCloud sign-in; no sign-in was attempted.
 
 ## Verification
 
-- FastDebug: **64 unit tests passed**, including supplied-image pixel identity,
+- Build 4 FastDebug: **66 unit tests passed**, including signed installer
+  bundling, explicit Float ignoring the crop preference, supplied-image pixel identity,
   control intent delivery/authentication, notification payload validation,
   expired/failed explicit claims, stale-ID isolation, and independent crop/
   notification preference persistence.
-- Documented-only Debug: the same **64 tests passed** without compiling the
+- Build 4 documented-only Debug: the same **66 tests passed** without compiling the
   direct-share app-opening workaround.
 - Native warm Share → notification → tap → containing app **passed** in the
   iOS 26.5 simulator; the app received the actual 300×200 fixture.
-- **10 native UI tests passed**, including real control-gallery registration,
+- Build 4: **12 native UI tests passed**, including real control-gallery registration,
   warm/cold notification taps with the correct image, crop-first notification
-  handoff without a second crop, and all six prior fast-share scenarios.
-  The expanded control test also passed: add the control, tap it in Control
+  handoff without a second crop, all six prior fast-share scenarios, and the two
+  signed Shortcut tests below. The control test passed: add the control, tap it in Control
   Center, and verify that Cod enters the foreground. This test does not claim
   actual PiP support in the simulator or grant Photos access for the user.
 - Default Debug, PersonalDebug and signed FastRelease device builds succeeded.
 - Artifact scans include all three bundles (app, Share, Controls); the strict
   and fast-candidate scans passed, with no App Review approval implied.
+- Native build 4 imports reached Apple's Add Shortcut interface for both signed
+  workflows. Run testing found and fixed a capture-template error: the screenshot
+  workflow must not use Stop and Respond for missing external input, because it
+  produces its own image. Share input remains explicitly required.
+- Both new native Shortcut tests passed unattended: signed import through the
+  app's installer, native image-sharing permission (Allow Once), cold launch
+  with the 300×200 shared fixture, replacement with the 148×92 second fixture,
+  and a fresh screenshot delivered at 942×2048. No file picker or manual app
+  activation was used. Actual PiP remains unavailable in the simulator.
+  Installer UI tests are simulator-only and never replace phone Shortcuts.
 - Actual PiP and Back Tap/Action Button hardware need a physical iPhone check.
-  No new build was installed on the user's phone during this sweep.
+
+## Physical acceptance still required
+
+On the new iPhone, verify the actual image remains visible in PiP after leaving
+Cod, repeat with a different image, and try each chosen entry point. Control
+Center needs a screenshot already saved to Photos and permission to see it;
+the capture Shortcut uses its own new screenshot instead. Assigning Back Tap,
+Lock Screen, or Action Button remains a user-controlled setup step.
+
+Build 4's signed iPhone artifact is built. Installation on the newly paired
+iPhone 16 Pro Max is pending Developer Mode; device-specific preparation
+reported that it was disabled. No installation or physical PiP pass for this
+build is claimed. The original Cod identity remains untouched.
 
 Apple reference: [Creating controls](https://developer.apple.com/documentation/widgetkit/creating-controls-to-perform-actions-across-the-system).
 The [extension notification discussion](https://developer.apple.com/forums/thread/764570)

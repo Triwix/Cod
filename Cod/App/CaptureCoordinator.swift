@@ -100,6 +100,15 @@ final class CaptureCoordinator: ObservableObject {
         }
     }
 
+    /// Explicit Float actions never consult the crop preference or substitute
+    /// the latest library photo. Record actual receipt for native handoff QA.
+    func receiveFloatIntentImage(_ image: UIImage) {
+        prioritizeExplicitInput()
+        lastExternalImageSize = image.pixelSize
+        CodDiagnosticLog.record("float intent received \(Int(image.pixelSize.width))x\(Int(image.pixelSize.height))")
+        floatImmediately(image: image, minimalUI: true, reusePreparedPlayback: false)
+    }
+
     @discardableResult
     func receiveQuickShare(retry: Bool = false, expectedID: UUID? = nil, fromNotification: Bool = false) -> Bool {
         guard !isWorking, !pip.status.isBusy else { return false }

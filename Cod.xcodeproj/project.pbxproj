@@ -69,6 +69,7 @@
 		B21B587A0AC24F189222D745 /* ShortcutInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4318747BC57965A26187F1F3 /* ShortcutInstaller.swift */; };
 		B334299C114CD8E46DFD7DE8 /* FloatEntryPointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */; };
 		B80E44B41B259E1C13D3B071 /* PhotoLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94358DCA24F7BED0795149FC /* PhotoLibraryService.swift */; };
+		BD5991802F816B7BCE209B49 /* ShortcutFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBCDF0688B74FC33A7FAD71F /* ShortcutFlowTests.swift */; };
 		C209F5A0B7C9855C907BD405 /* SnapStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6366B822B82C56FED4800146 /* SnapStore.swift */; };
 		C53E2ABD87884E857F938AC2 /* PinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5ED009F49D7F4916595F05C /* PinManager.swift */; };
 		C7C30C2E1FB90E636395DA45 /* QuickFloatLaunchRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919BF7B4F37E572AA582B91 /* QuickFloatLaunchRoute.swift */; };
@@ -214,6 +215,7 @@
 		C4FAC67581B2199C1A31CD11 /* FloatingClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingClip.swift; sourceTree = "<group>"; };
 		C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlLaunchTests.swift; sourceTree = "<group>"; };
 		C7A2A193101E7AA0421BB825 /* QuickFloatHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickFloatHandoff.swift; sourceTree = "<group>"; };
+		CBCDF0688B74FC33A7FAD71F /* ShortcutFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutFlowTests.swift; sourceTree = "<group>"; };
 		CEAF28A0F446BE8EBC685D86 /* CodControls.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CodControls.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3205D012BEC1EB67CED854E /* SharedImageInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedImageInbox.swift; sourceTree = "<group>"; };
 		DAB33ADB8430128051E65D6D /* CodIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodIntents.swift; sourceTree = "<group>"; };
@@ -400,6 +402,7 @@
 				C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */,
 				4445D542689FC73C1837BAB3 /* LaunchFlowTests.swift */,
 				A059949EED8FA17AC8D8C4A2 /* NotificationFlowTests.swift */,
+				CBCDF0688B74FC33A7FAD71F /* ShortcutFlowTests.swift */,
 			);
 			path = CodLaunchUITests;
 			sourceTree = "<group>";
@@ -832,6 +835,7 @@
 				D1E2792A86CE545BE458FB5A /* ControlLaunchTests.swift in Sources */,
 				E7E597DF9DFE676248D01A78 /* LaunchFlowTests.swift in Sources */,
 				ED1EEE5E54FFF3EBF0B37DA7 /* NotificationFlowTests.swift in Sources */,
+				BD5991802F816B7BCE209B49 /* ShortcutFlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1209,7 +1213,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1302,7 +1306,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1430,7 +1434,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "responder-chain";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1709,7 +1713,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1862,7 +1866,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "responder-chain";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1934,7 +1938,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2022,7 +2026,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

@@ -66,7 +66,7 @@ struct OneTapFloatGuide: View {
             } header: {
                 Label("Back Tap", systemImage: "iphone.gen3")
             } footer: {
-                Text("One-time setup is required by iOS. This Shortcut takes a new screenshot and passes that exact image to Cod; it doesn't search your photo library or read the clipboard. Wait for PiP, then switch apps yourself. If Shortcuts isn't offered for the file, save it to Files and open it there.")
+                Text("One-time setup is required by iOS. This Shortcut takes a new screenshot and passes that exact image to Cod; it doesn't search your photo library or read the clipboard. iOS may ask permission to share the image with Cod: Always Allow avoids repeating that prompt; Allow Once asks again next time. Wait for PiP, then switch apps yourself. If Shortcuts isn't offered for the file, save it to Files and open it there.")
             }
 
             Section {
@@ -77,11 +77,11 @@ struct OneTapFloatGuide: View {
                     step(1, "In **Shortcuts**, create **Float with Cod**, add **Float With Cod**, then enable **Show in Share Sheet** in Details. Accept only **Images**; long-press the action's Image field and choose **Shortcut Input**")
                 }
                 step(2, "In Photos, tap **Share**, scroll to the action list, then **Float with Cod**")
-                step(3, "Allow any first-run Shortcuts confirmation; Cod receives the image and starts floating")
+                step(3, "When iOS asks to share the image with Cod, choose **Always Allow** if you want future runs without that prompt")
             } header: {
                 Label("Share → Float with Cod", systemImage: "square.and.arrow.up")
             } footer: {
-                Text("The installed Shortcut already enables Show in Share Sheet, accepts Images, and connects Float With Cod's Image field to Shortcut Input. It appears in the action list, not the row of app icons. First-run permission prompts are controlled by iOS. If you build it manually, long-press Image and choose Shortcut Input—don't choose a file.")
+                Text("The installed Shortcut already enables Show in Share Sheet, accepts Images, and connects Float With Cod's Image field to Shortcut Input. It appears in the action list, not the row of app icons. First-run permission prompts are controlled by iOS; Allow Once repeats the prompt on the next run. After permission, Cod opens and starts floating. If you build it manually, long-press Image and choose Shortcut Input—don't choose a file.")
             }
 
             #if !COD_PERSONAL

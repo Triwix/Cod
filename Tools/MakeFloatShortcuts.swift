@@ -38,7 +38,7 @@ let templates: [(String, [[String: Any]], Bool)] = [
     ], false),
 ]
 for (name, actions, shareSheet) in templates {
-    let workflow: [String: Any] = [
+    var workflow: [String: Any] = [
         "WFWorkflowName": name,
         "WFWorkflowClientVersion": "4610",
         "WFWorkflowMinimumClientVersion": 1113,
@@ -49,8 +49,12 @@ for (name, actions, shareSheet) in templates {
         "WFWorkflowInputContentItemClasses": shareSheet ? ["WFImageContentItem"] : [],
         "WFWorkflowOutputContentItemClasses": [],
         "WFWorkflowImportQuestions": [],
-        "WFWorkflowNoInputBehavior": ["Name": "WFWorkflowNoInputBehaviorShowError", "Parameters": [:]],
     ]
+    // A capture Shortcut intentionally starts without external input. Applying
+    // Stop and Respond to it cancels before Take Screenshot can even run.
+    if shareSheet {
+        workflow["WFWorkflowNoInputBehavior"] = ["Name": "WFWorkflowNoInputBehaviorShowError", "Parameters": [:]]
+    }
     let data = try PropertyListSerialization.data(fromPropertyList: workflow, format: .xml, options: 0)
     let url = output.appendingPathComponent(name).appendingPathExtension("shortcut")
     try data.write(to: url, options: .atomic)

@@ -1,5 +1,10 @@
 # Image-floating MVP reliability
 
+October 18, build 4: system controls, notification handoff, and signed Back Tap /
+Share-sheet Shortcut installers are implemented. Both native Shortcut import
+and actual-image handoff tests pass in the simulator; physical PiP acceptance
+for these new routes remains open. See [entry-point verification](docs/float-entry-points.md).
+
 October 15 fast-share candidate: [FAST_SHARE.md](FAST_SHARE.md). The product
 acceptance target remains Share → Cod → PiP, not the manual-open fallback.
 Fast launch is separated from private source-app return and PiP control hiding;
