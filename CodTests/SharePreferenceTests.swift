@@ -3,6 +3,25 @@ import XCTest
 @testable import Cod
 
 final class SharePreferenceTests: XCTestCase {
+    func testDismissingSetupTipPersistsWithoutClaimingShortcutInstallation() {
+        let suite = "Cod.SetupTip.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = AppSettings(defaults: defaults, sharePreferences: MemorySharePreferenceStore())
+        XCTAssertFalse(settings.hasDismissedFloatSetupTip)
+        settings.hasDismissedFloatSetupTip = true
+        XCTAssertTrue(AppSettings(defaults: defaults, sharePreferences: MemorySharePreferenceStore()).hasDismissedFloatSetupTip)
+        XCTAssertFalse(settings.oneTapFloat, "Dismissing a tip must not change cropping")
+        XCTAssertFalse(settings.useFloatNotification)
+    }
+
+    func testHistoryReductionCountsOnlyTheImagesThatWouldBeRemoved() {
+        XCTAssertEqual(HistoryRetentionPolicy.removalCount(total: 12, limit: .ten), 2)
+        XCTAssertEqual(HistoryRetentionPolicy.removalCount(total: 12, limit: .off), 12)
+        XCTAssertEqual(HistoryRetentionPolicy.removalCount(total: 12, limit: .twenty), 0)
+        XCTAssertEqual(HistoryRetentionPolicy.removalCount(total: 12, limit: .unlimited), 0)
+        XCTAssertEqual(HistoryRetentionPolicy.removalCount(total: 0, limit: .off), 0)
+    }
     func testDedicatedAlbumDefaultsOffWithoutOverwritingAnExplicitChoice() {
         let suite = "Cod.DedicatedAlbumDefault.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

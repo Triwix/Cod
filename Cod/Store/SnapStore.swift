@@ -22,6 +22,7 @@ final class SnapStore: ObservableObject {
         indexURL = root.appendingPathComponent("index.json")
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
         imageCache.totalCostLimit = 64 * 1024 * 1024
+        imageCache.countLimit = 24
         load()
     }
 
@@ -39,8 +40,20 @@ final class SnapStore: ObservableObject {
         if let hit = imageCache.object(forKey: filename as NSString) { return hit }
         let url = root.appendingPathComponent(filename)
         guard let data = try? Data(contentsOf: url), let image = UIImage(data: data) else { return nil }
-        imageCache.setObject(image, forKey: filename as NSString, cost: data.count)
+        imageCache.setObject(image, forKey: filename as NSString, cost: Self.decodedMemoryCost(image))
         return image
+    }
+
+    /// PNG/JPEG byte counts can be tiny for a large screenshot. Account for
+    /// decoded pixels, including newly saved images, rather than compressed data.
+    static func decodedMemoryCost(_ image: UIImage) -> Int {
+        if let bitmap = image.cgImage {
+            let (bytes, overflow) = bitmap.bytesPerRow.multipliedReportingOverflow(by: bitmap.height)
+            return overflow ? Int.max : max(1, bytes)
+        }
+        let bytes = Double(image.size.width) * Double(image.size.height) * pow(Double(image.scale), 2) * 4
+        guard bytes.isFinite, bytes >= 0, bytes < Double(Int.max) else { return Int.max }
+        return max(1, Int(bytes.rounded(.up)))
     }
 
     // MARK: - Writing
@@ -80,22 +93,9 @@ final class SnapStore: ObservableObject {
         persistIndex()
     }
 
-    func setBarcodes(_ payloads: [String], for snapID: Snap.ID) {
-        guard let index = snaps.firstIndex(where: { $0.id == snapID }) else { return }
-        snaps[index].barcodes = payloads
-        persistIndex()
-    }
-
     func delete(_ snap: Snap) {
         snaps.removeAll { $0.id == snap.id }
         removeFiles(for: snap)
-        persistIndex()
-    }
-
-    func delete(ids: Set<Snap.ID>) {
-        let doomed = snaps.filter { ids.contains($0.id) }
-        snaps.removeAll { ids.contains($0.id) }
-        doomed.forEach(removeFiles(for:))
         persistIndex()
     }
 
@@ -134,9 +134,9 @@ final class SnapStore: ObservableObject {
     // MARK: - Persistence
 
     private func write(image: UIImage, for snap: Snap) {
-        imageCache.setObject(image, forKey: snap.imageFilename as NSString)
+        imageCache.setObject(image, forKey: snap.imageFilename as NSString, cost: Self.decodedMemoryCost(image))
         let thumb = image.fitted(within: CGSize(width: 400, height: 400))
-        imageCache.setObject(thumb, forKey: snap.thumbnailFilename as NSString)
+        imageCache.setObject(thumb, forKey: snap.thumbnailFilename as NSString, cost: Self.decodedMemoryCost(thumb))
 
         let imageURL = root.appendingPathComponent(snap.imageFilename)
         let thumbURL = root.appendingPathComponent(snap.thumbnailFilename)

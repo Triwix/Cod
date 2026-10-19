@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct Toast: Equatable, Identifiable {
     enum Kind: Equatable {
@@ -56,15 +57,16 @@ struct ToastView: View {
                     Text(detail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 11)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.primary.opacity(0.08), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.22), radius: 14, y: 5)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -75,10 +77,14 @@ extension View {
             if let current = toast.wrappedValue {
                 ToastView(toast: current)
                     .padding(.top, 8)
+                    .padding(.horizontal, 12)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .id(current.id)
                     .task(id: current.id) {
-                        try? await Task.sleep(nanoseconds: 2_400_000_000)
+                        UIAccessibility.post(notification: .announcement, argument: [current.title, current.detail].compactMap { $0 }.joined(separator: ". "))
+                        try? await Task.sleep(nanoseconds: current.kind == .failure ? 6_000_000_000 : 3_000_000_000)
+                        // A cancelled old toast must never dismiss a newer one.
+                        guard !Task.isCancelled, toast.wrappedValue?.id == current.id else { return }
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                             toast.wrappedValue = nil
                         }

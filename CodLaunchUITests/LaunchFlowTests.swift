@@ -6,7 +6,7 @@ final class LaunchFlowTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        cod.launchArguments = ["--launch-ui-test"]
+        cod.launchArguments = ["--launch-ui-test", "-autoCopyOnCapture", "NO"]
         cod.launch() // Seed UI-test arguments, then background it.
         setOneTapFloat(true)
         lab = XCUIApplication()
@@ -47,7 +47,7 @@ final class LaunchFlowTests: XCTestCase {
 
     func testSettingsExplainThatTheActionBarOnlyAppliesInsideCod() {
         cod.launch()
-        let settingsTab = cod.tabBars.buttons["Settings"]
+        let settingsTab = tab("Settings")
         expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: settingsTab)
         waitForExpectations(timeout: 5)
         settingsTab.tap()
@@ -82,11 +82,90 @@ final class LaunchFlowTests: XCTestCase {
     }
 
 
+    func testHistoryDeletionRequiresConfirmationAndCancelKeepsImages() {
+        cod.launch()
+        setOneTapFloat(false)
+        lab.launch()
+        lab.buttons["Share Test Image"].tap()
+        selectCod()
+        waitForShareToFinish()
+        cod.activate()
+        XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8), cod.debugDescription)
+        cod.buttons["Pin"].tap() // Real fixture ingestion, no clipboard read/write.
+        cod.buttons["cancel-selection"].tap()
+        tab("Settings").tap()
+        let clear = cod.buttons["clear-history"]
+        for _ in 0..<8 where !clear.isHittable { cod.swipeUp() }
+        XCTAssertTrue(clear.isHittable)
+        XCTAssertTrue(clear.isEnabled)
+        clear.tap()
+        XCTAssertTrue(cod.staticTexts["Clear saved history?"].waitForExistence(timeout: 5))
+        dismissConfirmation(titled: "Clear saved history?")
+
+        let limit = cod.buttons["history-limit"]
+        for _ in 0..<3 where !limit.isHittable { cod.swipeDown() }
+        limit.tap()
+        cod.buttons["Off"].tap()
+        XCTAssertTrue(cod.staticTexts["Remove older saved images?"].waitForExistence(timeout: 5))
+        dismissConfirmation(titled: "Remove older saved images?")
+
+        // Remove only the disposable in-app pin so it can't cover a thumbnail.
+        let closePin = cod.buttons["Close pin"]
+        closePin.tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: closePin)
+        waitForExpectations(timeout: 5)
+        XCTAssertFalse(cod.staticTexts["Clear saved history?"].exists, "Closing a pin must not tap through to the underlying setting")
+        let library = tab("Library")
+        if !library.isHittable {
+            print("AFTER HISTORY CANCEL: \(cod.debugDescription)")
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "History after cancellation"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+        }
+        expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: library)
+        waitForExpectations(timeout: 5)
+        library.tap()
+        let saved = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Saved '")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 5), cod.debugDescription)
+        saved.tap()
+        let floatImage = cod.buttons["Float Image"]
+        XCTAssertTrue(floatImage.waitForExistence(timeout: 5))
+        floatImage.tap()
+        // Simulator PiP is unavailable, but the Library handoff and dismissal
+        // must still reach the launch UI without leaving its detail sheet up.
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: floatImage)
+        waitForExpectations(timeout: 5)
+        if cod.buttons["Back to Cod"].exists { cod.buttons["Back to Cod"].tap() }
+        cod.launch()
+        setOneTapFloat(true)
+    }
+
+    private func dismissConfirmation(titled title: String) {
+        let cancel = cod.sheets.buttons["Cancel"]
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            // Popover-style confirmation dialogs omit Cancel. Dismiss outside
+            // the popover; an unrelated pin can also have a Close button.
+            let outside = cod.otherElements["PopoverDismissRegion"]
+            XCTAssertTrue(outside.exists)
+            outside.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        }
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: cod.staticTexts[title])
+        waitForExpectations(timeout: 5)
+    }
+
     private func setOneTapFloat(_ enabled: Bool) {
-        let settings = cod.tabBars.buttons["Settings"]
+        let settings = tab("Settings")
+        if !settings.isHittable { print("TAB NAVIGATION STATE: \(cod.debugDescription)") }
         expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: settings)
         waitForExpectations(timeout: 5)
         settings.tap()
+        let notification = cod.switches["Tap notification to float"]
+        if notification.waitForExistence(timeout: 5), notification.value as? String == "1" {
+            notification.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        }
         let toggle = cod.switches["One tap float"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         if (toggle.value as? String == "1") != enabled {
@@ -96,7 +175,15 @@ final class LaunchFlowTests: XCTestCase {
         }
         expectation(for: NSPredicate(format: "value == %@", enabled ? "1" : "0"), evaluatedWith: toggle)
         waitForExpectations(timeout: 5)
-        cod.tabBars.buttons["Capture"].tap()
+        tab("Float").tap()
+    }
+
+    private func tab(_ title: String) -> XCUIElement {
+        let bottomTab = cod.tabBars.buttons[title]
+        // Modern iPadOS exposes top tabs outside the bottom TabBar hierarchy.
+        if bottomTab.exists { return bottomTab }
+        let matches = cod.buttons.matching(NSPredicate(format: "label == %@", title))
+        return matches.allElementsBoundByIndex.first(where: { $0.isHittable }) ?? matches.firstMatch
     }
 
     private func selectCod() {
@@ -113,7 +200,14 @@ final class LaunchFlowTests: XCTestCase {
     private func waitForShareToFinish() {
         // A background button still "exists" behind an extension. Require
         // the system's presented sheet to have actually disappeared.
-        let completed = NSPredicate { _, _ in self.lab.sheets.count == 0 }
+        let sharingUI = XCUIApplication(bundleIdentifier: "com.apple.SharingUIService")
+        let completed = NSPredicate { _, _ in
+            self.lab.sheets.count == 0 && sharingUI.state != .runningForeground
+                && self.lab.buttons["Share Test Image"].isHittable
+                && !self.lab.staticTexts["Loading image…"].exists
+                && !self.lab.staticTexts["Preparing image…"].exists
+                && !self.lab.buttons["cancel-selection"].exists
+        }
         expectation(for: completed, evaluatedWith: nil)
         waitForExpectations(timeout: 12)
         XCTAssertFalse(lab.buttons["Try Again"].exists, "Import should succeed without a retry")

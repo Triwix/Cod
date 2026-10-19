@@ -10,6 +10,17 @@ check_mode="${2:-}"
     print -u2 'Only the documented-only audit is available; optional flag: --submission.'
     exit 1
 }
+package_info="$app_path/Shortcuts/Store/InstallerInfo.plist"
+package_bundle=$(/usr/libexec/PlistBuddy -c 'Print :BundleIdentifier' "$package_info")
+package_team=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier' "$package_info")
+app_team=$(/usr/libexec/PlistBuddy -c 'Print :CodShortcutTeamIdentifier' "$app_path/Info.plist")
+[[ "$package_bundle" == com.josh.cod.store && -n "$app_team" && "$package_team" == "$app_team" ]] || {
+    print -u2 'Shortcut installers do not match this app/team. Regenerate and sign them before shipping.'
+    exit 1
+}
+for workflow in 'Float with Cod' 'Screenshot and Float with Cod'; do
+    [[ -s "$app_path/Shortcuts/Store/$workflow.shortcut" ]] || { print -u2 "Missing Shortcut installer: $workflow"; exit 1; }
+done
 private_patterns='LSApplicationWorkspace|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle:|controlsStyle|ShareSourceContext|SourceAppReturn|BSProcessHandle|_FBSScene|SSEnvironmentDescription|com\.josh\.cod\.float-image|openThroughResponderChain|responder-chain|api\.imgur\.com'
 
 for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.appex"; do
@@ -36,6 +47,10 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             print -u2 "Simulator launch-probe code found in $bundle_id"
             exit 1
         fi
+        if /usr/bin/strings "$binary_path" | rg 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup'; then
+            print -u2 "Debug-only UI testing code found in $bundle_id. Audit a Release build."
+            exit 1
+        fi
         if /usr/bin/strings "$binary_path" | rg 'FastShareAppLauncher|FastShareLaunchAttempt'; then
             print -u2 "Fast-share workaround unexpectedly present in $bundle_id"
             exit 1
@@ -52,6 +67,8 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
 done
 
 if [[ "${2:-}" == --submission ]]; then
+    display_name=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$app_path/Info.plist")
+    [[ "$display_name" == Cod ]] || { print -u2 'Do not submit the Cod Test display name.'; exit 1; }
     policy_url=$(/usr/libexec/PlistBuddy -c 'Print :CodPrivacyPolicyURL' "$app_path/Info.plist")
     [[ "$policy_url" == https://* && "$policy_url" != *'$('* ]] || {
         print -u2 'A real hosted HTTPS privacy policy must be configured before submission.'

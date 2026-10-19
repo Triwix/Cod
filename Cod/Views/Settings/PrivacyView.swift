@@ -15,6 +15,7 @@ struct PrivacyView: View {
                 Text("The photo picker lets you choose an image without giving Cod access to your whole library. Reading the latest screenshot requires Photos permission. Saving to Photos asks for permission when needed.")
                 Text("Cod reads the clipboard only when you tap Paste, and writes when you choose a copy action. The Share extension doesn't use your clipboard to transfer images.")
                 Text("Share, opening a scanned link, and the system Translate interface are explicit actions. The destination app, website or Apple service handles that data under its own policies.")
+                Text("Optional Shortcuts use the image you share or a screenshot you explicitly trigger. You approve installing them in Shortcuts. Optional local float notifications contain only a request identifier, with no image preview.")
             }
             if let policyURL {
                 Section {

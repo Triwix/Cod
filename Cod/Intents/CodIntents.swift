@@ -110,7 +110,8 @@ struct FloatWithCodIntent: AppIntent {
     /// a shortcut didn't wire its input through, and the fallback grabbed the
     /// newest thing in the photo library — which looks exactly like the app
     /// floating a random photo. Required means Shortcuts fills it with the
-    /// share-sheet input automatically, and complains if it can't.
+    /// input only when the workflow connects it. Show in Share Sheet alone
+    /// doesn't wire this field; the bundled installer supplies that binding.
     @Parameter(
         title: "Image",
         supportedTypeIdentifiers: ["public.image"],
@@ -124,7 +125,9 @@ struct FloatWithCodIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        CodDiagnosticLog.record("float intent started bytes=\(image.data.count)")
         guard let decoded = UIImage.decodedImage(data: image.data) else {
+            CodDiagnosticLog.record("float intent couldn't decode supplied image")
             throw $image.needsValueError("Cod couldn't read that as an image.")
         }
         IntentInbox.shared.deliverForFloat(decoded)

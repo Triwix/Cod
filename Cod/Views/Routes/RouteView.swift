@@ -8,7 +8,6 @@ struct RouteView: View {
     let route: CaptureCoordinator.Route
 
     @EnvironmentObject private var coordinator: CaptureCoordinator
-    @EnvironmentObject private var settings: AppSettings
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -20,9 +19,6 @@ struct RouteView: View {
         case let .barcodes(hits):
             BarcodeResultsView(hits: hits)
 
-        case let .text(text):
-            TextResultView(title: "Recognized Text", text: text)
-
         case let .translate(text):
             TranslateResultView(text: text)
 
@@ -33,8 +29,6 @@ struct RouteView: View {
                 dismiss()
             }
 
-        case .confirmUpload:
-            Text("Uploads aren't included in this version.")
         }
     }
 }
@@ -71,39 +65,6 @@ struct BarcodeResultsView: View {
             .navigationTitle(hits.count == 1 ? "1 Code" : "\(hits.count) Codes")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
-}
-
-// MARK: - Text
-
-struct TextResultView: View {
-    let title: String
-    let text: String
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                Text(text)
-                    .font(.callout)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        UIPasteboard.general.string = text
-                        Haptics.success()
-                    } label: { Image(systemName: "doc.on.doc") }
-                }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
             }
         }

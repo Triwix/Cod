@@ -13,15 +13,18 @@ configs:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "7"
     DEVELOPMENT_TEAM: UE492DNA6V
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_EMIT_LOC_STRINGS: YES
     COD_PRIVACY_POLICY_URL: ""
-    COD_DISPLAY_NAME: Cod Test
+    COD_DISPLAY_NAME: Cod
     COD_SHARE_LAUNCH_POLICY: manual-open
+  configs:
+    Debug:
+      COD_DISPLAY_NAME: Cod Test
 
 targets:
   Cod:
@@ -83,10 +86,9 @@ targets:
       - path: Cod/Recognition
       - path: Cod/Support
       - path: Cod/Views/Selection
-      - path: Cod/Views/Components
+      - path: Cod/Views/Components/ActionBar.swift
       - path: Cod/Store/AppSettings.swift
       - path: Cod/Capture/ImageProcessing.swift
-      - path: Cod/Capture/PhotoLibraryService.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store.share

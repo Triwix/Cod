@@ -4,6 +4,8 @@
 <dict>
     <key>CodAppGroup</key>
     <string>$(COD_APP_GROUP)</string>
+    <key>CodShortcutTeamIdentifier</key>
+    <string>$(DEVELOPMENT_TEAM)</string>
     <key>CodFloatURLScheme</key>
     <string>$(COD_URL_SCHEME)</string>
     <key>CodShareLaunchPolicy</key>

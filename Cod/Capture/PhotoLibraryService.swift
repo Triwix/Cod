@@ -10,12 +10,14 @@ enum PhotoLibraryService {
     enum ServiceError: LocalizedError {
         case denied
         case noScreenshots
+        case imageUnavailable
         case saveFailed(String)
 
         var errorDescription: String? {
             switch self {
-            case .denied: return "Cod needs Photos access. Enable it in Settings → Privacy → Photos."
-            case .noScreenshots: return "No screenshots found in your library yet."
+            case .denied: return "Allow Photos access for Cod in iPhone Settings, or use Choose Photo without granting library access."
+            case .noScreenshots: return "No accessible screenshots found. Take a screenshot and let it save to Photos. With Limited Access, include that screenshot in your allowed photos."
+            case .imageUnavailable: return "This screenshot couldn't be loaded. Open it in Photos, let it finish downloading, then try again."
             case let .saveFailed(reason): return reason
             }
         }
@@ -120,7 +122,6 @@ enum PhotoLibraryService {
     struct ScreenshotHit {
         var image: UIImage
         var localIdentifier: String
-        var creationDate: Date?
     }
 
     /// The most recent item in the system Screenshots album.
@@ -155,8 +156,7 @@ enum PhotoLibraryService {
         let image = try await requestImage(for: asset)
         return ScreenshotHit(
             image: image,
-            localIdentifier: asset.localIdentifier,
-            creationDate: asset.creationDate
+            localIdentifier: asset.localIdentifier
         )
     }
 
@@ -182,9 +182,11 @@ enum PhotoLibraryService {
                 if let image {
                     resumed = true
                     continuation.resume(returning: image.normalizedUp())
-                } else if (info?[PHImageErrorKey] as? Error) != nil || (info?[PHImageCancelledKey] as? Bool) == true {
+                } else {
+                    // A final nil result can have no error dictionary. Always
+                    // finish it instead of leaving the UI waiting forever.
                     resumed = true
-                    continuation.resume(throwing: ServiceError.noScreenshots)
+                    continuation.resume(throwing: ServiceError.imageUnavailable)
                 }
             }
         }

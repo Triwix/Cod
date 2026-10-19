@@ -56,6 +56,7 @@ struct ShareRootView: View {
                     .multilineTextAlignment(.center)
                 Button("Try Again", action: onRetry)
                     .buttonStyle(.borderedProminent)
+                    .tint(.codActionBackground).foregroundStyle(.white)
             case .selecting:
                 EmptyView()
             }

@@ -57,6 +57,15 @@ final class SnapStoreTests: XCTestCase {
         XCTAssertTrue(store.snaps.isEmpty)
     }
 
+    func testCacheBudgetCountsDecodedPixelsRatherThanCompressedPNGBytes() throws {
+        let image = testImage()
+        let bitmap = try XCTUnwrap(image.cgImage)
+        let png = try XCTUnwrap(image.pngData())
+        XCTAssertEqual(SnapStore.decodedMemoryCost(image), bitmap.bytesPerRow * bitmap.height)
+        XCTAssertGreaterThan(SnapStore.decodedMemoryCost(image), png.count)
+        XCTAssertEqual(SnapStore.decodedMemoryCost(UIImage()), 1)
+    }
+
     private func testImage() -> UIImage {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1

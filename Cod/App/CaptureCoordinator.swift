@@ -18,10 +18,8 @@ final class CaptureCoordinator: ObservableObject {
         enum Kind {
             case share([Any])
             case barcodes([Recognizer.BarcodeHit])
-            case text(String)
             case translate(String)
             case annotate(UIImage)
-            case confirmUpload(UIImage)
         }
 
         let id = UUID()
@@ -538,7 +536,7 @@ final class CaptureCoordinator: ObservableObject {
             floatOnlyLaunch = false
             toast = .failure(
                 "Not available here",
-                "Floating needs Picture in Picture, which the Simulator doesn't have."
+                "Picture in Picture isn't available here. You can still crop, copy, save, and share images."
             )
 
         case let .failed(message):

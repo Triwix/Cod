@@ -280,6 +280,13 @@ final class PiPPinController: NSObject, ObservableObject {
         teardown()
     }
 
+    /// A prewarmed placeholder is only for foreground preparation. Never keep
+    /// idle playback/audio running in the background without an actual float.
+    func stopIdlePlayback() {
+        guard status == .idle, !isActive else { return }
+        teardown()
+    }
+
     // MARK: - Playback
 
     private func startPlayback(with url: URL) throws {

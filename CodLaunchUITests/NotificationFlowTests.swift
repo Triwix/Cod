@@ -35,7 +35,7 @@ final class NotificationFlowTests: XCTestCase {
         }
         expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: toggle)
         waitForExpectations(timeout: 5)
-        cod.tabBars.buttons["Capture"].tap()
+        cod.tabBars.buttons["Float"].tap()
         if cold { cod.terminate() }
 
         let lab = XCUIApplication()

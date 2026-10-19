@@ -8,6 +8,13 @@ Generate to a temporary directory, then sign using `shortcuts sign --mode anyone
 Signing sends the workflow definition to Apple's service, so obtain approval
 before running it. It contains bundle/team identifiers, not images or user data.
 
+`Store/InstallerInfo.plist` records the exact bundle/team referenced by these
+signed files. The runtime installer and release audit reject a mismatch. After
+Developer Program enrollment, confirm the publishing team: if it changes,
+regenerate with `bundle-id app-name output-directory team-id`, sign both generated
+workflows, and copy their matching InstallerInfo.plist alongside them. Never
+change the identity record alone to disguise a mismatched signed workflow.
+
 The image-sharing workflow accepts only images, enables the Share Sheet, stops
 when input is missing, and wires the Image parameter to Shortcut Input explicitly.
 The Back Tap workflow captures a screenshot and wires that action's output to

@@ -5,6 +5,13 @@ import XCTest
 @testable import Cod
 
 final class FloatEntryPointTests: XCTestCase {
+    func testInstallerIdentityMustMatchTheAppAndSigningTeam() {
+        let identity = ShortcutPackageIdentity(bundleIdentifier: "com.josh.cod.store", teamIdentifier: "UE492DNA6V")
+        XCTAssertTrue(identity.matches(bundleID: "com.josh.cod.store", teamID: "UE492DNA6V"))
+        XCTAssertFalse(identity.matches(bundleID: "com.example.other", teamID: "UE492DNA6V"))
+        XCTAssertFalse(identity.matches(bundleID: "com.josh.cod.store", teamID: "OTHERTEAM"))
+        XCTAssertFalse(identity.matches(bundleID: nil, teamID: nil))
+    }
     func testShortcutInstallersAreBundledAndNotUnsignedPropertyLists() throws {
         for shortcut in FloatShortcut.allCases {
             let url = try XCTUnwrap(shortcut.fileURL, "Missing signed installer: \(shortcut.rawValue)")
@@ -48,7 +55,7 @@ final class FloatEntryPointTests: XCTestCase {
             UIColor.green.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 37, height: 19))
         }
-        var intent = FloatWithCodIntent()
+        let intent = FloatWithCodIntent()
         intent.image = IntentFile(data: try XCTUnwrap(image.pngData()), filename: "shared.png", type: .png)
         defer { IntentInbox.shared.pendingFloatImage = nil }
         _ = try await intent.perform()

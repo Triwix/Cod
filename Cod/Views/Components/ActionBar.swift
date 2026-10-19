@@ -24,13 +24,15 @@ struct ActionBar: View {
                                 )
                                 .foregroundStyle(action.tint)
                             Text(action.title)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.caption2.weight(.medium))
                                 .foregroundStyle(.white.opacity(0.85))
                                 .lineLimit(1)
                         }
-                        .frame(minWidth: 54)
+                        .frame(minWidth: 60, minHeight: 64)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(action.title)
+                    .accessibilityHint(action.subtitle)
                 }
             }
             .padding(.horizontal, 16)

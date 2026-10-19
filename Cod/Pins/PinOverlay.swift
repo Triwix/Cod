@@ -90,11 +90,9 @@ private struct PinCard: View {
                 .opacity(pin.opacity)
 
             closeButton
-                .offset(x: 9, y: -9)
 
             resizeGrip
                 .frame(width: liveWidth, height: liveHeight, alignment: .bottomTrailing)
-                .offset(x: 8, y: 8)
         }
         .frame(width: liveWidth, height: liveHeight)
         .contentShape(RoundedRectangle(cornerRadius: settings.pinCornerRadius, style: .continuous))
@@ -115,9 +113,13 @@ private struct PinCard: View {
                 .frame(width: 22, height: 22)
                 .background(.black.opacity(0.62), in: Circle())
                 .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .opacity(isFocused ? 1 : 0.55)
+        .accessibilityLabel("Close pin")
+        .accessibilityHint("Removes this pin from Cod without deleting its saved history image.")
     }
 
     private var resizeGrip: some View {
@@ -128,7 +130,17 @@ private struct PinCard: View {
             .background(.black.opacity(0.62), in: Circle())
             .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
             .opacity(isFocused ? 1 : 0.55)
-            .contentShape(Circle())
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Resize pin")
+            .accessibilityValue("\(Int(pin.width)) points wide")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: manager.setWidth(pin.width + 24, for: pin.id)
+                case .decrement: manager.setWidth(pin.width - 24, for: pin.id)
+                @unknown default: break
+                }
+            }
             .gesture(
                 DragGesture(minimumDistance: 1)
                     .onChanged { value in

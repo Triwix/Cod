@@ -3,14 +3,16 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: SnapStore
-    @EnvironmentObject private var pip: PiPPinController
     @State private var isEnablingNotifications = false
+    @State private var confirmClearHistory = false
+    @State private var pendingHistoryLimit: HistoryLimit?
 
     var body: some View {
         NavigationStack {
             Form {
-                activationSection
                 shareSheetSection
+                playbackSection
+                activationSection
                 actionsSection
                 recognitionSection
                 historySection
@@ -20,6 +22,38 @@ struct SettingsView: View {
                 aboutSection
             }
             .navigationTitle("Settings")
+            .confirmationDialog(
+                "Clear saved history?", isPresented: $confirmClearHistory, titleVisibility: .visible
+            ) {
+                Button("Clear History", role: .destructive) { store.clear() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(
+                    "This deletes images and recognized text saved in Cod's history. Photos, pinned images and pending shares aren't removed."
+                )
+            }
+            .confirmationDialog(
+                "Remove older saved images?",
+                isPresented: Binding(
+                    get: { pendingHistoryLimit != nil },
+                    set: { if !$0 { pendingHistoryLimit = nil } }
+                ), titleVisibility: .visible
+            ) {
+                if let limit = pendingHistoryLimit {
+                    Button(
+                        "Remove \(HistoryRetentionPolicy.removalCount(total: store.snaps.count, limit: limit)) Images",
+                        role: .destructive
+                    ) {
+                        applyHistoryLimit(limit)
+                        pendingHistoryLimit = nil
+                    }
+                }
+                Button("Cancel", role: .cancel) { pendingHistoryLimit = nil }
+            } message: {
+                Text(
+                    "Reducing the history limit removes older images saved in Cod. Choosing Off removes all saved history. Photos, pins and pending shares aren't removed."
+                )
+            }
         }
     }
 
@@ -27,7 +61,7 @@ struct SettingsView: View {
 
     private var activationSection: some View {
         Section {
-            Picker("When a capture arrives", selection: $settings.arrivalMode) {
+            Picker("When opening a screenshot", selection: $settings.arrivalMode) {
                 ForEach(ArrivalMode.allCases) { mode in
                     Text(mode.label).tag(mode)
                 }
@@ -54,54 +88,86 @@ struct SettingsView: View {
                 Slider(value: $settings.captureDelay, in: 0...2, step: 0.1)
             }
         } header: {
-            Text("Activation")
+            Text("Screenshot Editor")
         } footer: {
-            Text(settings.arrivalMode.detail)
+            Text(
+                "These options apply to Crop Latest Screenshot, not explicit Float Shortcuts. \(settings.arrivalMode.detail)"
+            )
         }
     }
 
     // MARK: - Actions
 
     private var shareSheetSection: some View {
-        Section {
-            Toggle("One tap float", isOn: Binding(
-                get: { settings.oneTapFloat },
-                set: { settings.setOneTapFloat($0) }
-            ))
-            Toggle("Tap notification to float", isOn: Binding(
-                get: { settings.useFloatNotification },
-                set: { enabled in
-                    if !enabled {
-                        settings.setUseFloatNotification(false)
-                        ShareFloatNotifications().remove()
-                    } else {
-                        isEnablingNotifications = true
-                        Task { @MainActor in
-                            defer { isEnablingNotifications = false }
-                            do {
-                                if try await ShareFloatNotifications().requestPermission() {
-                                    settings.setUseFloatNotification(true)
-                                } else {
-                                    settings.sharePreferenceError = "Allow notifications for Cod in iPhone Settings to use this launch option."
-                                }
-                            } catch { settings.sharePreferenceError = error.localizedDescription }
-                        }
-                    }
+        Group {
+            Section {
+                NavigationLink {
+                    OneTapFloatGuide()
+                } label: {
+                    Label("Set up fast floating", systemImage: "bolt")
                 }
-            ))
-            .disabled(isEnablingNotifications)
-            NavigationLink {
-                OneTapFloatGuide()
-            } label: {
-                Label("Set up fast floating", systemImage: "bolt")
+                Toggle(
+                    "One tap float",
+                    isOn: Binding(
+                        get: { settings.oneTapFloat },
+                        set: { settings.setOneTapFloat($0) }
+                    ))
+            } header: {
+                Text("Floating")
+            } footer: {
+                Text(
+                    "Skip cropping for chosen, pasted and shared images. This switch doesn't open Cod automatically. Explicit Float Shortcuts always float their supplied image."
+                )
             }
-            if let error = settings.sharePreferenceError {
-                Text(error).font(.footnote).foregroundStyle(.red)
+            Section {
+                Toggle(
+                    "Tap notification to float",
+                    isOn: Binding(
+                        get: { settings.useFloatNotification },
+                        set: { enabled in
+                            if !enabled {
+                                settings.setUseFloatNotification(false)
+                                ShareFloatNotifications().remove()
+                            } else {
+                                isEnablingNotifications = true
+                                Task { @MainActor in
+                                    defer { isEnablingNotifications = false }
+                                    do {
+                                        if try await ShareFloatNotifications().requestPermission() {
+                                            settings.setUseFloatNotification(true)
+                                        } else {
+                                            settings.sharePreferenceError =
+                                                "Allow notifications for Cod in iPhone Settings to use this launch option."
+                                        }
+                                    } catch { settings.sharePreferenceError = error.localizedDescription }
+                                }
+                            }
+                        }
+                    )
+                )
+                .disabled(isEnablingNotifications)
+                if let error = settings.sharePreferenceError {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                }
+            } header: {
+                Text("Share → Cod App Icon")
+            } footer: {
+                Text(
+                    "Optional fallback: share to Cod, then tap its notification to open the app. Without notifications, open Cod yourself. Focus and banner settings can affect delivery. Use the Float with Cod Shortcut for the faster route."
+                )
             }
+        }
+    }
+
+    private var playbackSection: some View {
+        Section {
+            Toggle("Keep other audio playing", isOn: $settings.keepOtherAudioPlaying)
         } header: {
-            Text("Share Sheet")
+            Text("Picture in Picture")
         } footer: {
-            Text("One tap float skips cropping; it does not open Cod automatically. For the fastest supported photo-sharing route, set up Share → Float with Cod in the guide. Tap notification to float offers a notification you tap to open Cod; Focus and banner settings can affect delivery. Without notifications, open Cod yourself after sharing. Explicit Float Shortcuts aren't changed.")
+            Text(
+                "Switch apps once the image is floating. Cod doesn't change your screen automatically. iOS controls PiP's buttons, size and movement. If PiP stops when you leave Cod, try turning this option off."
+            )
         }
     }
 
@@ -120,7 +186,8 @@ struct SettingsView: View {
         } header: {
             Text("In-App Actions")
         } footer: {
-            Text("Choose actions for Cod's own crop editor. The share-sheet crop screen only offers Float.")
+            Text(
+                "Choose actions for Cod's own crop editor. The share-sheet crop screen only offers Float.")
         }
     }
 
@@ -141,9 +208,12 @@ struct SettingsView: View {
                 HStack {
                     Text("Languages")
                     Spacer()
-                    Text(settings.ocrLanguages.isEmpty ? "Automatic" : settings.ocrLanguages.joined(separator: ", "))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    Text(
+                        settings.ocrLanguages.isEmpty
+                            ? "Automatic" : settings.ocrLanguages.joined(separator: ", ")
+                    )
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 }
             }
 
@@ -159,14 +229,24 @@ struct SettingsView: View {
 
     private var historySection: some View {
         Section {
-            Picker("Keep", selection: $settings.historyLimit) {
+            Picker(
+                "Keep",
+                selection: Binding(
+                    get: { settings.historyLimit },
+                    set: { limit in
+                        if HistoryRetentionPolicy.removalCount(total: store.snaps.count, limit: limit) > 0 {
+                            pendingHistoryLimit = limit
+                        } else {
+                            applyHistoryLimit(limit)
+                        }
+                    }
+                )
+            ) {
                 ForEach(HistoryLimit.allCases) { limit in
                     Text(limit.label).tag(limit)
                 }
             }
-            .onChange(of: settings.historyLimit) { _, newValue in
-                store.trim(to: newValue)
-            }
+            .accessibilityIdentifier("history-limit")
 
             HStack {
                 Text("On disk")
@@ -175,13 +255,21 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Button("Clear History", role: .destructive) { store.clear() }
+            Button("Clear History", role: .destructive) { confirmClearHistory = true }
                 .disabled(store.snaps.isEmpty)
+                .accessibilityIdentifier("clear-history")
         } header: {
             Text("History")
         } footer: {
-            Text("Cod keeps your recent crops so you can reopen, re-crop or re-pin them.")
+            Text(
+                "Saved images stay on this device and may be included in backups. Clearing history or lowering the limit asks before deleting anything. It doesn't remove Photos copies or pending shares."
+            )
         }
+    }
+
+    private func applyHistoryLimit(_ limit: HistoryLimit) {
+        settings.historyLimit = limit
+        store.trim(to: limit)
     }
 
     // MARK: - Pins
@@ -217,11 +305,12 @@ struct SettingsView: View {
                 Slider(value: $settings.pinCornerRadius, in: 0...24, step: 1)
             }
 
-            Toggle("Keep other audio playing", isOn: $settings.keepOtherAudioPlaying)
         } header: {
-            Text("Pins")
+            Text("Pins Inside Cod")
         } footer: {
-            Text("Once Picture in Picture appears, switch apps yourself. Cod does not automatically return to another app. System controls determine PiP's size and movement. Shadow, opacity and corner radius only affect pins inside Cod.")
+            Text(
+                "Shadow, opacity and corner radius affect pins inside Cod only—not the system Picture in Picture window."
+            )
         }
     }
 
@@ -243,7 +332,9 @@ struct SettingsView: View {
         } header: {
             Text("Saving")
         } footer: {
-            Text("Dedicated albums require Full Photos Access. With Limited or Add-Only access, Cod saves to Recents instead.")
+            Text(
+                "Dedicated albums require Full Photos Access. With Limited or Add-Only access, Cod saves to Recents instead."
+            )
         }
     }
 
@@ -257,12 +348,11 @@ struct SettingsView: View {
         } header: {
             Text("Crop Surface")
         } footer: {
-            Text("Block detection outlines paragraphs and cards so you can snap the selection onto one with a single tap.")
+            Text(
+                "Block detection outlines paragraphs and cards so you can snap the selection onto one with a single tap."
+            )
         }
     }
-
-    // MARK: - Integrations
-
 
     // MARK: - About
 
@@ -278,6 +368,11 @@ struct SettingsView: View {
             } label: {
                 Label("Privacy", systemImage: "hand.raised")
             }
+            LabeledContent(
+                "Version",
+                value:
+                    "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))"
+            )
         }
     }
 }
@@ -296,7 +391,9 @@ struct ActionOrderView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(action.tint)
                             .frame(width: 30, height: 30)
-                            .background(action.tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .background(
+                                action.tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            )
 
                         VStack(alignment: .leading, spacing: 1) {
                             Text(action.title).font(.body)
@@ -308,17 +405,21 @@ struct ActionOrderView: View {
 
                         Spacer()
 
-                        Toggle("", isOn: Binding(
-                            get: { settings.enabledActions.contains(action) },
-                            set: { isOn in
-                                if isOn {
-                                    settings.enabledActions.insert(action)
-                                } else {
-                                    settings.enabledActions.remove(action)
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { settings.enabledActions.contains(action) },
+                                set: { isOn in
+                                    if isOn {
+                                        settings.enabledActions.insert(action)
+                                    } else {
+                                        settings.enabledActions.remove(action)
+                                    }
                                 }
-                            }
-                        ))
+                            )
+                        )
                         .labelsHidden()
+                        .accessibilityLabel("Show \(action.title) in action bar")
                     }
                 }
                 .onMove { source, destination in
@@ -369,7 +470,9 @@ struct OCRLanguageView: View {
                     .buttonStyle(.plain)
                 }
             } footer: {
-                Text("Vision tries the selected languages in order. Fewer languages means faster, more accurate recognition.")
+                Text(
+                    "Vision tries the selected languages in order. Fewer languages means faster, more accurate recognition."
+                )
             }
         }
         .navigationTitle("Languages")
@@ -425,9 +528,11 @@ struct CapabilitiesView: View {
             }
 
             Section {
-                Text("Cod uses Picture in Picture for one floating image; only one PiP window can be active at a time. New floating windows start while Cod is open. iOS controls the floating window's appearance and resizing. Cod can't automatically return to an arbitrary source screen using public APIs.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Cod uses Picture in Picture for one floating image; only one PiP window can be active at a time. New floating windows start while Cod is open. iOS controls the floating window's appearance and resizing. Cod can't automatically return to an arbitrary source screen using public APIs."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Capabilities")

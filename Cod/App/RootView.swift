@@ -19,7 +19,7 @@ struct RootView: View {
         ZStack {
             TabView(selection: $selectedTab) {
                 HomeView()
-                    .tabItem { Label("Capture", systemImage: "viewfinder") }
+                    .tabItem { Label("Float", systemImage: "pip.enter") }
                     .tag(0)
 
                 LibraryView()
@@ -144,7 +144,7 @@ struct RootView: View {
             Task { await coordinator.floatLatestScreenshot(minimalUI: true) }
         }
         .task {
-            CodDiagnosticLog.record("app: root ready build=supported-only-6 phase=\(scenePhase)")
+            CodDiagnosticLog.record("app: root ready build=release-polish-7 phase=\(scenePhase)")
             coordinator.refreshSharedImages()
             coordinator.refreshQuickSharePreview()
             if let id = inbox.pendingQuickFloatRequestID {
@@ -189,6 +189,7 @@ struct RootView: View {
             // Coming back to Cod deliberately after a float means the user
             // wants the app, not the confirmation screen.
             if phase == .background {
+                pip.stopIdlePlayback()
                 wasBackgrounded = true
                 suppressUnrequestedShare = false
             } else if phase == .active, wasBackgrounded {

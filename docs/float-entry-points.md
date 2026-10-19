@@ -1,4 +1,4 @@
-# Supported floating entry points · build 6
+# Supported floating entry points · 1.0 (7)
 
 Only documented, user-mediated launch routes remain. The responder-chain
 launcher and all private return/origin/control code were physically removed,
@@ -7,8 +7,9 @@ The source and artifact checks have no experimental bypass.
 
 ## How to use
 
-1. **Shared photo:** add **Float with Cod** using Cod → Settings → Set up fast
-   floating → Add Share-Sheet Shortcut. Approve installation in Shortcuts.
+1. **Shared photo:** tap **Add Float with Cod** on Cod's Float tab. Choose
+   Shortcuts and approve Add Shortcut. The installer also remains in Settings →
+   Set up fast floating after the Home tip is hidden.
    Then Photos → Share → **Float with Cod** in the action list. The workflow
    explicitly accepts Images and passes Shortcut Input to FloatWithCodIntent.
    Missing input stops; it never asks for an unrelated file or substitutes a
@@ -30,7 +31,9 @@ The source and artifact checks have no experimental bypass.
 iOS controls initial image-sharing permission prompts for Shortcuts. Allow
 Once repeats them; Always Allow is the user's choice. The signed Store
 workflows already included in the app were signed with user approval on
-October 18, 2026; no new upload/signing is needed for this cleanup.
+October 18, 2026; no new upload/signing was needed for this polish. Package
+identity is checked against the app/team before offering an installer. Changing
+the publishing identity requires regenerating and signing matching workflows.
 
 Once PiP appears, switch apps yourself. There is no automatic previous-app or
 Home navigation, native controls are retained, and no PiP size restrictions are
@@ -51,7 +54,15 @@ action bar; the extension has Float only.
 - Dedicated-album saving defaults off; this update does not delete old albums,
   history, settings, the original phone app, or user-installed Shortcuts.
 
-## Verification
+## Build-7 release polish
+
+The updated Home installer, guide, history safeguards, image-cache budget and
+in-app pin touch controls are documented in the
+[build-7 handoff](release-polish-7.md). It includes final test evidence and
+remaining physical-device/submission gates. These changes do not restore direct
+Share-extension app opening or automatic return navigation.
+
+## Earlier supported-only acceptance
 
 - **66 unit tests passed** on the iOS 26.5 simulator after removing the old
   implementations and configurations. These include actual image/video-frame
@@ -59,9 +70,11 @@ action bar; the extension has Float only.
 - Signed **Cod / Release** device build succeeded. Source regression checks,
   all-three-bundle artifact checks, privacy resources, and deep/strict signature
   verification passed. The obsolete experimental audit flag is now rejected.
-- **Cod Test 0.1.0 (6)** was installed on the user's current iPhone; the installed
-  app record confirms the version. Remote opening was denied because the phone
-  was locked, so this update's physical launch/PiP acceptance is still pending.
+- **Cod Test 0.1.0 (6)** was installed on the user's current iPhone. The user
+  subsequently confirmed that Photos → Share → the Float with Cod Shortcut
+  worked after connecting its Image parameter to Shortcut Input. The bundled
+  ready-made workflow already has that connection; build 7 puts its installer
+  prominently on Home to avoid manual editing.
 - **10 native UI tests passed**, zero failures/skips: real Control Center
   registration/launch; document opening; manual Share preparation without
   automatic Cod launch; action-bar scope; crop/cancel without replay; warm/cold
@@ -73,8 +86,9 @@ action bar; the extension has Float only.
   never user-installed phone Shortcuts.
 
 Simulator checks do not prove visible PiP on hardware or App Review acceptance.
-Physical build-4 confirmations were for the older candidate, not this cleaned
-build. The original installed Cod and its data were not modified or deleted.
+Physical build-4 confirmations were for an older candidate. Build-7 checks and
+remaining device acceptance are tracked in APP_STORE_RELEASE.md. The original
+installed Cod and its data were not modified or deleted.
 
 ## Apple references
 

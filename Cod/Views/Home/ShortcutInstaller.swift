@@ -7,8 +7,31 @@ enum FloatShortcut: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var fileURL: URL? {
-        let folder = "Store"
-        return Bundle.main.url(forResource: rawValue, withExtension: "shortcut", subdirectory: "Shortcuts/\(folder)")
+        guard
+            let infoURL = Bundle.main.url(
+                forResource: "InstallerInfo", withExtension: "plist", subdirectory: "Shortcuts/Store"),
+            let data = try? Data(contentsOf: infoURL),
+            let info = try? PropertyListDecoder().decode(ShortcutPackageIdentity.self, from: data),
+            info.matches(
+                bundleID: Bundle.main.bundleIdentifier,
+                teamID: Bundle.main.object(forInfoDictionaryKey: "CodShortcutTeamIdentifier") as? String)
+        else { return nil }
+        return Bundle.main.url(
+            forResource: rawValue, withExtension: "shortcut", subdirectory: "Shortcuts/Store")
+    }
+}
+
+/// Signed workflows refer to an exact app/team. Don't offer a broken installer
+/// if a future publisher changes identities without regenerating the package.
+struct ShortcutPackageIdentity: Decodable {
+    let bundleIdentifier: String
+    let teamIdentifier: String
+    enum CodingKeys: String, CodingKey {
+        case bundleIdentifier = "BundleIdentifier"
+        case teamIdentifier = "TeamIdentifier"
+    }
+    func matches(bundleID: String?, teamID: String?) -> Bool {
+        bundleID == bundleIdentifier && teamID == teamIdentifier
     }
 }
 

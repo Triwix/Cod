@@ -19,6 +19,13 @@ enum HistoryLimit: Int, CaseIterable, Identifiable, Codable {
     }
 }
 
+enum HistoryRetentionPolicy {
+    static func removalCount(total: Int, limit: HistoryLimit) -> Int {
+        guard limit != .unlimited else { return 0 }
+        return max(0, total - max(0, limit.rawValue))
+    }
+}
+
 /// What happens the moment a capture arrives.
 enum ArrivalMode: String, CaseIterable, Identifiable, Codable {
     /// Drop straight into the crop surface (Snapper's normal mode).
@@ -77,7 +84,7 @@ enum PinShadow: String, CaseIterable, Identifiable, Codable {
     }
 }
 
-/// Every user-facing preference, mirroring Snapper 3's preference panes.
+/// User-facing preferences, including the optional setup tip.
 /// Backed by `UserDefaults`; each setter writes through immediately.
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -115,6 +122,12 @@ final class AppSettings: ObservableObject {
         self.smartRegions = defaults.object(forKey: Keys.smartRegions) as? Bool ?? true
         self.showMagnifier = defaults.object(forKey: Keys.showMagnifier) as? Bool ?? true
         self.lastSeenScreenshotID = defaults.string(forKey: Keys.lastSeenScreenshotID)
+        self.hasDismissedFloatSetupTip = defaults.bool(forKey: Keys.hasDismissedFloatSetupTip)
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--show-float-setup") {
+            self.hasDismissedFloatSetupTip = false
+        }
+        #endif
     }
 
     // MARK: - Activation
@@ -123,6 +136,11 @@ final class AppSettings: ObservableObject {
     @Published var instantAction: SnapAction { didSet { defaults.encode(instantAction, forKey: Keys.instantAction) } }
     @Published var watchScreenshots: Bool { didSet { defaults.set(watchScreenshots, forKey: Keys.watchScreenshots) } }
     @Published var captureDelay: Double { didSet { defaults.set(captureDelay, forKey: Keys.captureDelay) } }
+    /// A dismissed tip isn't proof that iOS installed the Shortcut. Installation
+    /// stays user-controlled, and the installer remains available in the guide.
+    @Published var hasDismissedFloatSetupTip: Bool {
+        didSet { defaults.set(hasDismissedFloatSetupTip, forKey: Keys.hasDismissedFloatSetupTip) }
+    }
 
     /// On by default: skip cropping when the prepared share opens in Cod.
     @Published private(set) var oneTapFloat: Bool
@@ -223,6 +241,7 @@ final class AppSettings: ObservableObject {
         static let smartRegions = "smartRegions"
         static let showMagnifier = "showMagnifier"
         static let lastSeenScreenshotID = "lastSeenScreenshotID"
+        static let hasDismissedFloatSetupTip = "hasDismissedFloatSetupTip"
     }
 }
 

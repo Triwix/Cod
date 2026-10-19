@@ -9,358 +9,315 @@ struct HomeView: View {
     @EnvironmentObject private var settings: AppSettings
 
     @State private var pickerItem: PhotosPickerItem?
+    @State private var isLoadingPhoto = false
+    @State private var installingShortcut: FloatShortcut?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
                     #if DEBUG
-                    if showsLaunchDiagnostics, let size = coordinator.lastExternalImageSize {
-                        Text("Received image \(Int(size.width))x\(Int(size.height))")
-                            .accessibilityIdentifier("received-image-size")
-                    }
+                        if let size = coordinator.lastExternalImageSize {
+                            Text("Received image \(Int(size.width))x\(Int(size.height))")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .accessibilityIdentifier("received-image-size")
+                        }
                     #endif
                     if coordinator.quickSharePreview != nil { quickShare }
-                    if !coordinator.sharedImages.isEmpty { sharedImages }
-                    primaryCapture
-                    if pip.isSupported { floatLatest }
-                    secondaryRow
-                    if !pins.isEmpty || pip.isActive || pip.status.isBusy { floatingStatus }
+                    if pip.isActive || pip.status.isBusy || !pins.isEmpty { floatingStatus }
+                    choosePhoto
+                    if !settings.hasDismissedFloatSetupTip { setupCard }
+                    screenshotActions
+                    if !coordinator.sharedImages.isEmpty || coordinator.sharedInboxError != nil { sharedImages }
                     if !store.snaps.isEmpty { recents }
-                    activationHint
+                    NavigationLink {
+                        OneTapFloatGuide()
+                    } label: {
+                        Label("Floating guide & setup", systemImage: "questionmark.circle")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(Color.accentColor)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 28)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16).padding(.bottom, 24)
             }
             .navigationTitle("Cod")
             .background(Color(.systemGroupedBackground))
         }
-        .onChange(of: pickerItem) { _, item in
-            guard let item else { return }
-            Task {
-                defer { pickerItem = nil }
-                guard let data = try? await item.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data)
+        .sheet(item: $installingShortcut) { shortcut in
+            if let url = shortcut.fileURL { ShortcutInstaller(url: url) }
+        }
+        .task(id: pickerItem) {
+            guard let item = pickerItem else { return }
+            isLoadingPhoto = true
+            defer {
+                isLoadingPhoto = false
+                pickerItem = nil
+            }
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self),
+                    let image = UIImage.decodedImage(data: data)
                 else {
-                    coordinator.toast = .failure("Couldn't read that image")
+                    if !Task.isCancelled {
+                        coordinator.toast = .failure(
+                            "Couldn't read that image",
+                            "Choose a photo saved on this device, or let it finish downloading from iCloud and try again."
+                        )
+                    }
                     return
                 }
+                guard !Task.isCancelled else { return }
                 coordinator.receiveExternalImage(image, origin: .imported)
+            } catch {
+                guard !Task.isCancelled else { return }
+                coordinator.toast = .failure(
+                    "Couldn't load photo", "Please try again once the photo is available on this device.")
             }
         }
     }
 
-    // MARK: - Primary
-
-    #if DEBUG
-    private var showsLaunchDiagnostics: Bool {
-        // System-launched Shortcut tests cannot supply app launch arguments.
-        // Image dimensions only; this label is absent from Release builds.
-        return true
-    }
-    #endif
-
-    private var quickShare: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Shared image", systemImage: "pip.enter").font(.headline)
-            Text(settings.useFloatNotification
-                 ? "Tap Cod's notification to float this image, or use Try Floating Again below. A newer share replaces this request."
-                 : "A previous attempt didn't finish, or this image was shared more than five minutes ago. It won't reopen automatically.")
-                .font(.footnote).foregroundStyle(.secondary)
-            HStack {
-                Button("Try Floating Again") { coordinator.receiveQuickShare(retry: true) }
-                    .buttonStyle(.borderedProminent)
-                Button("Remove", role: .destructive) { coordinator.discardQuickShare() }
-            }
-        }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var sharedImages: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("Shared Images", systemImage: "tray")
+    private var choosePhoto: some View {
+        PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+            VStack(spacing: 12) {
+                Image(systemName: "pip.enter").font(.system(size: 34, weight: .medium))
+                Text("Keep an image in view").font(.title2.weight(.semibold))
+                Text(
+                    settings.oneTapFloat
+                        ? "Choose a photo to float over other apps."
+                        : "Choose a photo, crop it, then tap Float."
+                )
+                .font(.subheadline).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                HStack {
+                    if isLoadingPhoto { ProgressView() }
+                    Label(
+                        isLoadingPhoto ? "Loading photo…" : "Choose Photo", systemImage: "photo.on.rectangle"
+                    )
                     .font(.headline)
-                Spacer()
-                Button { coordinator.refreshSharedImages() } label: {
-                    Image(systemName: "arrow.clockwise")
                 }
-                .accessibilityLabel("Refresh shared images")
-            }
-            if let error = coordinator.sharedInboxError {
-                Text(error).font(.footnote).foregroundStyle(.secondary)
-            } else if coordinator.sharedImages.isEmpty {
-                Text("Images from the earlier test build. New shares no longer need inbox buttons.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            } else {
-                ForEach(coordinator.sharedImages) { entry in
-                    HStack(spacing: 12) {
-                        Group {
-                            if let thumbnail = entry.thumbnail {
-                                Image(uiImage: thumbnail).resizable().scaledToFit()
-                            } else {
-                                Image(systemName: "photo.badge.exclamationmark")
-                            }
-                        }
-                        .frame(width: 64, height: 64)
-                        .accessibilityLabel("Shared image preview")
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let date = entry.receivedAt {
-                                Text(date, style: .relative).font(.caption).foregroundStyle(.secondary)
-                            } else {
-                                Text("Unreadable image").font(.caption).foregroundStyle(.secondary)
-                            }
-                            HStack {
-                                Button("Float") { coordinator.openSharedImage(entry, float: true) }
-                                    .buttonStyle(.borderedProminent)
-                                Button("Crop") { coordinator.openSharedImage(entry, float: false) }
-                                    .buttonStyle(.bordered)
-                            }
-                            .disabled(entry.thumbnail == nil || coordinator.pip.status.isBusy)
-                        }
-                        Spacer(minLength: 0)
-                        Button(role: .destructive) { coordinator.removeSharedImage(entry) } label: {
-                            Image(systemName: "trash")
-                        }
-                        .accessibilityLabel("Remove this image from Cod's inbox")
-                    }
-                }
-                Text("Images stay here until you remove them. History is separate; clearing it doesn't empty this inbox.")
+                .padding(.horizontal, 24).padding(.vertical, 13)
+                .foregroundStyle(.white)
+                .background(Color.codActionBackground, in: Capsule())
+                Text("Only the photo you choose is shared with Cod.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-        }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
-        .padding(.top, 4)
-    }
-
-    private var primaryCapture: some View {
-        Button {
-            Task { await coordinator.captureLatestScreenshot() }
-        } label: {
-            VStack(spacing: 12) {
-                Image(systemName: "viewfinder")
-                    .font(.system(size: 36, weight: .light))
-                Text("Crop Latest Screenshot")
-                    .font(.headline)
-                Text("Pulls the newest item from your Screenshots album")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 30)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.14))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 1)
-            )
+            .padding(24).frame(maxWidth: .infinity)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 24))
         }
         .buttonStyle(.plain)
-        .padding(.top, 4)
+        .accessibilityLabel("Choose Photo")
+        .accessibilityHint(
+            settings.oneTapFloat
+                ? "Floats the selected photo in Picture in Picture."
+                : "Opens the selected photo in the crop editor."
+        )
+        .accessibilityIdentifier("choose-photo")
+        .disabled(isLoadingPhoto || coordinator.isWorking)
     }
 
-    /// One tap from launch to a floating snippet.
-    private var floatLatest: some View {
-        Button {
-            Task { await coordinator.floatLatestScreenshot() }
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "pip.enter")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.red)
-                    .frame(width: 34, height: 34)
-                    .background(Color.red.opacity(0.16), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Float Latest Screenshot")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Straight to the hovering window, no cropping")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+    private var setupCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Float straight from Photos", systemImage: "square.and.arrow.up")
+                .font(.headline)
+            Text("Add the ready-made Shortcut once. Then use Photos → Share → Float with Cod.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            if FloatShortcut.shareImage.fileURL != nil {
+                Button {
+                    installingShortcut = .shareImage
+                } label: {
+                    Label("Add Float with Cod", systemImage: "plus.circle.fill")
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                .buttonStyle(.borderedProminent)
+                .tint(.codActionBackground).foregroundStyle(.white)
+                .accessibilityIdentifier("install-share-shortcut")
+                Text(
+                    "Choose Shortcuts, then confirm Add Shortcut. The image input is already connected—no editing needed."
+                )
+                .font(.footnote).foregroundStyle(.secondary)
+            } else {
+                NavigationLink("Open setup instructions") { OneTapFloatGuide() }
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(.secondarySystemGroupedBackground))
-            )
+            Button("Already set up? Hide this tip") { settings.hasDismissedFloatSetupTip = true }
+                .font(.footnote).frame(minHeight: 44)
+                .accessibilityIdentifier("hide-float-setup")
         }
-        .buttonStyle(.plain)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
     }
 
-    private var secondaryRow: some View {
-        HStack(spacing: 12) {
-            PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
-                tile(title: "Choose Photo", systemImage: "photo.on.rectangle")
+    private var screenshotActions: some View {
+        VStack(spacing: 0) {
+            Button {
+                Task { await coordinator.floatLatestScreenshot(minimalUI: true) }
+            } label: {
+                actionRow(
+                    "Float Latest Screenshot",
+                    detail: "Uses the newest saved screenshot · Photos access required", icon: "pip.enter")
             }
-            .buttonStyle(.plain)
-
+            Divider().padding(.leading, 52)
+            Button {
+                Task { await coordinator.captureLatestScreenshot() }
+            } label: {
+                actionRow(
+                    "Crop Latest Screenshot", detail: "Select a region and choose an action", icon: "crop")
+            }
+            Divider().padding(.leading, 52)
             Button {
                 coordinator.pasteFromClipboard()
             } label: {
-                tile(title: "Paste", systemImage: "doc.on.clipboard")
+                actionRow("Paste Image", detail: "Use an image you copied", icon: "doc.on.clipboard")
             }
-            .buttonStyle(.plain)
         }
+        .buttonStyle(.plain).disabled(coordinator.isWorking || isLoadingPhoto)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
     }
 
-    private func tile(title: String, systemImage: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 20, weight: .regular))
-            Text(title)
-                .font(.subheadline.weight(.medium))
+    private func actionRow(_ title: String, detail: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).foregroundStyle(Color.accentColor).frame(width: 28)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize(
+                    horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
+        .padding(16).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
-    // MARK: - Floating status
+    private var quickShare: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Shared image ready to retry", systemImage: "photo").font(.headline)
+            Text(
+                settings.useFloatNotification
+                    ? "Tap Cod's notification, or retry here. A newer share replaces this image."
+                    : "This attempt didn't finish or has expired. Retry when you're ready; it won't restart on its own."
+            )
+            .font(.footnote).foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    retryButton
+                    removeShareButton
+                }
+                VStack(alignment: .leading) {
+                    retryButton
+                    removeShareButton
+                }
+            }
+        }
+        .padding(18).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var retryButton: some View {
+        Button("Try Floating Again") { coordinator.receiveQuickShare(retry: true) }
+            .buttonStyle(.borderedProminent).tint(.codActionBackground).foregroundStyle(.white)
+            .disabled(coordinator.isWorking)
+    }
+    private var removeShareButton: some View {
+        Button("Remove", role: .destructive) { coordinator.discardQuickShare() }
+            .buttonStyle(.bordered).disabled(coordinator.isWorking)
+    }
+
+    /// Compatibility UI for existing user data, not a new-image inbox workflow.
+    private var sharedImages: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Earlier shared images", systemImage: "tray").font(.headline)
+            if let error = coordinator.sharedInboxError {
+                Text(error).font(.footnote).foregroundStyle(.secondary)
+                Button("Try loading earlier images again") { coordinator.refreshSharedImages() }
+                    .frame(minHeight: 44)
+            }
+            ForEach(coordinator.sharedImages) { entry in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        if let thumbnail = entry.thumbnail {
+                            Image(uiImage: thumbnail).resizable().scaledToFit().frame(width: 64, height: 64)
+                                .accessibilityLabel("Shared image preview")
+                        } else {
+                            Label("Unreadable image", systemImage: "photo.badge.exclamationmark")
+                        }
+                        Spacer()
+                        Button(role: .destructive) {
+                            coordinator.removeSharedImage(entry)
+                        } label: {
+                            Image(systemName: "trash").frame(width: 44, height: 44)
+                        }
+                        .accessibilityLabel("Remove this image from Cod's inbox")
+                    }
+                    HStack {
+                        Button("Float") { coordinator.openSharedImage(entry, float: true) }.buttonStyle(
+                            .borderedProminent
+                        )
+                        .tint(.codActionBackground).foregroundStyle(.white)
+                        Button("Crop") { coordinator.openSharedImage(entry, float: false) }.buttonStyle(
+                            .bordered)
+                    }
+                    .disabled(entry.thumbnail == nil || coordinator.isWorking)
+                }
+            }
+            Text(
+                "Kept from an earlier version. Remove them here; clearing history doesn't remove these copies."
+            )
+            .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(18).background(
+            Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+    }
 
     private var floatingStatus: some View {
-        VStack(spacing: 0) {
-            if !pins.isEmpty {
-                statusRow(
-                    icon: "pin.fill",
-                    tint: .orange,
-                    title: "\(pins.pins.count) pinned snippet\(pins.pins.count == 1 ? "" : "s")",
-                    detail: "Drag to move · pinch or corner-drag to resize",
-                    actionTitle: "Clear All"
-                ) {
-                    pins.removeAll()
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 12) {
             if pip.isActive || pip.status.isBusy {
-                if !pins.isEmpty { Divider().padding(.leading, 52) }
-                statusRow(
-                    icon: pip.isActive ? "pip.fill" : "hourglass",
-                    tint: pip.isActive ? .red : .secondary,
-                    title: pip.isActive ? "Floating over other apps" : "Opening floating window…",
-                    detail: pip.isActive
-                        ? "Swipe home — it stays on screen"
-                        : "Waiting for iOS to hand over the window",
-                    actionTitle: "Stop"
-                ) {
-                    pip.stop()
-                }
+                Label(
+                    pip.isActive ? "Floating over other apps" : "Opening floating window…",
+                    systemImage: "pip.fill"
+                )
+                .font(.headline)
+                Text(
+                    pip.isActive
+                        ? "Switch to any app when you're ready. iOS controls the window's size and position."
+                        : "Keep Cod open while iOS prepares Picture in Picture."
+                )
+                .font(.footnote).foregroundStyle(.secondary)
+                Button("Stop Floating", role: .destructive) { pip.stop() }.buttonStyle(.bordered)
+            }
+            if !pins.isEmpty {
+                Label("\(pins.pins.count) pinned inside Cod", systemImage: "pin.fill").font(.subheadline)
+                Button("Clear Pins") { pins.removeAll() }.buttonStyle(.bordered)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
+        .frame(maxWidth: .infinity, alignment: .leading).padding(18)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
     }
-
-    private func statusRow(
-        icon: String,
-        tint: Color,
-        title: String,
-        detail: String,
-        actionTitle: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 28, height: 28)
-                .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.medium))
-                Text(detail).font(.caption).foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Button(actionTitle, action: action)
-                .font(.subheadline.weight(.medium))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-        }
-        .padding(14)
-    }
-
-    // MARK: - Recents
 
     private var recents: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Recent")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-
+            Text("Recent images").font(.headline)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(store.snaps.prefix(12)) { snap in
                         Button {
                             coordinator.reopen(snap)
                         } label: {
-                            SnapThumbnail(snap: snap)
-                                .frame(width: 92, height: 92)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .strokeBorder(.primary.opacity(0.08), lineWidth: 0.5)
-                                )
+                            SnapThumbnail(snap: snap).frame(width: 96, height: 96)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            "Open saved \(snap.origin.label.lowercased()), \(snap.dimensionLabel)")
                     }
                 }
-                .padding(.vertical, 1)
             }
         }
-    }
-
-    // MARK: - Hint
-
-    private var activationHint: some View {
-        NavigationLink {
-            OneTapFloatGuide()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "hand.tap")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 30, height: 30)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("How to float an image")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Share sheet, Back Tap and the Action Button")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(.secondarySystemGroupedBackground))
-            )
-        }
-        .buttonStyle(.plain)
     }
 }
 
-/// Thumbnail that loads lazily from the store's cache.
+/// Thumbnail loading is bounded by the store's cache.
 struct SnapThumbnail: View {
     let snap: Snap
     @EnvironmentObject private var store: SnapStore
@@ -369,19 +326,9 @@ struct SnapThumbnail: View {
     var body: some View {
         ZStack {
             Color(.tertiarySystemFill)
-            if let image {
-                // Fit, not fill: a snippet is only recognizable if you can see
-                // its whole shape.
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .padding(3)
-            }
+            if let image { Image(uiImage: image).resizable().scaledToFit().padding(3) }
         }
-        .task(id: snap.id) {
-            guard image == nil else { return }
-            image = store.thumbnail(for: snap)
-        }
+        .task(id: snap.id) { image = store.thumbnail(for: snap) }
         .clipped()
     }
 }

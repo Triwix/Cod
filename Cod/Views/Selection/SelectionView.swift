@@ -121,7 +121,9 @@ struct SelectionView: View {
                 .font(.system(size: 30, weight: .light))
             Text("Drag to select a region")
                 .font(.callout.weight(.medium))
-            Text("or tap a highlighted block")
+            Text(smartRegionsEnabled && settings.smartRegions && !smartRegions.isEmpty
+                 ? "or tap a highlighted block"
+                 : "Choose an action below to use the whole image")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

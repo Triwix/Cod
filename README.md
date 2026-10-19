@@ -3,18 +3,21 @@
 Float an image over other apps with iOS Picture in Picture, or crop, copy,
 recognize text, scan barcodes, and keep snippets inside Cod.
 
-## Supported-only build · 0.1.0 (6)
+## Release-polish candidate · 1.0 (7)
 
 All private navigation/control APIs, direct Share-extension app-launch tricks,
 and experimental build configurations have been removed—not just disabled.
 The only application scheme is **Cod**, with Debug/Release configurations.
-The test installation is **Cod Test**, `com.josh.cod.store`; it does not replace
+The development installation is **Cod Test**, `com.josh.cod.store`; it does not replace
 the original installed Cod or delete its data.
+The public Release display name is **Cod**. This is a release candidate, not an
+App Store submission or approval.
 
 Fast entry points:
 
 - **Share → Float with Cod**: install the signed Shortcut once from Cod's
-  Floating Guide. It accepts the actual shared image and opens Cod through
+  Float tab's **Add Float with Cod** button (also available in the Floating
+  Guide). It accepts the actual shared image and opens Cod through
   App Intents. It appears in the share action list, not the app-icon row.
 - **Control Center / Lock Screen / Action Button**: iOS 18+ control opens Cod
   to float the latest saved screenshot. Requires Photos access and, when
@@ -35,6 +38,11 @@ yourself; native PiP controls and system resizing remain available.
 Save to a dedicated album defaults off. Existing saved preferences survive.
 Share-sheet cropping offers Float only; configurable action-bar actions apply
 to the editor inside Cod.
+
+The Float tab prioritizes choosing a photo and installing the ready-made Share
+Shortcut. Its setup tip can be hidden without losing access to the guide.
+History deletion and lowering the retention limit require confirmation; local
+pins and pending shares are separate. Library images can be floated directly.
 
 Documented APIs do not guarantee App Review acceptance. Still-image-to-video
 PiP use remains a review question; no Apple preapproval is claimed.
@@ -62,6 +70,7 @@ image transport, encoding, crop handling and system entry points; visible PiP
 and hardware gestures still need an iPhone.
 
 See [entry-point details](docs/float-entry-points.md) and
-[remaining release gates](APP_STORE_RELEASE.md).
+[remaining release gates](APP_STORE_RELEASE.md). Listing text, reviewer steps,
+and owner decisions are in the [submission draft](docs/app-store-draft.md).
 Older research documents are historical records of experiments removed in
 build 6, not current build instructions. Git history retains removed source.

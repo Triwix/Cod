@@ -55,7 +55,7 @@ final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         diagnostic("viewDidLoad")
-        diagnostic("build=supported-only-6 process=\(ProcessInfo.processInfo.processIdentifier)")
+        diagnostic("build=release-polish-7 process=\(ProcessInfo.processInfo.processIdentifier)")
         oneTapFloat = SharePreferences.shared.oneTapFloat
         useFloatNotification = SharePreferences.shared.useFloatNotification
         diagnostic("share mode oneTapFloat=\(oneTapFloat)")

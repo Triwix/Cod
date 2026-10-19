@@ -1,10 +1,11 @@
 # Cod privacy policy — release draft
 
-Last updated: October 7, 2026.
+Last updated: October 18, 2026.
 
 Publication requires the developer's approved identity/contact details below.
-This draft describes only the App Store V1 configuration, not the personal build
-with optional Imgur uploads. Remove this draft notice before hosting it.
+This draft describes Cod 1.0's supported-only configuration. Unsupported launch,
+return and control-hiding experiments were removed. Remove this draft notice
+after approving the publishing identity and contact information, before hosting.
 
 ## Data Cod uses
 
@@ -51,6 +52,18 @@ you choose a copy action, including the optional copy-on-pin setting. Shared
 images are not transferred through the clipboard.
 
 ## Actions involving other apps or services
+
+Cod offers optional, ready-made Shortcuts. You approve adding them in Apple's
+Shortcuts interface; Cod does not silently install or assign Shortcuts. The
+share-sheet Shortcut receives the image you share. The screenshot Shortcut takes
+a fresh screenshot when you trigger it, then passes that image to Cod. The
+latest-screenshot control reads only Photos assets you have permitted. Apple
+manages its own permission prompts and processing under its privacy policies.
+
+An optional local notification contains a request identifier, not an image
+preview or recognized text. Tapping it opens Cod with the matching local image.
+Cod does not use a push-notification server, tracking notification identifiers,
+or time-sensitive notifications. Notification permission is optional.
 
 If you choose Share, open a scanned link, or invoke Apple's system translation
 interface, the receiving app, website or Apple service handles that data under

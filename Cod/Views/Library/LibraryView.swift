@@ -30,7 +30,9 @@ struct LibraryView: View {
                 if !store.snaps.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
-                            Button(role: .destructive) { confirmClear = true } label: {
+                            Button(role: .destructive) {
+                                confirmClear = true
+                            } label: {
                                 Label("Clear History", systemImage: "trash")
                             }
                         } label: {
@@ -69,7 +71,9 @@ struct LibraryView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(filtered) { snap in
-                    Button { detail = snap } label: {
+                    Button {
+                        detail = snap
+                    } label: {
                         SnapThumbnail(snap: snap)
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
@@ -81,6 +85,7 @@ struct LibraryView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Saved \(snap.origin.label.lowercased()), \(snap.dimensionLabel)")
                     .contextMenu { menu(for: snap) }
                 }
             }
@@ -111,33 +116,57 @@ struct LibraryView: View {
 
     @ViewBuilder
     private func menu(for snap: Snap) -> some View {
-        Button { coordinator.reopen(snap) } label: { Label("Re-crop", systemImage: "crop") }
+        Button {
+            if let image = store.image(for: snap) {
+                coordinator.floatImmediately(
+                    image: image, origin: snap.origin, minimalUI: true, reusePreparedPlayback: false)
+            }
+        } label: {
+            Label("Float", systemImage: "pip.enter")
+        }
+        .disabled(coordinator.isWorking)
+        Button {
+            coordinator.reopen(snap)
+        } label: {
+            Label("Re-crop", systemImage: "crop")
+        }
         Button {
             if let image = store.image(for: snap) { pins.add(image: image, recognizedText: snap.recognizedText) }
-        } label: { Label("Pin", systemImage: "pin") }
+        } label: {
+            Label("Pin", systemImage: "pin")
+        }
         Button {
             if let image = store.image(for: snap) {
                 UIPasteboard.general.image = image
                 coordinator.toast = .success("Image copied")
             }
-        } label: { Label("Copy Image", systemImage: "doc.on.doc") }
+        } label: {
+            Label("Copy Image", systemImage: "doc.on.doc")
+        }
         if snap.hasText {
             Button {
                 UIPasteboard.general.string = snap.recognizedText
                 coordinator.toast = .success("Text copied")
-            } label: { Label("Copy Text", systemImage: "text.viewfinder") }
+            } label: {
+                Label("Copy Text", systemImage: "text.viewfinder")
+            }
         }
         Divider()
-        Button(role: .destructive) { store.delete(snap) } label: { Label("Delete", systemImage: "trash") }
+        Button(role: .destructive) {
+            store.delete(snap)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
     }
 
     private var emptyState: some View {
         ContentUnavailableView {
             Label("No captures yet", systemImage: "square.grid.2x2")
         } description: {
-            Text(settings.historyLimit == .off
-                 ? "History is turned off in Settings, so nothing is being kept."
-                 : "Crop a screenshot and it'll show up here.")
+            Text(
+                settings.historyLimit == .off
+                    ? "History is turned off in Settings, so nothing is being kept."
+                    : "Images you float or crop appear here. Choose a photo from the Float tab to get started.")
         }
     }
 }
@@ -172,6 +201,19 @@ struct SnapDetailView: View {
                             )
                     }
 
+                    if let image {
+                        Button {
+                            dismiss()
+                            coordinator.floatImmediately(
+                                image: image, origin: snap.origin, minimalUI: true, reusePreparedPlayback: false)
+                        } label: {
+                            Label("Float Image", systemImage: "pip.enter")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent).tint(.codActionBackground).foregroundStyle(.white)
+                        .disabled(coordinator.isWorking)
+                    }
+
                     metadata
 
                     if let text, !text.isEmpty {
@@ -195,14 +237,28 @@ struct SnapDetailView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button { reopen() } label: { Label("Re-crop", systemImage: "crop") }
-                        Button { pin() } label: { Label("Pin", systemImage: "pin") }
-                        Button { copyImage() } label: { Label("Copy Image", systemImage: "doc.on.doc") }
+                        Button {
+                            reopen()
+                        } label: {
+                            Label("Re-crop", systemImage: "crop")
+                        }
+                        Button {
+                            pin()
+                        } label: {
+                            Label("Pin", systemImage: "pin")
+                        }
+                        Button {
+                            copyImage()
+                        } label: {
+                            Label("Copy Image", systemImage: "doc.on.doc")
+                        }
                         Divider()
                         Button(role: .destructive) {
                             store.delete(snap)
                             dismiss()
-                        } label: { Label("Delete", systemImage: "trash") }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }

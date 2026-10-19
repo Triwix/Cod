@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The post-capture actions offered in the instant action bar.
-/// Snapper 3 lets you disable and reorder these; so does Cod (see `AppSettings`).
+/// Actions can be disabled and reordered in Settings.
 enum SnapAction: String, Codable, CaseIterable, Identifiable {
     case float
     case pin
@@ -12,6 +12,8 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
     case qr
     case translate
     case annotate
+    // Decode older saved preferences without resetting the whole action list.
+    // This retired value is filtered out before anything reaches the UI.
     case upload
 
     var id: String { rawValue }
@@ -81,10 +83,9 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// The order Snapper 3 ships with, roughly — with Float first, because
-    /// hovering a snippet over other apps is the whole point.
+    /// Floating is the primary action. Retired actions aren't in new defaults.
     static let defaultOrder: [SnapAction] = [
-        .float, .pin, .copyImage, .copyText, .save, .share, .qr, .translate, .annotate, .upload,
+        .float, .pin, .copyImage, .copyText, .save, .share, .qr, .translate, .annotate,
     ]
 
     static let defaultEnabled: Set<SnapAction> = [

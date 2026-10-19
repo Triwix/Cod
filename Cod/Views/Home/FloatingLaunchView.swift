@@ -6,9 +6,7 @@ import SwiftUI
 /// appear for a moment. Showing this instead of the full app makes that moment
 /// read as a confirmation rather than an app switch.
 struct FloatingLaunchView: View {
-    @EnvironmentObject private var coordinator: CaptureCoordinator
     @EnvironmentObject private var pip: PiPPinController
-    @EnvironmentObject private var settings: AppSettings
 
     var onOpenApp: () -> Void
 
@@ -16,77 +14,84 @@ struct FloatingLaunchView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 22) {
-                Spacer()
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 22) {
+                        Spacer(minLength: 12)
 
-                if let image = pip.currentImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: 260, maxHeight: 260)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
-                        )
-                        .shadow(color: .black.opacity(0.5), radius: 20, y: 8)
-                }
-
-                VStack(spacing: 6) {
-                    HStack(spacing: 8) {
-                        if pip.status.isBusy {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: statusIcon)
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(statusTint)
+                        if let image = pip.currentImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 260, maxHeight: 260)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
+                                )
+                                .shadow(color: .black.opacity(0.5), radius: 20, y: 8)
+                                .accessibilityLabel("Image being floated")
                         }
-                        Text(statusTitle)
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                    }
 
-                    Text(statusDetail)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                        VStack(spacing: 6) {
+                            HStack(spacing: 8) {
+                                if pip.status.isBusy {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: statusIcon)
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundStyle(statusTint)
+                                }
+                                Text(statusTitle)
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                            }
+
+                            Text(statusDetail)
+                                .font(.footnote)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 32)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        VStack(spacing: 10) {
+                            if pip.isActive {
+                                Button {
+                                    pip.stop()
+                                    onOpenApp()
+                                } label: {
+                                    Text("Stop Floating")
+                                        .font(.subheadline.weight(.medium))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 13)
+                                        .background(.white.opacity(0.12), in: Capsule())
+                                        .foregroundStyle(.white)
+                                }
+                            }
+
+                            Button {
+                                onOpenApp()
+                            } label: {
+                                Text("Back to Cod")
+                                    .font(.subheadline.weight(.medium))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 13)
+                                    .background(.white.opacity(0.12), in: Capsule())
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .buttonStyle(.plain)
                         .padding(.horizontal, 32)
-                }
-
-                Spacer()
-
-                VStack(spacing: 10) {
-                    if pip.isActive {
-                        Button {
-                            pip.stop()
-                            onOpenApp()
-                        } label: {
-                            Text("Stop Floating")
-                                .font(.subheadline.weight(.medium))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 13)
-                                .background(.white.opacity(0.12), in: Capsule())
-                                .foregroundStyle(.white)
-                        }
+                        .padding(.bottom, 24)
                     }
-
-                    Button {
-                        onOpenApp()
-                    } label: {
-                        Text("Open Cod")
-                            .font(.subheadline.weight(.medium))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 13)
-                            .background(.white.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.white)
-                    }
+                    .frame(maxWidth: 640, minHeight: proxy.size.height)
+                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 24)
             }
         }
     }
@@ -120,12 +125,13 @@ struct FloatingLaunchView: View {
     private var statusDetail: String {
         switch pip.status {
         case .active:
-            return "Switch to another app when you're ready. The image stays floating. Cod doesn't automatically change your screen."
+            return
+                "Switch to another app when you're ready. The image stays floating. Cod doesn't automatically change your screen."
         case .preparing:
             return "Handing the snippet to the system window."
         case .unsupported:
             return "Picture in Picture isn't available on this device."
-        case let .failed(message):
+        case .failed(let message):
             return message
         case .idle:
             return ""
