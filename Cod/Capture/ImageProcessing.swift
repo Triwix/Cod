@@ -76,20 +76,6 @@ extension UIImage {
         return UIImage(cgImage: cropped, scale: 1, orientation: .up)
     }
 
-    /// Rounds the corners for pinned snippets so the floating card reads as a
-    /// card rather than a torn-out rectangle.
-    func withRoundedCorners(radius: CGFloat) -> UIImage {
-        guard radius > 0 else { return self }
-        let rect = CGRect(origin: .zero, size: size)
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = scale
-        format.opaque = false
-        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
-            UIBezierPath(roundedRect: rect, cornerRadius: radius).addClip()
-            draw(in: rect)
-        }
-    }
-
     /// Aspect-fit resize used by thumbnails and the Picture in Picture encoder.
     /// Never upscales.
     func fitted(within bounds: CGSize) -> UIImage {
@@ -130,7 +116,10 @@ extension UIImage {
             bitsPerComponent: 8,
             bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
             space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            // BGRA's fourth channel must contain real alpha. A skipped
+            // channel may be zero: H.264 ignores it, but direct sample-buffer
+            // playback can composite those otherwise valid pixels as clear.
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ) else { return nil }
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))

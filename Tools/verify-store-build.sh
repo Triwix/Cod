@@ -47,7 +47,7 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             print -u2 "Simulator launch-probe code found in $bundle_id"
             exit 1
         fi
-        if /usr/bin/strings "$binary_path" | rg 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup'; then
+        if /usr/bin/strings "$binary_path" | rg 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup|--show-introduction'; then
             print -u2 "Debug-only UI testing code found in $bundle_id. Audit a Release build."
             exit 1
         fi
@@ -60,8 +60,15 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
     if [[ "$bundle_id" != com.josh.cod.store.controls ]]; then
         reason=$(/usr/libexec/PlistBuddy -c 'Print :NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPITypeReasons:0' "$bundle_path/PrivacyInfo.xcprivacy")
         [[ "$reason" == CA92.1 ]] || { print -u2 'Missing own-preferences declaration'; exit 1; }
-        group_id=$(/usr/libexec/PlistBuddy -c 'Print :CodAppGroup' "$bundle_path/Info.plist")
-        [[ "$group_id" == group.com.josh.cod.store ]] || { print -u2 'Incorrect App Group configuration'; exit 1; }
+    fi
+    group_id=$(/usr/libexec/PlistBuddy -c 'Print :CodAppGroup' "$bundle_path/Info.plist")
+    [[ "$group_id" == group.com.josh.cod.store ]] || { print -u2 'Incorrect App Group configuration'; exit 1; }
+    if [[ "$bundle_id" != com.josh.cod.store.share ]]; then
+        metadata_path="$bundle_path/Metadata.appintents/extract.actionsdata"
+        [[ -s "$metadata_path" ]] && rg -q 'FloatSavedReferenceIntent' "$metadata_path" || {
+            print -u2 "Saved-reference intent metadata is missing from $bundle_id"
+            exit 1
+        }
     fi
     print "Checked $bundle_id: privacy resource present; known private methods absent."
 done

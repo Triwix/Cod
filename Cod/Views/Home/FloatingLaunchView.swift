@@ -12,81 +12,72 @@ struct FloatingLaunchView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color(.systemGroupedBackground).ignoresSafeArea()
 
             GeometryReader { proxy in
                 ScrollView {
-                    VStack(spacing: 22) {
-                        Spacer(minLength: 12)
+                    VStack(spacing: 24) {
+                        Spacer(minLength: 24)
 
                         if let image = pip.currentImage {
                             Image(uiImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(maxWidth: 260, maxHeight: 260)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .frame(maxWidth: 280, maxHeight: 280)
+                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .strokeBorder(.primary.opacity(0.08), lineWidth: 0.5)
                                 )
-                                .shadow(color: .black.opacity(0.5), radius: 20, y: 8)
                                 .accessibilityLabel("Image being floated")
                         }
 
-                        VStack(spacing: 6) {
+                        VStack(spacing: 12) {
                             HStack(spacing: 8) {
                                 if pip.status.isBusy {
                                     ProgressView()
                                         .progressViewStyle(.circular)
-                                        .tint(.white)
+                                        .tint(Color.accentColor)
                                 } else {
                                     Image(systemName: statusIcon)
-                                        .font(.system(size: 17, weight: .semibold))
+                                        .font(.body.weight(.medium))
                                         .foregroundStyle(statusTint)
                                 }
                                 Text(statusTitle)
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
+                                    .font(.title2.weight(.medium))
+                                    .foregroundStyle(.primary)
                             }
 
                             Text(statusDetail)
-                                .font(.footnote)
-                                .foregroundStyle(.white.opacity(0.6))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .padding(.horizontal, 32)
+                                .frame(maxWidth: 400)
+                                .padding(.horizontal, 24)
                         }
 
-                        Spacer(minLength: 12)
+                        Spacer(minLength: 24)
 
-                        VStack(spacing: 10) {
+                        VStack(spacing: 12) {
                             if pip.isActive {
                                 Button {
                                     pip.stop()
                                     onOpenApp()
                                 } label: {
-                                    Text("Stop Floating")
-                                        .font(.subheadline.weight(.medium))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 13)
-                                        .background(.white.opacity(0.12), in: Capsule())
-                                        .foregroundStyle(.white)
+                                    Text("Stop Floating").frame(maxWidth: .infinity)
                                 }
+                                .buttonStyle(CodActionStyle(emphasis: .secondary))
                             }
 
                             Button {
                                 onOpenApp()
                             } label: {
-                                Text("Back to Cod")
-                                    .font(.subheadline.weight(.medium))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 13)
-                                    .background(.white.opacity(0.12), in: Capsule())
-                                    .foregroundStyle(.white)
+                                Text("Back to Cod").frame(maxWidth: .infinity)
                             }
+                            .buttonStyle(CodActionStyle())
                         }
-                        .buttonStyle(.plain)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, 24)
                         .padding(.bottom, 24)
                     }
                     .frame(maxWidth: 640, minHeight: proxy.size.height)
@@ -108,7 +99,7 @@ struct FloatingLaunchView: View {
         switch pip.status {
         case .active: return .green
         case .failed, .unsupported: return .orange
-        default: return .white
+        default: return .accentColor
         }
     }
 
@@ -126,7 +117,7 @@ struct FloatingLaunchView: View {
         switch pip.status {
         case .active:
             return
-                "Switch to another app when you're ready. The image stays floating. Cod doesn't automatically change your screen."
+                "Open another app yourself; the image will stay floating above it. Cod doesn't switch apps for you."
         case .preparing:
             return "Handing the snippet to the system window."
         case .unsupported:

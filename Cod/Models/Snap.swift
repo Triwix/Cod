@@ -42,6 +42,19 @@ struct Snap: Identifiable, Codable, Hashable {
     var recognizedText: String?
     /// Cached barcode/QR payloads found in the snippet.
     var barcodes: [String] = []
+    // Optional on disk so indexes written before favorites decode unchanged.
+    var favorite: Bool? = nil
+    var favoriteOrder: Int? = nil
+    var videoExtension: String? = nil
+    var isVideo: Bool { videoExtension != nil }
+    var videoFilename: String? {
+        guard let ext = videoExtension, ["mp4", "mov", "m4v"].contains(ext) else { return nil }
+        return "\(id.uuidString).\(ext)"
+    }
+    var isFavorite: Bool {
+        get { favorite ?? false }
+        set { favorite = newValue }
+    }
 
     var imageFilename: String { "\(id.uuidString).png" }
     var thumbnailFilename: String { "\(id.uuidString)-thumb.jpg" }

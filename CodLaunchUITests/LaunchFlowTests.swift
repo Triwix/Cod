@@ -6,7 +6,8 @@ final class LaunchFlowTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        cod.launchArguments = ["--launch-ui-test", "-autoCopyOnCapture", "NO"]
+        cod.terminate()
+        cod.launchArguments = ["--launch-ui-test"]
         cod.launch() // Seed UI-test arguments, then background it.
         setOneTapFloat(true)
         lab = XCUIApplication()
@@ -91,16 +92,16 @@ final class LaunchFlowTests: XCTestCase {
         waitForShareToFinish()
         cod.activate()
         XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8), cod.debugDescription)
-        cod.buttons["Pin"].tap() // Real fixture ingestion, no clipboard read/write.
-        cod.buttons["cancel-selection"].tap()
+        cod.scrollViews.buttons["Float"].tap() // Crop action, not the Float tab.
+        cod.launch() // Stop playback; the disk-backed capture must survive.
         tab("Settings").tap()
         let clear = cod.buttons["clear-history"]
         for _ in 0..<8 where !clear.isHittable { cod.swipeUp() }
         XCTAssertTrue(clear.isHittable)
         XCTAssertTrue(clear.isEnabled)
         clear.tap()
-        XCTAssertTrue(cod.staticTexts["Clear saved history?"].waitForExistence(timeout: 5))
-        dismissConfirmation(titled: "Clear saved history?")
+        XCTAssertTrue(cod.staticTexts["Clear Library?"].waitForExistence(timeout: 5))
+        dismissConfirmation(titled: "Clear Library?")
 
         let limit = cod.buttons["history-limit"]
         for _ in 0..<3 where !limit.isHittable { cod.swipeDown() }
@@ -109,12 +110,6 @@ final class LaunchFlowTests: XCTestCase {
         XCTAssertTrue(cod.staticTexts["Remove older saved images?"].waitForExistence(timeout: 5))
         dismissConfirmation(titled: "Remove older saved images?")
 
-        // Remove only the disposable in-app pin so it can't cover a thumbnail.
-        let closePin = cod.buttons["Close pin"]
-        closePin.tap()
-        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: closePin)
-        waitForExpectations(timeout: 5)
-        XCTAssertFalse(cod.staticTexts["Clear saved history?"].exists, "Closing a pin must not tap through to the underlying setting")
         let library = tab("Library")
         if !library.isHittable {
             print("AFTER HISTORY CANCEL: \(cod.debugDescription)")
@@ -147,7 +142,7 @@ final class LaunchFlowTests: XCTestCase {
             cancel.tap()
         } else {
             // Popover-style confirmation dialogs omit Cancel. Dismiss outside
-            // the popover; an unrelated pin can also have a Close button.
+            // the popover; another presented view can also have a Close button.
             let outside = cod.otherElements["PopoverDismissRegion"]
             XCTAssertTrue(outside.exists)
             outside.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
@@ -162,6 +157,9 @@ final class LaunchFlowTests: XCTestCase {
         expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: settings)
         waitForExpectations(timeout: 5)
         settings.tap()
+        // Wait for the destination, not just a tappable floating-tab animation.
+        if !cod.navigationBars["Settings"].waitForExistence(timeout: 3) { tab("Settings").tap() }
+        XCTAssertTrue(cod.navigationBars["Settings"].waitForExistence(timeout: 5), cod.debugDescription)
         let notification = cod.switches["Tap notification to float"]
         if notification.waitForExistence(timeout: 5), notification.value as? String == "1" {
             notification.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()

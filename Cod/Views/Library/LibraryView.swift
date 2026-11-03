@@ -3,22 +3,58 @@ import SwiftUI
 struct LibraryView: View {
     @EnvironmentObject private var store: SnapStore
     @EnvironmentObject private var coordinator: CaptureCoordinator
-    @EnvironmentObject private var pins: PinManager
     @EnvironmentObject private var settings: AppSettings
+    @StateObject private var savedReferences = SavedReferenceStore.shared
 
     @State private var query = ""
+    @State private var favoritesOnly = false
     @State private var confirmClear = false
     @State private var detail: Snap?
 
-    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 10)]
+    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 12)]
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                if let issue = store.storageIssue {
+                    Text(issue).font(.footnote).foregroundStyle(.secondary).padding()
+                        .accessibilityIdentifier("library-storage-issue")
+                    if store.canRetryLoading {
+                        Button("Try Loading Library Again") { store.retryLoading() }
+                            .frame(minHeight: 44).accessibilityIdentifier("retry-library-load")
+                    }
+                }
+                VStack(spacing: 16) {
+                    NavigationLink { SavedReferencesView() } label: {
+                        HStack(spacing: 12) {
+                            CodRowLabel("Saved cards & presets", systemImage: "text.book.closed",
+                                        detail: savedReferences.items.isEmpty
+                                            ? "Text cards, scripts and time tools"
+                                            : "\(savedReferences.items.count) saved")
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.medium)).foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .padding(16)
+                        .background(Color(.secondarySystemGroupedBackground),
+                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).accessibilityIdentifier("saved-references")
+                    Picker("Show", selection: $favoritesOnly) {
+                        Text("All").tag(false)
+                        Text("Favorites").tag(true)
+                    }.pickerStyle(.segmented).accessibilityIdentifier("library-filter")
+                }
+                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 16)
+                if settings.historyLimit == .off, !store.snaps.isEmpty { enableHistory }
                 if store.snaps.isEmpty {
                     emptyState
                 } else if filtered.isEmpty {
-                    ContentUnavailableView.search(text: query)
+                    if query.isEmpty {
+                        ContentUnavailableView("No favorites yet", systemImage: "star", description: Text("Open a capture and tap the star to keep it for later."))
+                    } else { ContentUnavailableView.search(text: query) }
                 } else {
                     grid
                 }
@@ -27,41 +63,48 @@ struct LibraryView: View {
             .background(Color(.systemGroupedBackground))
             .searchable(text: $query, prompt: "Search recognized text")
             .toolbar {
-                if !store.snaps.isEmpty {
+                if !store.snaps.isEmpty || !savedReferences.items.isEmpty || savedReferences.loadError != nil || store.storageIssue != nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button(role: .destructive) {
                                 confirmClear = true
                             } label: {
-                                Label("Clear History", systemImage: "trash")
+                                Label("Clear Library…", systemImage: "trash")
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
                         }
+                        .accessibilityIdentifier("library-options")
                     }
                 }
             }
             .confirmationDialog(
-                "Delete all \(store.snaps.count) captures?",
+                "Clear Library?",
                 isPresented: $confirmClear,
                 titleVisibility: .visible
             ) {
-                Button("Delete All", role: .destructive) { store.clear() }
+                if store.historyCount > 0 {
+                    Button("Clear Recent History (\(store.historyCount))", role: .destructive) { store.clearHistory() }
+                }
+                Button("Delete Everything, Including Favorites", role: .destructive) {
+                    do { try SavedReferenceStore.shared.clear(); store.clear() }
+                    catch { coordinator.toast = .failure("Couldn't clear saved cards", error.localizedDescription) }
+                }
             } message: {
-                Text("This removes them from Cod. Anything you saved to Photos stays there.")
+                Text("Clear Recent History keeps favorites and saved cards. Delete Everything removes all captures, favorites, saved cards and presets. Originals in Photos or Files aren't deleted.")
             }
             .sheet(item: $detail) { snap in
                 SnapDetailView(snap: snap)
                     .environmentObject(store)
                     .environmentObject(coordinator)
-                    .environmentObject(pins)
             }
         }
     }
 
     private var filtered: [Snap] {
-        guard !query.isEmpty else { return store.snaps }
-        return store.snaps.filter { snap in
+        let candidates = store.snaps.filter { !favoritesOnly || $0.isFavorite }
+        guard !query.isEmpty else { return candidates }
+        return candidates.filter { snap in
             (snap.recognizedText ?? "").localizedCaseInsensitiveContains(query)
                 || snap.barcodes.contains { $0.localizedCaseInsensitiveContains(query) }
         }
@@ -69,8 +112,39 @@ struct LibraryView: View {
 
     private var grid: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(filtered) { snap in
+            LazyVGrid(columns: columns, spacing: 12) {
+                let matching = Set(filtered.map(\.id))
+                let favorites = store.favorites.filter { matching.contains($0.id) }
+                if !favorites.isEmpty {
+                    Section {
+                        thumbnails(favorites)
+                    } header: {
+                        Text("Favorites").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("library-favorites-heading")
+                    }
+                }
+                if !favoritesOnly {
+                    let history = filtered.filter { !$0.isFavorite }
+                    if !history.isEmpty {
+                        Section {
+                            thumbnails(history)
+                        } header: {
+                            Text("Recent history").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, favorites.isEmpty ? 0 : 16)
+                                .accessibilityIdentifier("library-history-heading")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+    }
+
+    private func thumbnails(_ snaps: [Snap]) -> some View {
+                ForEach(snaps) { snap in
                     Button {
                         detail = snap
                     } label: {
@@ -86,16 +160,15 @@ struct LibraryView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Saved \(snap.origin.label.lowercased()), \(snap.dimensionLabel)")
+                    .accessibilityIdentifier("library-capture-\(snap.id)")
                     .contextMenu { menu(for: snap) }
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
     }
 
     private func badges(for snap: Snap) -> some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
+            if snap.isVideo { badge("play.fill") }
+            if snap.isFavorite { badge("star.fill") }
             if snap.hasText {
                 badge("textformat")
             }
@@ -103,21 +176,23 @@ struct LibraryView: View {
                 badge("qrcode")
             }
         }
-        .padding(6)
+        .padding(8)
     }
 
     private func badge(_ systemImage: String) -> some View {
         Image(systemName: systemImage)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(size: 12, weight: .medium))
             .foregroundStyle(.white)
-            .padding(4)
-            .background(.black.opacity(0.55), in: Circle())
+            .frame(width: 24, height: 24)
+            .background(.black.opacity(0.7), in: RoundedRectangle(cornerRadius: 6))
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder
     private func menu(for snap: Snap) -> some View {
         Button {
-            if let image = store.image(for: snap) {
+            if snap.isVideo { coordinator.reopenVideo(snap, float: true) }
+            else if let image = store.image(for: snap) {
                 coordinator.floatImmediately(
                     image: image, origin: snap.origin, minimalUI: true, reusePreparedPlayback: false)
             }
@@ -125,15 +200,11 @@ struct LibraryView: View {
             Label("Float", systemImage: "pip.enter")
         }
         .disabled(coordinator.isWorking)
-        Button {
-            coordinator.reopen(snap)
-        } label: {
-            Label("Re-crop", systemImage: "crop")
+        if !snap.isVideo {
+            Button { coordinator.reopen(snap) } label: { Label("Re-crop", systemImage: "crop") }
         }
-        Button {
-            if let image = store.image(for: snap) { pins.add(image: image, recognizedText: snap.recognizedText) }
-        } label: {
-            Label("Pin", systemImage: "pin")
+        Button { store.toggleFavorite(snap.id) } label: {
+            Label(snap.isFavorite ? "Remove Favorite" : "Favorite", systemImage: snap.isFavorite ? "star.slash" : "star")
         }
         Button {
             if let image = store.image(for: snap) {
@@ -167,7 +238,15 @@ struct LibraryView: View {
                 settings.historyLimit == .off
                     ? "History is turned off in Settings, so nothing is being kept."
                     : "Images you float or crop appear here. Choose a photo from the Float tab to get started.")
+        } actions: {
+            if settings.historyLimit == .off { enableHistory }
         }
+    }
+    private var enableHistory: some View {
+        Button("Enable History") { settings.historyLimit = .ten }
+            .buttonStyle(CodActionStyle())
+            .accessibilityIdentifier("enable-history")
+            .padding(8)
     }
 }
 
@@ -178,7 +257,6 @@ struct SnapDetailView: View {
 
     @EnvironmentObject private var store: SnapStore
     @EnvironmentObject private var coordinator: CaptureCoordinator
-    @EnvironmentObject private var pins: PinManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var image: UIImage?
@@ -202,17 +280,26 @@ struct SnapDetailView: View {
                     }
 
                     if let image {
+                        if !snap.isVideo {
+                            NavigationLink("Use in Text") { ReadableImageView(image: image) }.buttonStyle(.bordered)
+                        }
                         Button {
                             dismiss()
-                            coordinator.floatImmediately(
+                            if snap.isVideo { coordinator.reopenVideo(snap, float: true) }
+                            else { coordinator.floatImmediately(
                                 image: image, origin: snap.origin, minimalUI: true, reusePreparedPlayback: false)
+                            }
                         } label: {
-                            Label("Float Image", systemImage: "pip.enter")
+                            Label(snap.isVideo ? "Float Video" : "Float Image", systemImage: "pip.enter")
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .buttonStyle(.borderedProminent).tint(.codActionBackground).foregroundStyle(.white)
+                        .buttonStyle(CodActionStyle())
                         .disabled(coordinator.isWorking)
                     }
+
+                    Button { store.toggleFavorite(snap.id) } label: {
+                        Label(isFavorite ? "Remove Favorite" : "Favorite", systemImage: isFavorite ? "star.fill" : "star")
+                    }.buttonStyle(CodActionStyle(emphasis: .secondary)).accessibilityIdentifier("favorite-capture")
 
                     metadata
 
@@ -237,15 +324,8 @@ struct SnapDetailView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button {
-                            reopen()
-                        } label: {
-                            Label("Re-crop", systemImage: "crop")
-                        }
-                        Button {
-                            pin()
-                        } label: {
-                            Label("Pin", systemImage: "pin")
+                        if !snap.isVideo {
+                            Button { reopen() } label: { Label("Re-crop", systemImage: "crop") }
                         }
                         Button {
                             copyImage()
@@ -271,6 +351,8 @@ struct SnapDetailView: View {
             }
         }
     }
+
+    private var isFavorite: Bool { store.snaps.first(where: { $0.id == snap.id })?.isFavorite ?? false }
 
     private var metadata: some View {
         HStack {
@@ -322,7 +404,7 @@ struct SnapDetailView: View {
     }
 
     private func recognizeIfNeeded() async {
-        guard text == nil, let image else { return }
+        guard !snap.isVideo, text == nil, let image else { return }
         isRecognizing = true
         defer { isRecognizing = false }
         if let result = try? await Recognizer.recognizeText(in: image), !result.isEmpty {
@@ -335,12 +417,6 @@ struct SnapDetailView: View {
 
     private func reopen() {
         coordinator.reopen(snap)
-        dismiss()
-    }
-
-    private func pin() {
-        guard let image else { return }
-        pins.add(image: image, recognizedText: text)
         dismiss()
     }
 

@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: SnapStore
+    @EnvironmentObject private var coordinator: CaptureCoordinator
+    @StateObject private var savedReferences = SavedReferenceStore.shared
     @State private var isEnablingNotifications = false
     @State private var confirmClearHistory = false
     @State private var pendingHistoryLimit: HistoryLimit?
@@ -16,20 +18,26 @@ struct SettingsView: View {
                 actionsSection
                 recognitionSection
                 historySection
-                pinsSection
                 savingSection
                 feelSection
                 aboutSection
             }
+            .codFormStyle()
             .navigationTitle("Settings")
             .confirmationDialog(
-                "Clear saved history?", isPresented: $confirmClearHistory, titleVisibility: .visible
+                "Clear Library?", isPresented: $confirmClearHistory, titleVisibility: .visible
             ) {
-                Button("Clear History", role: .destructive) { store.clear() }
+                if store.historyCount > 0 {
+                    Button("Clear Recent History (\(store.historyCount))", role: .destructive) { store.clearHistory() }
+                }
+                Button("Delete Everything, Including Favorites", role: .destructive) {
+                    do { try savedReferences.clear(); store.clear() }
+                    catch { coordinator.toast = .failure("Couldn't clear saved cards", error.localizedDescription) }
+                }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(
-                    "This deletes images and recognized text saved in Cod's history. Photos, pinned images and pending shares aren't removed."
+                    "Clear Recent History keeps favorites and saved cards. Delete Everything removes captures, favorites, saved cards and presets. Originals in Photos or Files and pending shares aren't deleted."
                 )
             }
             .confirmationDialog(
@@ -41,7 +49,7 @@ struct SettingsView: View {
             ) {
                 if let limit = pendingHistoryLimit {
                     Button(
-                        "Remove \(HistoryRetentionPolicy.removalCount(total: store.snaps.count, limit: limit)) Images",
+                        "Remove \(HistoryRetentionPolicy.removalCount(total: store.historyCount, limit: limit)) Images",
                         role: .destructive
                     ) {
                         applyHistoryLimit(limit)
@@ -51,7 +59,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { pendingHistoryLimit = nil }
             } message: {
                 Text(
-                    "Reducing the history limit removes older images saved in Cod. Choosing Off removes all saved history. Photos, pins and pending shares aren't removed."
+                    "Reducing the history limit removes older images saved in Cod. Choosing Off removes all saved history. Favorites, Photos and pending shares aren't removed."
                 )
             }
         }
@@ -61,7 +69,7 @@ struct SettingsView: View {
 
     private var activationSection: some View {
         Section {
-            Picker("When opening a screenshot", selection: $settings.arrivalMode) {
+            Picker("When offering a new screenshot", selection: $settings.arrivalMode) {
                 ForEach(ArrivalMode.allCases) { mode in
                     Text(mode.label).tag(mode)
                 }
@@ -88,10 +96,10 @@ struct SettingsView: View {
                 Slider(value: $settings.captureDelay, in: 0...2, step: 0.1)
             }
         } header: {
-            Text("Screenshot Editor")
+            Text("Screenshot editor")
         } footer: {
             Text(
-                "These options apply to Crop Latest Screenshot, not explicit Float Shortcuts. \(settings.arrivalMode.detail)"
+                "These options apply to automatic screenshot offers. Explicit Float and Crop buttons and Shortcuts always do the action you choose. \(settings.arrivalMode.detail)"
             )
         }
     }
@@ -101,10 +109,12 @@ struct SettingsView: View {
     private var shareSheetSection: some View {
         Group {
             Section {
+                NavigationLink("Quick introduction") { FloatingIntroductionView() }
+                    .accessibilityIdentifier("reopen-introduction")
                 NavigationLink {
                     OneTapFloatGuide()
                 } label: {
-                    Label("Set up fast floating", systemImage: "bolt")
+                    CodRowLabel("Set up fast floating", systemImage: "bolt")
                 }
                 Toggle(
                     "One tap float",
@@ -116,7 +126,7 @@ struct SettingsView: View {
                 Text("Floating")
             } footer: {
                 Text(
-                    "Skip cropping for chosen, pasted and shared images. This switch doesn't open Cod automatically. Explicit Float Shortcuts always float their supplied image."
+                    "Skip cropping for pasted and shared images. Explicit Float and Crop actions always follow your choice."
                 )
             }
             Section {
@@ -149,11 +159,18 @@ struct SettingsView: View {
                 if let error = settings.sharePreferenceError {
                     Text(error).font(.footnote).foregroundStyle(.red)
                 }
+                DisclosureGroup("Why sharing needs another step") {
+                    Text("The Cod app icon runs a Share extension. iOS doesn't let that extension launch Cod directly; the full app must open to start PiP. Tap its notification or open Cod manually.")
+                    Text("The Float with Cod Share Shortcut opens Cod directly and avoids the notification tap. Focus, summaries and banner settings may hide or delay a notification.")
+                    Text("One tap float skips cropping; it doesn't open Cod automatically. Explicit Float Shortcuts always float their supplied image. Photo and screenshot buttons always follow the action you choose.")
+                }
+                .font(.subheadline).foregroundStyle(.secondary)
+                .accessibilityIdentifier("share-route-explanation")
             } header: {
-                Text("Share → Cod App Icon")
+                Text("Share → Cod app icon")
             } footer: {
                 Text(
-                    "Optional fallback: share to Cod, then tap its notification to open the app. Without notifications, open Cod yourself. Focus and banner settings can affect delivery. Use the Float with Cod Shortcut for the faster route."
+                    "Share → Cod, then tap its notification. You can also open Cod manually. The Share Shortcut is the faster route."
                 )
             }
         }
@@ -166,7 +183,7 @@ struct SettingsView: View {
             Text("Picture in Picture")
         } footer: {
             Text(
-                "Switch apps once the image is floating. Cod doesn't change your screen automatically. iOS controls PiP's buttons, size and movement. If PiP stops when you leave Cod, try turning this option off."
+                    "After PiP starts, switch apps yourself. iOS controls the window. If PiP stops when you leave Cod, try turning this off."
             )
         }
     }
@@ -184,7 +201,7 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text("In-App Actions")
+            Text("In-app actions")
         } footer: {
             Text(
                 "Choose actions for Cod's own crop editor. The share-sheet crop screen only offers Float.")
@@ -219,7 +236,7 @@ struct SettingsView: View {
 
             Toggle("Language correction", isOn: $settings.ocrLanguageCorrection)
         } header: {
-            Text("Text Recognition")
+            Text("Text recognition")
         } footer: {
             Text(settings.ocrAccuracy.detail)
         }
@@ -234,7 +251,7 @@ struct SettingsView: View {
                 selection: Binding(
                     get: { settings.historyLimit },
                     set: { limit in
-                        if HistoryRetentionPolicy.removalCount(total: store.snaps.count, limit: limit) > 0 {
+                        if HistoryRetentionPolicy.removalCount(total: store.historyCount, limit: limit) > 0 {
                             pendingHistoryLimit = limit
                         } else {
                             applyHistoryLimit(limit)
@@ -249,20 +266,20 @@ struct SettingsView: View {
             .accessibilityIdentifier("history-limit")
 
             HStack {
-                Text("On disk")
+                Text("History on disk")
                 Spacer()
                 Text(ByteCountFormatter.string(fromByteCount: store.diskUsage, countStyle: .file))
                     .foregroundStyle(.secondary)
             }
 
-            Button("Clear History", role: .destructive) { confirmClearHistory = true }
-                .disabled(store.snaps.isEmpty)
+            Button("Clear Library…", role: .destructive) { confirmClearHistory = true }
+                .disabled(store.snaps.isEmpty && savedReferences.items.isEmpty)
                 .accessibilityIdentifier("clear-history")
         } header: {
             Text("History")
         } footer: {
             Text(
-                "Saved images stay on this device and may be included in backups. Clearing history or lowering the limit asks before deleting anything. It doesn't remove Photos copies or pending shares."
+                "Saved media stay on this device and may be included in backups. Favorites, named cards and presets stay saved when History is Off or its limit is reduced. Clear Library lets you clear recent history or delete everything, including those saves, after confirmation. Photos copies and pending shares aren't removed."
             )
         }
     }
@@ -270,48 +287,6 @@ struct SettingsView: View {
     private func applyHistoryLimit(_ limit: HistoryLimit) {
         settings.historyLimit = limit
         store.trim(to: limit)
-    }
-
-    // MARK: - Pins
-
-    private var pinsSection: some View {
-        Section {
-            Picker("Shadow", selection: $settings.pinShadow) {
-                ForEach(PinShadow.allCases) { shadow in
-                    Text(shadow.label).tag(shadow)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Opacity")
-                    Spacer()
-                    Text("\(Int(settings.pinOpacity * 100))%")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                Slider(value: $settings.pinOpacity, in: 0.25...1, step: 0.05)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Corner radius")
-                    Spacer()
-                    Text("\(Int(settings.pinCornerRadius))")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                Slider(value: $settings.pinCornerRadius, in: 0...24, step: 1)
-            }
-
-        } header: {
-            Text("Pins Inside Cod")
-        } footer: {
-            Text(
-                "Shadow, opacity and corner radius affect pins inside Cod only—not the system Picture in Picture window."
-            )
-        }
     }
 
     // MARK: - Saving
@@ -328,7 +303,6 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Toggle("Copy image when pinning", isOn: $settings.autoCopyOnCapture)
         } header: {
             Text("Saving")
         } footer: {
@@ -346,7 +320,7 @@ struct SettingsView: View {
             Toggle("Detect blocks to tap", isOn: $settings.smartRegions)
             Toggle("Magnifier while dragging", isOn: $settings.showMagnifier)
         } header: {
-            Text("Crop Surface")
+            Text("Crop surface")
         } footer: {
             Text(
                 "Block detection outlines paragraphs and cards so you can snap the selection onto one with a single tap."
@@ -361,12 +335,12 @@ struct SettingsView: View {
             NavigationLink {
                 CapabilitiesView()
             } label: {
-                Label("What Cod can and can't do", systemImage: "info.circle")
+                CodRowLabel("What Cod can and can't do", systemImage: "info.circle")
             }
             NavigationLink {
                 PrivacyView()
             } label: {
-                Label("Privacy", systemImage: "hand.raised")
+                CodRowLabel("Privacy", systemImage: "hand.raised")
             }
             LabeledContent(
                 "Version",
@@ -388,14 +362,10 @@ struct ActionOrderView: View {
                 ForEach(settings.actionOrder) { action in
                     HStack(spacing: 12) {
                         Image(systemName: action.systemImage)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(action.tint)
-                            .frame(width: 30, height: 30)
-                            .background(
-                                action.tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            )
+                            .font(.body).foregroundStyle(.secondary)
+                            .frame(width: 24)
 
-                        VStack(alignment: .leading, spacing: 1) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(action.title).font(.body)
                             Text(action.subtitle)
                                 .font(.caption)
@@ -509,8 +479,7 @@ struct CapabilitiesView: View {
             Section("Works") {
                 row("Crop any region of a screenshot", true)
                 row("Frozen image while you select", true)
-                row("Multiple pins floating over Cod", true)
-                row("One pin floating over every app (PiP)", pip.isSupported)
+                row("Picture in Picture over other apps", pip.isSupported)
                 row("OCR with language + accuracy control", true)
                 row("QR and barcode scanning", true)
                 row("Screenshot history, searchable by text", true)

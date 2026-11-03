@@ -29,6 +29,19 @@ struct RouteView: View {
                 dismiss()
             }
 
+        case let .tool(session):
+            NavigationStack { FloatingToolSessionView(session: session) }
+
+        case let .pdf(reference):
+            NavigationStack { PDFReferenceView(reference: reference) }
+
+        case let .video(reference, autoFloat):
+            NavigationStack { FloatingVideoView(reference: reference, autoFloat: autoFloat) }
+        case let .readable(image):
+            NavigationStack { ReadableImageView(image: image) }
+        case let .saved(reference):
+            NavigationStack { SavedReferenceEditor(reference: reference) }
+
         }
     }
 }

@@ -14,7 +14,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "7"
+    CURRENT_PROJECT_VERSION: "21"
     DEVELOPMENT_TEAM: UE492DNA6V
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -64,6 +64,9 @@ targets:
     sources:
       - path: CodControls
       - path: Cod/Intents/FloatControlIntent.swift
+      - path: Cod/Intents/SavedReferenceIntent.swift
+      - path: Cod/Support/SavedReferenceCatalog.swift
+      - path: Cod/FloatingTools/CodTimerAlarmMetadata.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store.controls
@@ -71,6 +74,8 @@ targets:
         INFOPLIST_FILE: CodControls/Info.plist
         GENERATE_INFOPLIST_FILE: YES
         APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_ENTITLEMENTS: Cod/StoreRelease.entitlements
+        COD_APP_GROUP: group.com.josh.cod.store
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_CONTROLS_EXTENSION"
         TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: YES
@@ -89,6 +94,7 @@ targets:
       - path: Cod/Views/Components/ActionBar.swift
       - path: Cod/Store/AppSettings.swift
       - path: Cod/Capture/ImageProcessing.swift
+      - path: Cod/FloatingTools/FloatingText.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.store.share
@@ -124,6 +130,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.josh.cod.launch-harness
+        INFOPLIST_FILE: CodLaunchHarness/Info.plist
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Cod Launch Lab
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

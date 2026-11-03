@@ -1,10 +1,11 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct RootView: View {
     @EnvironmentObject private var coordinator: CaptureCoordinator
-    @EnvironmentObject private var pins: PinManager
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var pip: PiPPinController
+    @EnvironmentObject private var store: SnapStore
 
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var inbox = IntentInbox.shared
@@ -14,8 +15,9 @@ struct RootView: View {
     @State private var quickLaunchRequestID: UUID?
     @State private var quickLaunchIsNotification = false
     @State private var suppressUnrequestedShare = false
+    @State private var documentImportTask: Task<Void, Never>?
 
-    var body: some View {
+    private var overlayContent: some View {
         ZStack {
             TabView(selection: $selectedTab) {
                 HomeView()
@@ -31,26 +33,20 @@ struct RootView: View {
                     .tag(2)
             }
 
-            // The crop surface sits above the tabs but below the pins, so a
-            // snippet you just pinned floats over the screenshot you're still
-            // cropping — exactly the Snapper behaviour.
+            // The crop surface sits above the tabs.
             if let pending = coordinator.pending {
                 SelectionView(
                     image: pending.image,
                     onCancel: { coordinator.dismissSelection() },
                     onAction: { action, image, rect in
                         coordinator.run(action, image: image, rect: rect, origin: pending.origin)
-                    }
+                    },
+                    onReadText: { coordinator.openReadableImage($0) }
                 )
                 .id(pending.id)
                 .transition(.opacity.combined(with: .scale(scale: 1.02)))
                 .zIndex(1)
             }
-
-            PinOverlay(manager: pins) { action, pin in
-                coordinator.run(pinAction: action, pin: pin)
-            }
-            .zIndex(2)
 
             // Launched purely to float: keep the app out of the way.
             if coordinator.floatOnlyLaunch {
@@ -66,10 +62,15 @@ struct RootView: View {
             }
         }
         .toast($coordinator.toast)
+    }
+
+    private var inputContent: some View {
+        overlayContent
         .onOpenURL { url in
             CodDiagnosticLog.record("app: received URL scheme=\(url.scheme ?? "none") host=\(url.host ?? "none")")
 
             if let id = QuickFloatLaunchRoute.configured?.requestID(in: url) {
+                documentImportTask?.cancel()
                 quickLaunchRequestID = id
                 quickLaunchIsNotification = false
                 suppressUnrequestedShare = true
@@ -82,20 +83,36 @@ struct RootView: View {
             // This is distinct from selecting our Share extension: not every
             // image source offers a direct document-opening action.
             guard url.isFileURL else { return }
-            let accessing = url.startAccessingSecurityScopedResource()
-            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             quickShareTask?.cancel()
             quickLaunchRequestID = nil
             quickLaunchIsNotification = false
+            suppressUnrequestedShare = true
+            documentImportTask?.cancel()
             coordinator.prioritizeExplicitInput()
-            guard let image = UIImage.decodedImage(at: url) else {
-                coordinator.toast = .failure("Couldn't open image")
-                return
+            let inputID = coordinator.explicitInputID
+            documentImportTask = Task {
+                do {
+                    let content = try await VisualFileImport.open(url)
+                    try Task.checkCancellation()
+                    guard inputID == coordinator.explicitInputID else { return }
+                    switch content {
+                    case .image(let image): coordinator.receiveExternalImage(image)
+                    case .video(let video): coordinator.route = .init(kind: .video(video))
+                    case .pdf(let pdf): coordinator.route = .init(kind: .pdf(pdf))
+                    }
+                } catch {
+                    guard !Task.isCancelled, inputID == coordinator.explicitInputID else { return }
+                    if let message = ImportRecovery.message(for: error) {
+                        coordinator.toast = .failure("Couldn't open file", message)
+                    }
+                }
             }
-            coordinator.receiveExternalImage(image)
         }
         .onReceive(NotificationCenter.default.publisher(for: .codQuickFloatRequested)) { _ in
             scheduleQuickShare()
+        }
+        .onChange(of: store.storageIssue) { _, issue in
+            if let issue { coordinator.toast = .failure("Library needs attention", issue) }
         }
         .onChange(of: inbox.pendingQuickFloatRequestID) { _, id in
             guard let id else { return }
@@ -113,6 +130,21 @@ struct RootView: View {
             coordinator.pip.restorationImage = nil
             coordinator.restoreFloatingSelection(image)
         }
+        .onChange(of: pip.restorationTool?.id) { _, id in
+            guard id != nil, let session = pip.restorationTool else { return }
+            pip.restorationTool = nil
+            selectedTab = 0
+            coordinator.floatOnlyLaunch = false
+            coordinator.route = .init(kind: .tool(session))
+        }
+        .onChange(of: pip.restorationVideo?.id) { _, id in
+            guard id != nil, let video = pip.restorationVideo else { return }
+            pip.restorationVideo = nil
+            selectedTab = 0
+            coordinator.floatOnlyLaunch = false
+            coordinator.route = .init(kind: .video(video))
+        }
+        .onChange(of: inbox.pendingReference?.id) { _, _ in receiveReference() }
         .sheet(item: $coordinator.route) { route in
             RouteView(route: route)
                 .environmentObject(coordinator)
@@ -124,7 +156,7 @@ struct RootView: View {
             guard let image else { return }
             inbox.pendingImage = nil
             coordinator.prioritizeExplicitInput()
-            coordinator.present(image: image, origin: .screenshot)
+            coordinator.restoreFloatingSelection(image, origin: .screenshot)
         }
         .onChange(of: inbox.pendingFloatImage) { _, image in
             guard let image else { return }
@@ -143,8 +175,12 @@ struct RootView: View {
             coordinator.prioritizeExplicitInput()
             Task { await coordinator.floatLatestScreenshot(minimalUI: true) }
         }
+    }
+
+    var body: some View {
+        inputContent
         .task {
-            CodDiagnosticLog.record("app: root ready build=release-polish-7 phase=\(scenePhase)")
+            CodDiagnosticLog.record("app: root ready build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "unknown") phase=\(scenePhase)")
             coordinator.refreshSharedImages()
             coordinator.refreshQuickSharePreview()
             if let id = inbox.pendingQuickFloatRequestID {
@@ -154,7 +190,9 @@ struct RootView: View {
             }
             // Cold launch from a Shortcut: the intent may have landed before
             // this view existed.
-            if let image = inbox.pendingFloatImage {
+            if inbox.pendingReference != nil {
+                receiveReference()
+            } else if let image = inbox.pendingFloatImage {
                 inbox.pendingFloatImage = nil
                 coordinator.receiveFloatIntentImage(image)
             } else if inbox.wantsFloatLatest {
@@ -164,7 +202,7 @@ struct RootView: View {
             } else if let image = inbox.pendingImage {
                 coordinator.prioritizeExplicitInput()
                 inbox.pendingImage = nil
-                coordinator.present(image: image, origin: .screenshot)
+                coordinator.restoreFloatingSelection(image, origin: .screenshot)
             } else if inbox.wantsLatestScreenshot {
                 coordinator.prioritizeExplicitInput()
                 inbox.wantsLatestScreenshot = false
@@ -203,9 +241,43 @@ struct RootView: View {
             guard phase == .active, settings.watchScreenshots,
                   !coordinator.floatOnlyLaunch, !coordinator.pip.status.isBusy else { return }
             guard coordinator.sharedImages.isEmpty, coordinator.quickSharePreview == nil else { return }
+            // Don't cover a live tool, document picker or tool draft with an
+            // unrelated screenshot offer when returning to Cod.
+            guard coordinator.isFloatListVisible, coordinator.route == nil, !pip.isActive else { return }
             guard coordinator.pending == nil, PhotoLibraryService.isAuthorized() else { return }
             Task { await coordinator.captureLatestScreenshot(force: false) }
         }
+    }
+
+    private func receiveReference() {
+        documentImportTask?.cancel()
+        guard let input = inbox.pendingReference else { return }
+        inbox.pendingReference = nil
+        quickShareTask?.cancel()
+        quickLaunchRequestID = nil
+        quickLaunchIsNotification = false
+        suppressUnrequestedShare = true
+        coordinator.prioritizeExplicitInput()
+        do {
+            switch input.content {
+            case .text(let text):
+                let image = try FloatingText.render(text)
+                coordinator.receiveFloatIntentImage(image)
+            case .pdf(let data, let page):
+                let reference = try PDFReference(data: data)
+                let image = try reference.image(pageIndex: page - 1)
+                coordinator.receiveFloatIntentImage(image)
+            case .saved(let id):
+                coordinator.floatSavedReference(id)
+            case .animated(let data):
+                Task {
+                    do {
+                        let video = try await AnimatedImageImport.video(data)
+                        coordinator.route = .init(kind: .video(video, autoFloat: true))
+                    } catch { coordinator.toast = .failure("Couldn't open animation", error.localizedDescription) }
+                }
+            }
+        } catch { coordinator.toast = .failure("Couldn't float reference", error.localizedDescription) }
     }
 
     private func scheduleQuickShare() {
@@ -216,7 +288,10 @@ struct RootView: View {
             try? await Task.sleep(nanoseconds: 150_000_000)
             guard !Task.isCancelled, scenePhase == .active else { return }
             let id = quickLaunchRequestID
-            guard id != nil || (!settings.useFloatNotification && !suppressUnrequestedShare) else { return }
+            // A deliberate manual open is also the fallback when banners
+            // are disabled/hidden. A notification preference mustn't block
+            // receipt of its prepared image. Explicit other inputs still win.
+            guard id != nil || !suppressUnrequestedShare else { return }
             if coordinator.receiveQuickShare(expectedID: id, fromNotification: quickLaunchIsNotification) {
                 quickLaunchRequestID = nil
                 quickLaunchIsNotification = false
@@ -225,6 +300,7 @@ struct RootView: View {
     }
 
     private func receiveNotificationRequest(_ id: UUID) {
+        documentImportTask?.cancel()
         quickLaunchRequestID = id
         quickLaunchIsNotification = true
         suppressUnrequestedShare = true

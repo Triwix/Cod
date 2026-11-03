@@ -29,7 +29,7 @@ final class PiPStateTests: XCTestCase {
         settings.arrivalMode = .instant
         settings.instantAction = .float
         let pip = PiPPinController()
-        let coordinator = CaptureCoordinator(store: store, settings: settings, pins: PinManager(), pip: pip)
+        let coordinator = CaptureCoordinator(store: store, settings: settings, pip: pip)
         coordinator.floatOnlyLaunch = true
         let image = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 12)).image { _ in UIColor.red.setFill() }
         coordinator.restoreFloatingSelection(image)

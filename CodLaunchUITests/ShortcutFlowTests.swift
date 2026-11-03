@@ -9,6 +9,8 @@ final class ShortcutFlowTests: XCTestCase {
             throw XCTSkip(
                 "Installer tests replace disposable simulator Shortcuts; never replace a person's phone workflows.")
         #endif
+        XCUIDevice.shared.orientation = .portrait
+        shortcuts.terminate()
     }
 
     func testSignedShareShortcutImportsAndDeliversColdAndWarmImages() {
@@ -54,12 +56,19 @@ final class ShortcutFlowTests: XCTestCase {
         let target = cod.cells.matching(NSPredicate(format: "label == 'Shortcuts'")).firstMatch
         XCTAssertTrue(target.waitForExistence(timeout: 8))
         target.tap()
-        let inCod = cod.buttons["Add Shortcut"]
-        let inShortcuts = shortcuts.buttons["Add Shortcut"]
-        let available = NSPredicate { _, _ in inCod.exists || inShortcuts.exists }
+        // Imported workflows can be presented by either process. A button
+        // behind another sheet still exists; only tap the foreground sheet.
+        let surfaces = [shortcuts, cod]
+        let available = NSPredicate { _, _ in
+            surfaces.contains { app in app.state == .runningForeground && app.buttons.matching(identifier: "Add Shortcut").allElementsBoundByIndex.contains(where: \.isHittable) }
+        }
         expectation(for: available, evaluatedWith: nil)
         waitForExpectations(timeout: 12)
-        if inCod.exists { inCod.tap() } else { inShortcuts.tap() }
+        let addButton = surfaces.filter { $0.state == .runningForeground }
+            .flatMap { $0.buttons.matching(identifier: "Add Shortcut").allElementsBoundByIndex }
+            .first(where: \.isHittable)
+        XCTAssertNotNil(addButton, "The native Add Shortcut confirmation must be on screen")
+        addButton?.tap()
         // Only replaces the diagnostic Shortcut installed by this test.
         if shortcuts.buttons["Replace"].waitForExistence(timeout: 2) {
             shortcuts.buttons["Replace"].tap()

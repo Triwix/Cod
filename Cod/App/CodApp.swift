@@ -5,7 +5,6 @@ struct CodApp: App {
     @UIApplicationDelegateAdaptor(CodApplicationDelegate.self) private var applicationDelegate
     @StateObject private var settings = AppSettings.shared
     @StateObject private var store = SnapStore.shared
-    @StateObject private var pins = PinManager.shared
     @StateObject private var pip = PiPPinController.shared
     @StateObject private var coordinator = CaptureCoordinator()
 
@@ -17,7 +16,6 @@ struct CodApp: App {
                 #endif
                 .environmentObject(settings)
                 .environmentObject(store)
-                .environmentObject(pins)
                 .environmentObject(pip)
                 .environmentObject(coordinator)
         }

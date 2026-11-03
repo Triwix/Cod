@@ -29,7 +29,7 @@ final class FloatEntryPointTests: XCTestCase {
         let settings = AppSettings(defaults: defaults, sharePreferences: CropFirstPreferences())
         XCTAssertFalse(settings.oneTapFloat)
         settings.historyLimit = .off
-        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pins: .shared, pip: PiPPinController())
+        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController())
         let image = UIGraphicsImageRenderer(size: CGSize(width: 37, height: 19)).image { context in
             UIColor.green.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 37, height: 19))

@@ -1,186 +1,147 @@
-# Image-floating MVP reliability
+# MVP checklist
 
-> Historical checklist through build 5. Build 6 removed unsupported mechanisms
-> and their build configurations. The current supported-only release gates
-> are in APP_STORE_RELEASE.md; setup is in docs/float-entry-points.md.
+Current candidate: **Cod Test 1.0 (21)**, locally verified and installed on Jay
+(iPhone 16 Pro Max) on November 2. The installed version was checked and the
+app launched successfully. Owner review and physical feature acceptance are open.
+Automated checks are not a substitute
+for physical-device acceptance or App Review. Keep the original Cod app/data untouched.
 
-October 18, build 4: system controls, notification handoff, and signed Back Tap /
-Share-sheet Shortcut installers are implemented. Both native Shortcut import
-and actual-image handoff tests pass in the simulator; physical PiP acceptance
-for these new routes remains open. See [entry-point verification](docs/float-entry-points.md).
+Use only documented Apple APIs. The Share extension cannot launch Cod directly;
+fast floating uses the installed Shortcut or system controls. Automatic return
+to the previous app is not supported. Public APIs do not guarantee approval.
 
-October 15 fast-share candidate: [FAST_SHARE.md](FAST_SHARE.md). The product
-acceptance target remains Share → Cod → PiP, not the manual-open fallback.
-Fast launch is separated from private source-app return and PiP control hiding;
-physical acceptance and review eligibility are distinct, unfinished checks.
+Details: [release gates](APP_STORE_RELEASE.md),
+[latest UI refinement](docs/redesign-21.md),
+[latest audit follow-up](docs/audit-follow-up-20.md),
+[submission draft](docs/app-store-draft.md).
 
-App Store transition is tracked separately in [APP_STORE_RELEASE.md](APP_STORE_RELEASE.md).
-The default **Cod** scheme now tests a public-API automatic-receipt/manual-open
-fallback, not the desired one-tap native Share → PiP workflow. See
-[fast-launch tests](FAST_LAUNCH_TESTS.md). It does not need Save/Done/inbox Float.
-the earlier source-aware flow below is retained only in **Cod Personal**.
-These earlier physical confirmations do not certify the new store workflow.
+Research: [feature candidates](docs/feature-candidates.md). Selected items
+1, 2, 3, 4, 6, 10, 11 and 12 are implemented; the others remain unapproved ideas.
 
-Updated October 6, 2026. Research build: `return-context-research-20261006`;
-clean build: `return-research-complete-20261006`.
-Videos remain deferred; this checklist covers still-image floating only.
+## Open items
 
-## Verified so far
+1. Review the build-21 native UI refinement on the phone and confirm the
+   Share/Shortcut/document request-lifecycle fix carried forward from build 20.
+   Complete iPhone PiP reliability checks: cold/warm launch, image replacement,
+   early taps/restore, close/reopen, resizing, rotation, lock/unlock, music mixing
+   and another app already using PiP. Verify prompter smoothness, native rewind,
+   pause, countdown and replay. Simulator PiP is unavailable or shows black tool
+   pictures; use the phone for actual floating-picture acceptance.
+2. Confirm physical-device setup and use of Back Tap, Control Center, Lock Screen,
+   Action Button and notification handoff, including permission denial and Focus.
+   Check the new saved-card/favorite Shortcut, Home Screen widget and configurable
+   control, including changed/deleted references and a locked phone.
+3. Investigate delayed timer-alarm sound on the phone. Verify short and longer
+   timers with music, Cod foreground/background and the screen locked; check
+   alarm permission, pause/resume/restart, cancellation and both PiP-close settings.
+4. Verify video sound, repeat boundaries, Repeat Off, pause/seek, restore and
+   replacement on the phone, plus GIF motion/timing and video-region crop/reset.
+5. Finish phone acceptance of text/teleprompter, PDF cropping, time tools, numeric
+   entry, Preview labels, live colors and Library favorites/clear-history behavior.
+   Include image-to-text accuracy/original comparison, named-card/preset editing,
+   finite image/PDF scrolling, and timed prompter guide/margins/line spacing.
+   Check the unified Text/photo/Teleprompter flow, inline PDF toggle and optional
+   first-run introduction on the phone.
+   Retest end-of-script seeking and Library save/reopen behavior after build 19.
+6. Finish real-provider import recovery checks: denied/limited Photos access,
+   cloud-only/slow media and interrupted downloads. Local corrupt/unsupported
+   media, cancelled pickers and stale-result rejection have automated coverage.
+7. Finish iPad window-resizing and assistive-technology acceptance before making
+   full-app accessibility claims. iPad landscape/dark, PDF and largest-text
+   introduction checks have passed in the simulator.
+8. Set up Apple Developer Program membership and distribution signing. Confirm
+   the publishing team, bundle IDs and App Groups; regenerate signed Shortcuts
+   if their app/team identity changes.
+9. Owner: supply the publishing identity and support contact, host the privacy
+   and support pages, configure `COD_PRIVACY_POLICY_URL` and verify the link in
+   the built app. Deferred at the owner's request; it remains a submission gate.
+10. Approve the final name and App Store listing; capture final screenshots and
+    provide the support URL, privacy answers, age
+    rating, export compliance and reviewer instructions. Explain generated
+    still-image/live-tool PiP honestly.
+11. Validate a signed Release archive/TestFlight build, embedded entitlements and
+    installed Shortcuts; rerun unit/UI tests and the submission-mode artifact audit.
+12. Submit for App Review and address any review feedback before publishing.
 
-- The user confirmed Photos → Share → Cod → Float shows the image and returns
-  correctly. Logs recorded both a new window and an in-place replacement.
-- The user confirmed the screenshot-preview exception fixes the black
-  "Screenshots" screen. Later logs explicitly show PiP starting before Cod
-  returns directly to Home, without activating ScreenshotServicesService.
-- Messages sharing reached PiP in ~1.2 seconds and dispatched Messages
-  activation. Logs establish that pipeline, not the exact visual return screen.
-- Earlier simulator UI checks established crop-default and One tap float modes
-  and preference persistence across the separate app/extension processes.
-- The reliability sweep passed 43 automated tests, with no failures or skips.
-  It also built and installed on the paired iPhone. Phone checks below still
-  need repeating on this build.
-- The unsigned device Release configuration also builds successfully, with
-  debug-only return experiments excluded. This is a compile check, not a
-  distribution/signing or App Store acceptance check.
-- The user confirmed all three requested checks on the reliability build:
-  cropped-photo floating, replacing the image in an active PiP window, and
-  closing PiP then floating again, with no issues.
-- The user also confirmed One tap float on/off behavior and at least one minute
-  of floating while music keeps playing. PiP/Spotify screenshot return and early
-  tap behavior remain separate issues, not covered by these passing checks.
+## Completed items
 
-## Early-tap and screenshot-origin follow-up
-
-Device logs at 21:33:11 showed PiP did start, then iOS requested interface
-restoration and began stopping it. At 21:33:12 Cod still activated Photos from
-its delayed automatic return. This is evidence of a restoration/navigation race,
-not a failed initial PiP start. Apple's
-[restoration callback documentation](https://developer.apple.com/documentation/avkit/avpictureinpicturecontrollerdelegate/pictureinpicturecontroller(_:restoreuserinterfaceforpictureinpicturestopwithcompletionhandler:))
-describes this as restoring the app UI before PiP stops.
-
-The follow-up cancels automatic return and start retries on restoration/stop,
-preserves the image in the crop UI, ignores a late start/failure after restoration,
-and makes explicit Open Cod override delayed navigation. Restoring selection
-bypasses Instant Float so it cannot automatically reopen PiP in a loop. iOS's
-native restore gesture can still close PiP; it should no longer trigger a second
-app switch or discard the image. Single-tap versus double-tap/button behavior
-still needs clarification and physical verification.
-
-The Spotify screenshot shares exposed only `com.apple.ScreenshotServicesService`.
-The Home fallback therefore behaved as implemented; returning to the app under
-the preview remains unresolved. Inspected
-[screenshot environment runtime headers](https://raw.githubusercontent.com/qingralf/iOS26-Runtime-Headers/master/PrivateFrameworks/ScreenshotServices.framework/SSEnvironmentDescription.h)
-contain `currentApplicationBundleID`, but the published
-[screenshot image-sharing implementation](https://github.com/EthanArbuckle/iPhone18-3_26.1_23B85_Restore/blob/main/Applications/ScreenshotServicesService.app/SSSScreenshotItemProviderImage.mm)
-does not establish that this environment is forwarded to Cod.
-
-Cod now performs a bounded check for that exact environment object in the
-current share's item/provider metadata. It logs only metadata class names when
-missing, not content, titles or URLs. It never assumes Spotify, reuses a previous
-Photos source, queries global foreground apps or reopens the temporary service.
-Absent reliable metadata, the safe Home fallback remains. The physical test
-at 21:52:55 found no screenshot environment in the inspected share metadata;
-only the temporary service was identified. This approach did not recover
-Spotify, and the user reported that neither symptom changed.
-
-The follow-up passed all 50 simulator tests and built for device. The physical
-test at 21:52:22 still produced a native restore/stop request after PiP started.
-No competing automatic activation appeared after that restoration, but native
-PiP closure was still unresolved in that build. Controls were still in hidden
-style `2`, prompting an A/B test with Open without controls disabled. The
-automated race-policy tests alone did not fix the user's tap issue.
-
-The user then confirmed that disabling Open without controls fixes early
-tapping. Native controls are now the default for fresh preferences, with an
-explicit warning on the experimental hiding option. Existing preferences are
-preserved; this phone already has the safer setting disabled by the user.
-Screenshot-preview return to Spotify still fails and is not claimed fixed.
-The safer-default update passed all 51 simulator tests and the device build.
-It was not immediately reinstalled because the user's setting already selected
-native controls; it is included in the later research and clean installations.
-The inspected screenshot-service implementation routes share completion and
-preview dismissal through its own controllers, not a return token provided to
-Cod. No new screenshot-routing change is being shipped without a reliable
-original-app identity or a verified system return action.
-
-The next research sweep tested the foreground-app query in the simulator,
-the phone app, and twice in a screenshot-hosted share extension: every query
-returned nil. The phone PNG had no explicit application-ID field, and a
-read-only observer found no delayed Back-to token during the tested warm
-screenshot-share launch. Published authentication code is consistent with
-the query being restricted to system clients. Modern Back-to uses the same
-missing navigation token, not an independent mechanism. No privileged access
-was attempted. See [the research report](RETURN_RESEARCH.md) for observations,
-limits and primary sources. Universal screenshot-origin return is unresolved.
-The clean build passed all 52 simulator tests with no failures or skips and
-was installed after removing the temporary automatic share probes. Its
-unsigned Release build also passed, with explicit diagnostics excluded.
-
-## Hardening in this sweep
-
-- Delayed start/failure/stop/restore callbacks only affect the currently owned
-  PiP controller. Old eligibility and foreground notifications are ignored.
-- Readiness waits have independent ownership, immediate cancellation, one-shot
-  completion, and a bounded timeout. Old waits cannot clear newer observations.
-- A new float cancels old retry/timeout/foreground monitoring. Teardown clears
-  the old background timestamp so it cannot mislabel a later window closure.
-- Corrupt image handoffs are consumed once, preserving unrelated clipboard
-  representations. Tests use disposable, named pasteboards, not the Mac clipboard.
-- Very narrow/tall images retain at least one pixel when downsampled.
-- Encoding checks frame-append failures and removes partial clips on error.
-  Tests decode actual generated H.264 frames, check image color and dimensions,
-  and verify odd dimensions become even.
-- Share imports time out after 20 seconds with Retry available. Late callbacks
-  cannot overwrite a retried or dismissed session. Responder traversal is bounded.
-- The early-close message describes an observation, not a proven audio failure.
-
-## Physical acceptance checks
-
-The automated tests cannot establish actual PiP visibility, controls, duration,
-source-screen restoration, music mixing, or interactions with another app's PiP.
-The simulator's native screen-control service was unavailable during this sweep;
-no new simulator UI pass is claimed.
-
-- [x] Crop mode: share a photo, choose a small region, Float; user reported no issues.
-- [ ] Cancel a separate crop without floating.
-- [x] One tap float: enable it, share a photo, verify no crop menu; disable it
-  afterward and verify the menu returns.
-- [ ] One tap float setting survives a physical-device app restart.
-- [x] Share another photo while PiP is active: the existing window updates,
-  without gray frames, a second window, or an unexpected destination.
-- [x] Close PiP, then float again; user reported no issues.
-- [ ] Repeat several times, including a first float after Cod has been fully
-  closed and reopened.
-- [ ] Immediate screenshot preview: float successfully and land on Home, never
-  a black Screenshots app. Saved screenshot shared from Photos returns to Photos.
-- [ ] Other sources: Messages, Safari image sharing, Files image sharing.
-  Confirm image and destination visually, including cropped/one-tap variants.
-- [ ] Portrait/landscape, rotated JPEG/HEIC, transparent PNG, large camera photo,
-  and very thin image; native PiP movement and all available resize positions.
-- [ ] PiP restore, dismissal, app switching, rotation and lock/unlock; no false
-  error message or automatic reopening after the user closes it.
-- [x] Float with music playing: verify music continues and the window remains
-  visible for at least one minute with the mixing setting enabled.
-- [ ] Another app already owns PiP: verify successful takeover or understandable
-  failure, recovery and no silent image loss.
-- [ ] Shortcut whole-image / latest-screenshot actions on cold and warm launch.
-  Arbitrary Shortcut-origin exact-screen return is not yet solved.
-- [ ] Permission-denied screenshot capture and slow/cloud-only import offer
-  useful errors/retry. The new share-import timeout needs an integration check.
-- [ ] Tap Open Cod while floating is preparing: check whether automatic return
-  later interrupts the user's deliberate decision to stay in the app.
-
-## Next release work
-
-- Complete the physical acceptance checks before calling this a stable MVP.
-- Refresh onboarding/documentation around the share-first workflow and known
-  fallback behavior. Preserve optional Shortcuts; do not require their setup.
-- A core-flow source checkpoint is saved locally as
-  `.checkpoints/image-float-core-20261006.tar.gz`. It preserves current source,
-  project configuration, tests and documentation without committing, staging or
-  discarding existing repository changes. This is not full MVP acceptance;
-  save the final stable checkpoint after the remaining physical checks pass.
-- Clarify distribution: current share launching and source-app return rely on
-  unsupported/private behavior for personal sideloading, not an App Store-ready
-  architecture. New iOS versions can require revalidation.
-- Floating videos remains a separate, unimplemented backlog item.
+- Applied the approved native UI refinement to Home, Library, Settings, the
+  preview/editor headers, setup and launch confirmation: clearer Float actions,
+  aligned neutral icons, consistent shapes/touch targets, shorter guidance and
+  fitted pinned previews. Native typography, content settings and features remain.
+  Verification and screenshots are in [redesign notes](docs/redesign-21.md).
+  Passed all 218 unit tests and 16 relevant simulator UI checks across iPhone
+  and iPad, plus signed Debug, Release archive and local source/artifact checks.
+- Fixed fresh image-playback cleanup ending the new request before its result.
+  Reproduced the bug before the fix and passed five deterministic lifecycle
+  checks plus all 218 signed unit tests and four sharing-flow UI tests. Signed
+  Debug, Release archive and local source/artifact checks passed. The document
+  menu used its permitted Share/manual-open fallback in this simulator run;
+  actual phone PiP and submission-mode validation remain open above.
+- Removed private APIs, direct Share-extension app launching, automatic app
+  return and hidden PiP-control experiments; retained the Cod Debug/Release scheme.
+- Implemented supported Share/Back Tap Shortcuts, App Intents, system controls,
+  optional tapped notifications and manual-open fallback.
+- Confirmed basic Choose Photo and Share Shortcut image floating on the phone.
+- Combined floating choices into one sectioned Float tab with compact image and
+  screenshot actions, clipboard paste and image/video/PDF file imports.
+- Added text references, scrolling and word-group teleprompter modes, sample
+  placeholders, Clear actions, readability controls and PDF crop zoom/pan.
+- Added Current Time, pausable stopwatch with optional hundredths, remembered
+  hour/minute/second timer wheels and directly editable Pomodoro values.
+- Implemented optional AlarmKit alarms, timer-close behavior and smooth circular
+  progress; audible timing remains an open acceptance issue above.
+- Added native video PiP with sound control and default-on repeat.
+- Added local animated-GIF video conversion and non-destructive video-region
+  cropping/reset, retaining sound and repeat controls.
+- Added editable image-to-text cards with original comparison, named saved cards
+  and source/settings presets independent of History.
+- Added saved-card/favorite App Intents, a configurable Home Screen widget and
+  iOS 18+ system control; no direct Share-extension app launching.
+- Added finite image/PDF-page-range auto-scroll and teleprompter reading guides,
+  margins, line spacing and target-duration pacing separate from countdown.
+- Added configurable prompter countdown and finite seekable script playback,
+  Current Time line/size options, typed PDF pages and supported-route explanations.
+- Added visible time-zone search, a ticking clock preview, conditional size reset,
+  default System appearance and smoother cached-layout scrolling with 60-fps pacing.
+- Added stable Library favorites, direct history enabling and explicit choices
+  for clearing recent history or deleting everything; removed in-app pins.
+- Kept dedicated-album saving off by default while preserving saved preferences.
+- Added pinned rounded previews, Preview labels and undimmed live color selection;
+  clarified sample text and removed duplicate Home recents.
+- Consolidated text, photo recognition and teleprompter into one editor with
+  optional playback settings. Made PDF page controls one row and scrolling an
+  inline toggle with automatic preparation and conditional crop controls.
+- Added an optional first-run introduction, with Skip/Not now, replay in Settings,
+  the ready-made Share Shortcut installer and clear explanations of notification
+  and system-control routes. It never gates an incoming image or requires setup.
+- Added visible, cancellable import progress and persistent Home import errors;
+  cancelled pickers are not failures. Nil Photos results and corrupt images get
+  recovery messages, and cancelled/older loads cannot replace newer input.
+- Enlarged color-selector touch targets, clarified text-editor accessibility
+  guidance and removed an unused Home row helper. Added import/setup regression tests.
+- Prepared updated listing copy, concise reviewer notes, privacy wording and an
+  owner-approval/screenshot plan in [submission-package-18](docs/submission-package-18.md).
+  No account answers, public hosting or submission has been performed.
+- Passed 193 unit tests on iPhone and iPad simulators, relevant setup/import/editor
+  UI checks, cold/warm Share Shortcut delivery, signed Debug and Release builds,
+  signature verification and source/Release artifact audits for build 18.
+- Hardened saved-reference updates and failed saves, protected damaged indexes,
+  added non-destructive Library reload and visible storage warnings, and cleaned
+  recognized orphaned media only on explicit full deletion or process-start
+  temporary cleanup. Originals and unknown files are not swept.
+- Bounded thumbnail fallback and image decoding, aligned the 50 MB import limit,
+  streamed PDF page preparation, avoided unnecessary favorite-widget reloads,
+  and bounded/excluded local diagnostic logs from backups.
+- Fixed an end-of-script clock-positioning race. Passed 213 unit tests plus relevant
+  media, saved-card update, PDF, Library and cold/warm Share Shortcut UI checks.
+  Debug/Release builds, signature and source/artifact audits passed for build 19.
+  PDF memory/time measurements and remaining device limits are recorded in
+  [hardening notes](docs/hardening-19.md), not counted as phone playback acceptance.
+- Passed 182 unit tests, relevant simulator UI checks, Debug/Release builds and
+  local source/Release artifact audits for build 17. Build 16's features received
+  positive owner feedback; build 17's phone check remains open. Original Cod
+  app/data remain untouched.
+- Researched competing apps, user requests and documented Apple capabilities;
+  recorded 14 feature candidates with selected implementation scope separated
+  from unapproved ideas and the remaining MVP release gates.

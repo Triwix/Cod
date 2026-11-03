@@ -27,6 +27,32 @@ final class SelectionGeometryTests: XCTestCase {
         XCTAssertEqual(first.height, 9)
     }
 
+    func testZoomedAndPannedCropRoundTripsInOriginalPixels() {
+        let size = CGSize(width: 1200, height: 1600)
+        let container = CGSize(width: 390, height: 844)
+        let base = SelectionGeometry.fit(imageSize: size, in: container)
+        let zoomed = SelectionGeometry.fit(imageSize: size, in: container, zoom: 3, pan: CGSize(width: 70, height: -80))
+        XCTAssertEqual(zoomed.scale, base.scale * 3, accuracy: 0.0001)
+        let pixels = CGRect(x: 123, y: 456, width: 321, height: 654)
+        let roundTrip = zoomed.pixelRect(zoomed.viewRect(pixels))
+        XCTAssertEqual(roundTrip.minX, pixels.minX, accuracy: 0.001)
+        XCTAssertEqual(roundTrip.minY, pixels.minY, accuracy: 0.001)
+        XCTAssertEqual(roundTrip.width, pixels.width, accuracy: 0.001)
+        XCTAssertEqual(roundTrip.height, pixels.height, accuracy: 0.001)
+    }
+
+    func testCropZoomAndPanAreBoundedWithoutBlankOverscroll() {
+        let size = CGSize(width: 1200, height: 1600)
+        let container = CGSize(width: 390, height: 844)
+        let maxZoom = SelectionGeometry.fit(imageSize: size, in: container, zoom: 999, pan: .init(width: 999_999, height: -999_999))
+        let base = SelectionGeometry.fit(imageSize: size, in: container)
+        XCTAssertEqual(maxZoom.scale, base.scale * 6, accuracy: 0.001)
+        XCTAssertEqual(maxZoom.displayRect.minX, 0, accuracy: 1)
+        XCTAssertEqual(maxZoom.displayRect.maxY, container.height, accuracy: 1)
+        let invalid = SelectionGeometry.fit(imageSize: size, in: container, zoom: CGFloat.nan, pan: .init(width: CGFloat.infinity, height: CGFloat.nan))
+        XCTAssertEqual(invalid, base)
+    }
+
     func testCornerResizeStandardizesWhenDraggedPastOppositeCorner() {
         let original = CGRect(x: 20, y: 30, width: 80, height: 60)
 

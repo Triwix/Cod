@@ -34,7 +34,7 @@ final class ReleaseUXTests: XCTestCase {
         cod.launch()
         XCTAssertFalse(install.exists, "Hiding the tip must persist")
         let guide = cod.buttons["Floating guide & setup"]
-        for _ in 0..<6 where !guide.isHittable { cod.swipeUp() }
+        for _ in 0..<12 where !guide.isHittable { cod.swipeUp() }
         XCTAssertTrue(guide.isHittable)
         guide.tap()
         XCTAssertTrue(
@@ -48,7 +48,12 @@ final class ReleaseUXTests: XCTestCase {
             "--show-float-setup", "--large-text-ui-test",
         ]
         cod.launch()
-        XCTAssertTrue(cod.buttons["choose-photo"].waitForExistence(timeout: 8))
+        capture("Float home - initial accessibility viewport")
+        let photo = cod.buttons["choose-photo"]
+        // A pending share's retry card can occupy the initial viewport at
+        // accessibility sizes. The sectioned List loads lower rows lazily.
+        for _ in 0..<8 where !photo.isHittable { cod.swipeUp() }
+        XCTAssertTrue(photo.isHittable, cod.debugDescription)
         capture("Float home - accessibility text")
         let install = cod.buttons["install-share-shortcut"]
         for _ in 0..<10 where !install.isHittable { cod.swipeUp() }
@@ -79,8 +84,14 @@ final class ReleaseUXTests: XCTestCase {
             return
         }
         let install = cod.buttons["install-share-shortcut"]
-        for _ in 0..<8 where !install.isHittable { cod.swipeUp() }
-        XCTAssertTrue(install.isHittable)
+        let scroll = cod.collectionViews.firstMatch
+        for _ in 0..<8 where !install.isHittable {
+            // Anchor to the actual landscape scroll view, not a possibly
+            // portrait-oriented application-coordinate swipe during rotation.
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+                .press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)))
+        }
+        XCTAssertTrue(install.isHittable, cod.debugDescription)
         capture("Float setup - landscape")
     }
 

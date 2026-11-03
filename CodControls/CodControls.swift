@@ -6,6 +6,9 @@ import WidgetKit
 struct CodControls: WidgetBundle {
     var body: some Widget {
         FloatLatestScreenshotControl()
+        SavedReferenceControl()
+        SavedReferenceWidget()
+        if #available(iOS 26.0, *) { CodTimerActivity() }
     }
 }
 

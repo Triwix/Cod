@@ -14,21 +14,78 @@ final class IntentInbox: ObservableObject {
     @Published var wantsLatestScreenshot = false
     @Published var wantsFloatLatest = false
     @Published var pendingQuickFloatRequestID: UUID?
+    struct ReferenceInput: Identifiable {
+        enum Content { case text(String), pdf(Data, page: Int), saved(UUID), animated(Data) }
+        let id = UUID()
+        let content: Content
+    }
+    @Published var pendingReference: ReferenceInput?
 
     func deliver(_ image: UIImage) {
+        pendingReference = nil
         pendingImage = image
     }
 
     func deliverForFloat(_ image: UIImage) {
+        pendingReference = nil
         pendingFloatImage = image
     }
 
     func requestLatestScreenshot() {
+        pendingReference = nil
         wantsLatestScreenshot = true
     }
 
     func requestFloatLatest() {
+        pendingReference = nil
         wantsFloatLatest = true
+    }
+
+    func deliverReference(_ content: ReferenceInput.Content) {
+        pendingQuickFloatRequestID = nil
+        pendingImage = nil
+        pendingFloatImage = nil
+        wantsLatestScreenshot = false
+        wantsFloatLatest = false
+        pendingReference = .init(content: content)
+    }
+}
+
+/// A separate action preserves the installed image Shortcut's existing input
+/// binding. Text is supplied explicitly, never taken silently from clipboard.
+struct FloatTextWithCodIntent: AppIntent {
+    static var title: LocalizedStringResource = "Float Text With Cod"
+    static var description = IntentDescription("Float supplied text as a readable reference over other apps.", categoryName: "Floating")
+    static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
+    @Parameter(title: "Text", inputConnectionBehavior: .connectToPreviousIntentResult)
+    var text: String
+    static var parameterSummary: some ParameterSummary { Summary("Float \(\.$text) with Cod") }
+    @MainActor func perform() async throws -> some IntentResult {
+        _ = try FloatingText.render(text) // Fail with a useful message before handoff.
+        IntentInbox.shared.deliverReference(.text(text))
+        return .result()
+    }
+}
+
+struct FloatPDFPageWithCodIntent: AppIntent {
+    static var title: LocalizedStringResource = "Float PDF Page With Cod"
+    static var description = IntentDescription("Float a numbered PDF page. To choose a region, open the PDF from Cod's Float tab.", categoryName: "Floating")
+    static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
+    @Parameter(title: "PDF", supportedTypeIdentifiers: ["com.adobe.pdf"], inputConnectionBehavior: .connectToPreviousIntentResult)
+    var document: IntentFile
+    @Parameter(title: "Page", default: 1, inclusiveRange: (1, 10_000))
+    var page: Int
+    static var parameterSummary: some ParameterSummary { Summary("Float page \(\.$page) of \(\.$document) with Cod") }
+    @MainActor func perform() async throws -> some IntentResult {
+        guard page >= 1 else { throw PDFReferenceError.invalidPage }
+        let reference = try PDFReference(data: document.data)
+        guard page <= reference.pageCount else { throw PDFReferenceError.invalidPage }
+        IntentInbox.shared.deliverReference(.pdf(document.data, page: page))
+        return .result()
     }
 }
 
@@ -126,6 +183,10 @@ struct FloatWithCodIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         CodDiagnosticLog.record("float intent started bytes=\(image.data.count)")
+        if AnimatedImageImport.isAnimatedGIF(image.data) {
+            IntentInbox.shared.deliverReference(.animated(image.data))
+            return .result()
+        }
         guard let decoded = UIImage.decodedImage(data: image.data) else {
             CodDiagnosticLog.record("float intent couldn't decode supplied image")
             throw $image.needsValueError("Cod couldn't read that as an image.")
@@ -154,26 +215,13 @@ struct FloatLatestScreenshotIntent: AppIntent {
     }
 }
 
-/// Clears every floating pin — the equivalent of Snapper's Control Center
-/// "remove pinned snippets" module.
-struct ClearCodPinsIntent: AppIntent {
-    static var title: LocalizedStringResource = "Clear Cod Pins"
-    static var description = IntentDescription(
-        "Removes every pinned snippet and stops the floating window.",
-        categoryName: "Pins"
-    )
-    static var openAppWhenRun: Bool = false
-
-    @MainActor
-    func perform() async throws -> some IntentResult {
-        PinManager.shared.removeAll()
-        PiPPinController.shared.stop()
-        return .result()
-    }
-}
-
 struct CodShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: FloatSavedReferenceIntent(),
+            phrases: ["Float \(\.$target) with \(.applicationName)"],
+            shortTitle: "Float Saved Reference", systemImageName: "star"
+        )
         AppShortcut(
             intent: FloatLatestScreenshotIntent(),
             phrases: [
@@ -191,12 +239,6 @@ struct CodShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Crop Latest Screenshot",
             systemImageName: "viewfinder"
-        )
-        AppShortcut(
-            intent: ClearCodPinsIntent(),
-            phrases: ["Clear \(.applicationName) pins"],
-            shortTitle: "Clear Pins",
-            systemImageName: "pin.slash"
         )
     }
 }

@@ -16,7 +16,15 @@ final class NotificationFlowTests: XCTestCase {
         exerciseNotification(cold: false, crop: true)
     }
 
-    private func exerciseNotification(cold: Bool, crop: Bool) {
+    func testManualOpenWorksEvenWhenNotificationModeIsEnabled() {
+        exerciseNotification(cold: false, crop: false, manual: true)
+    }
+
+    func testCropCanContinueByManualOpenWithoutTappingNotification() {
+        exerciseNotification(cold: false, crop: true, manual: true)
+    }
+
+    private func exerciseNotification(cold: Bool, crop: Bool, manual: Bool = false) {
         continueAfterFailure = false
         cod.launch()
         cod.tabBars.buttons["Settings"].tap()
@@ -48,9 +56,17 @@ final class NotificationFlowTests: XCTestCase {
             XCTAssertTrue(lab.buttons["cancel-selection"].waitForExistence(timeout: 8))
             lab.buttons["Float"].tap()
         }
-        let notification = springboard.staticTexts["Your image is ready to float"].firstMatch
-        XCTAssertTrue(notification.waitForExistence(timeout: 10), "Notification must actually be delivered by the share extension, not just scheduled by the app")
-        notification.tap()
+        if manual {
+            let finished = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                lab.sheets.count == 0 && lab.buttons["Share Test Image"].isHittable
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [finished], timeout: 10), .completed)
+            cod.activate()
+        } else {
+            let notification = springboard.staticTexts["Your image is ready to float"].firstMatch
+            XCTAssertTrue(notification.waitForExistence(timeout: 10), "Notification must actually be delivered by the share extension, not just scheduled by the app")
+            notification.tap()
+        }
         XCTAssertTrue(cod.wait(for: .runningForeground, timeout: 10))
         XCTAssertTrue(cod.staticTexts["received-image-size"].waitForExistence(timeout: 10))
         XCTAssertEqual(cod.staticTexts["received-image-size"].label, "Received image 300x200")

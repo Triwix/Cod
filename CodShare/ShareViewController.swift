@@ -24,38 +24,18 @@ final class ShareViewController: UIViewController {
     private static let diagnosticQueue = DispatchQueue(label: "com.josh.cod.share-diagnostics")
 
     private func diagnostic(_ message: String) {
-        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
         print("[CodShare] \(message)")
         Self.diagnosticQueue.async {
             guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
             let url = directory.appendingPathComponent("share-diagnostics.log")
-            guard let data = line.data(using: .utf8) else { return }
-            if !FileManager.default.fileExists(atPath: url.path) {
-                try? data.write(to: url, options: .atomic)
-                return
-            }
-            // Keep this quick to retrieve over a wireless device connection
-            // without allowing months of share attempts to grow forever.
-            if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-               size > 128 * 1_024 {
-                try? data.write(to: url, options: .atomic)
-                return
-            }
-            guard let handle = try? FileHandle(forWritingTo: url) else { return }
-            defer { try? handle.close() }
-            do {
-                try handle.seekToEnd()
-                try handle.write(contentsOf: data)
-            } catch {
-                // Diagnostics must never interfere with the share action.
-            }
+            CodDiagnosticLog.append(message, at: url)
         }
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         diagnostic("viewDidLoad")
-        diagnostic("build=release-polish-7 process=\(ProcessInfo.processInfo.processIdentifier)")
+        diagnostic("build=\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "unknown") process=\(ProcessInfo.processInfo.processIdentifier)")
         oneTapFloat = SharePreferences.shared.oneTapFloat
         useFloatNotification = SharePreferences.shared.useFloatNotification
         diagnostic("share mode oneTapFloat=\(oneTapFloat)")
@@ -87,8 +67,12 @@ final class ShareViewController: UIViewController {
         let attachments = item.attachments ?? []
         diagnostic("received \(attachments.count) attachment(s)")
         guard let provider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.image.identifier) }) else {
+            if let textProvider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) }) {
+                loadSharedText(from: textProvider)
+                return
+            }
             diagnostic("no image-conforming provider")
-            state.phase = .failed("This item isn't an image. Share a single photo or screenshot with Cod.")
+            state.phase = .failed("Share one image or some text with Cod. For a PDF, use Choose File on Cod's Float tab or open the document in Cod.")
             return
         }
         diagnostic("image provider found; requesting file")
@@ -113,6 +97,36 @@ final class ShareViewController: UIViewController {
                 guard let self, !self.completed, self.imageLoadID == requestID else { return }
                 if let image { self.completeImageLoad(image, requestID: requestID) }
                 else { self.loadImageObject(from: provider, requestID: requestID) }
+            }
+        }
+    }
+
+    private func loadSharedText(from provider: NSItemProvider) {
+        let requestID = UUID()
+        imageLoadID = requestID
+        imageLoadTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            guard !Task.isCancelled, let self, self.imageLoadID == requestID, !self.completed else { return }
+            self.imageLoadID = nil
+            self.state.phase = .failed("This text is taking too long to load. Copy it, then use Text on Cod's Float tab.")
+        }
+        provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { [weak self] object, _ in
+            let text: String?
+            if let value = object as? String { text = value }
+            else if let data = object as? Data, data.count <= 16_000 { text = String(data: data, encoding: .utf8) }
+            else { text = nil }
+            DispatchQueue.main.async {
+                guard let self, !self.completed, self.imageLoadID == requestID else { return }
+                do {
+                    guard let text else { throw FloatingTextError.empty }
+                    let image = try FloatingText.render(text)
+                    self.completeImageLoad(image, requestID: requestID)
+                } catch {
+                    self.imageLoadID = nil
+                    self.imageLoadTimeout?.cancel()
+                    self.imageLoadTimeout = nil
+                    self.state.phase = .failed(error.localizedDescription)
+                }
             }
         }
     }
@@ -217,8 +231,10 @@ final class ShareViewController: UIViewController {
         handoffTask = Task { @MainActor [weak self] in
             guard let self else { return }
             if self.useFloatNotification {
+                var imageWasSaved = false
                 do {
                     let id = try QuickFloatHandoff.shared.store(image, mode: .float)
+                    imageWasSaved = true
                     try await ShareFloatNotifications().schedule(id)
                     self.handoffTask = nil
                     guard !self.completed else { return }
@@ -228,7 +244,7 @@ final class ShareViewController: UIViewController {
                     self.handoffTask = nil
                     guard !self.completed else { return }
                     self.diagnostic("notification handoff failed: \(error.localizedDescription)")
-                    self.state.phase = .failed(error.localizedDescription)
+                    self.state.phase = imageWasSaved ? .ready : .failed(error.localizedDescription)
                 }
                 return
             }

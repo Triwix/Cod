@@ -127,7 +127,7 @@ final class SharedImageInboxTests: XCTestCase {
         settings.arrivalMode = .instant
         settings.instantAction = .copyImage
         settings.historyLimit = .off
-        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pins: .shared, pip: PiPPinController(), sharedInbox: inbox)
+        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController(), sharedInbox: inbox)
         try inbox.save(Self.image)
         coordinator.refreshSharedImages()
         let entry = try XCTUnwrap(coordinator.sharedImages.first)

@@ -9,8 +9,7 @@ import UIKit
 /// using the documented AVKit video playback APIs. There are no extension-side
 /// video-call experiments or private control/navigation overrides.
 ///
-/// What comes with PiP either way: one window at a time, Apple's chrome, and
-/// nothing at all in the Simulator.
+/// PiP has one window at a time, with system-owned controls and resizing.
 @MainActor
 final class PiPPinController: NSObject, ObservableObject {
     static let shared = PiPPinController()
@@ -48,9 +47,18 @@ final class PiPPinController: NSObject, ObservableObject {
     /// Hand the image back to the crop UI when the user restores PiP, including
     /// a tap during its opening animation. Do not treat restoration as failure.
     @Published var restorationImage: UIImage?
+    @Published var restorationTool: FloatingToolSession?
+    @Published var restorationVideo: VideoReference?
+    @Published private(set) var toolSession: FloatingToolSession?
+    @Published private(set) var videoReference: VideoReference?
+    @Published private(set) var completedVideoLoops = 0
+    private var videoPlayback: FloatingVideoPlayback?
+    private var videoRepeats = FloatingVideoPlayback.defaultRepeats
+    private var videoSound = false
+    private var liveSource: LiveFloatSource?
     private var restorationState = PiPRestorationState()
 
-    let isSupported = AVPictureInPictureController.isPictureInPictureSupported()
+    let isSupported: Bool
 
     /// The controller is the source of truth during a failed in-place
     /// replacement: the old window may still be active even though the new
@@ -65,6 +73,8 @@ final class PiPPinController: NSObject, ObservableObject {
     /// Start of the current float request, for stage timings.
     private var startedAt = CFAbsoluteTimeGetCurrent()
     private var hostView: UIView?
+    weak var inlineVideoHost: FloatingVideoHostView?
+    private var ownsHostView = true
     private var clipURL: URL?
     private var possibleObservation: NSKeyValueObservation?
     private var startTimeout: Task<Void, Never>?
@@ -74,13 +84,50 @@ final class PiPPinController: NSObject, ObservableObject {
     /// Identifies the task that currently owns preparation state. Cancelling an
     /// older task is cooperative, so its defer must not clear a newer handle.
     private var preparationID: UUID?
+    private var audioInterruptionObservation: NSObjectProtocol?
 
     /// PiP renders into a window a few hundred points wide, so full-resolution
     /// screenshots buy nothing and cost encode time.
     private let maxRenderEdge: CGFloat = 1200
 
-    override init() {
+    override convenience init() {
+        self.init(isSupported: AVPictureInPictureController.isPictureInPictureSupported())
+    }
+
+    /// Keep capability checks injectable so lifecycle tests do not depend on
+    /// native PiP availability. The app always uses the system result above.
+    init(isSupported: Bool) {
+        self.isSupported = isSupported
         super.init()
+        audioInterruptionObservation = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification, object: AVAudioSession.sharedInstance(), queue: .main
+        ) { [weak self] notification in
+            let type = (notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt)
+                .flatMap(AVAudioSession.InterruptionType.init(rawValue:))
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.liveSource?.audioIsInterrupted = type == .began
+                self.log("audio interruption \(type == .began ? "began" : "ended")")
+                // iOS owns alarm audio. An audio interruption isn't a request
+                // to pause/cancel the independently scheduled timer.
+            }
+        }
+    }
+
+    deinit {
+        if let audioInterruptionObservation { NotificationCenter.default.removeObserver(audioInterruptionObservation) }
+    }
+
+    func setVideoSound(_ enabled: Bool, for id: UUID) {
+        guard videoReference?.id == id else { return }
+        videoSound = enabled
+        player?.isMuted = !enabled
+    }
+
+    func setVideoRepeats(_ enabled: Bool, for id: UUID) {
+        guard videoReference?.id == id else { return }
+        videoRepeats = enabled
+        videoPlayback?.setRepeats(enabled)
     }
 
     // MARK: - Public
@@ -141,6 +188,14 @@ final class PiPPinController: NSObject, ObservableObject {
             return
         }
 
+        // A live tool uses a different documented content source. Do not let
+        // its frame pump survive an explicit replacement with a photo.
+        if liveSource != nil || videoReference != nil {
+            controller?.stopPictureInPicture()
+            teardown(keepStatus: true)
+        }
+        restorationTool = nil
+        restorationVideo = nil
         restorationState.beginFloat()
         restorationImage = nil
         startTimeout?.cancel()
@@ -154,7 +209,10 @@ final class PiPPinController: NSObject, ObservableObject {
         // A share launch returns to an app that was backgrounded while its
         // placeholder was playing. Rebuild that dormant pipeline around the
         // actual image, while preserving an already-visible PiP replacement.
-        if !reusePreparedPlayback, !wasActive { teardown() }
+        // Playback cleanup is part of this new request, not a cancellation.
+        // Publishing idle here would make CaptureCoordinator finish the
+        // request before it can observe preparing and the eventual result.
+        if !reusePreparedPlayback, !wasActive { teardown(keepStatus: true) }
         let previousImage = currentImage
         let wasPrewarmed = controller != nil && status == .idle
         currentImage = image
@@ -233,6 +291,100 @@ final class PiPPinController: NSObject, ObservableObject {
         }
     }
 
+    /// Starts changing video content without altering the proven still-image
+    /// encoder. Native play/pause controls are delegated to the tool session.
+    func float(tool session: FloatingToolSession) {
+        guard isSupported else {
+            if session.configuration.hasTimerAlarm { session.resume() }
+            status = .unsupported
+            return
+        }
+        controller?.stopPictureInPicture()
+        teardown(keepStatus: true)
+        restorationState.beginFloat()
+        restorationImage = nil
+        restorationTool = nil
+        restorationVideo = nil
+        currentImage = nil
+        toolSession = session
+        status = .preparing
+        startedAt = CFAbsoluteTimeGetCurrent()
+        configureAudioSession()
+        let source = LiveFloatSource(session: session)
+        liveSource = source
+        source.onFailure = { [weak self, weak source] error in
+            guard let self, let source, self.liveSource === source else { return }
+            self.status = .failed(error.localizedDescription)
+            self.teardown(keepStatus: true)
+        }
+        do {
+            try source.start()
+            guard attachHostView() else { throw FloatingToolError.renderFailed }
+            source.appearanceHost = hostView
+            let pip = AVPictureInPictureController(contentSource: .init(sampleBufferDisplayLayer: source.layer, playbackDelegate: source))
+            pip.delegate = self
+            pip.requiresLinearPlayback = !session.configuration.supportsSeeking
+            pip.canStartPictureInPictureAutomaticallyFromInline = false
+            controller = pip
+            source.controller = pip
+            startWhenPossible()
+        } catch {
+            status = .failed(error.localizedDescription)
+            teardown(keepStatus: true)
+        }
+    }
+
+    func float(video reference: VideoReference, sound: Bool, repeats: Bool = FloatingVideoPlayback.defaultRepeats) {
+        guard isSupported else { status = .unsupported; return }
+        controller?.stopPictureInPicture()
+        teardown(keepStatus: true)
+        restorationState.beginFloat()
+        restorationImage = nil
+        restorationTool = nil
+        restorationVideo = nil
+        currentImage = nil
+        videoReference = reference
+        completedVideoLoops = 0
+        videoRepeats = repeats
+        videoSound = sound
+        status = .preparing
+        startedAt = CFAbsoluteTimeGetCurrent()
+        configureAudioSession()
+        let requestID = UUID()
+        preparationID = requestID
+        prepareTask = Task { @MainActor in
+            defer {
+                if preparationID == requestID { preparationID = nil; prepareTask = nil }
+            }
+            guard !Task.isCancelled, preparationID == requestID else { return }
+            let playback = FloatingVideoPlayback(reference: reference, sound: videoSound, repeats: videoRepeats)
+            videoPlayback = playback
+            playback.onRepeat = { [weak self, weak playback] count in
+                guard let self, let playback, self.videoPlayback === playback else { return }
+                self.completedVideoLoops = count
+            }
+            let queue = playback.player
+            let layer = AVPlayerLayer(player: queue)
+            layer.videoGravity = .resizeAspect
+            player = queue
+            playerLayer = layer
+            guard attachHostView() else {
+                status = .failed("Cod couldn't attach the video to its window.")
+                teardown(keepStatus: true)
+                return
+            }
+            queue.play()
+            await waitForPlayerReady()
+            guard !Task.isCancelled, preparationID == requestID else { return }
+            // Prepare the first frame, then hold the video at its beginning
+            // while AVKit opens. A short clip mustn't finish during setup.
+            queue.pause()
+            await queue.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+            guard !Task.isCancelled, preparationID == requestID else { return }
+            makeController()
+            startWhenPossible()
+        }
+    }
 
     /// A small black frame — never seen, it just gives AVKit something real to
     /// initialise against.
@@ -344,7 +496,7 @@ final class PiPPinController: NSObject, ObservableObject {
         let pip = AVPictureInPictureController(playerLayer: playerLayer)
         pip?.delegate = self
         // A looping still has no meaningful timeline; hide the scrubber.
-        pip?.requiresLinearPlayback = true
+        pip?.requiresLinearPlayback = videoReference == nil
         pip?.canStartPictureInPictureAutomaticallyFromInline = false
         controller = pip
         log("controller created +\(elapsed())ms nil=\(pip == nil)")
@@ -455,12 +607,16 @@ final class PiPPinController: NSObject, ObservableObject {
             try? await Task.sleep(nanoseconds: timeout)
             guard !Task.isCancelled, self.status == .preparing else { return }
             self.log("TIMED OUT — PiP never started")
+            if self.toolSession?.configuration.hasTimerAlarm == true { self.toolSession?.resume() }
             // Deliberately does NOT tear down. AVKit can open the window well
             // after we've given up, and destroying the player mid-handover was
             // itself making the launch intermittent.
             self.status = .failed(
                 "iOS hasn't opened the window yet. Another app may be holding Picture in Picture — force-quit video apps and try again."
             )
+            // A changing tool must not keep rendering indefinitely after a
+            // failed launch. Preserve the legacy still-image late-start path.
+            if self.liveSource != nil { self.teardown(keepStatus: true) }
         }
     }
 
@@ -492,7 +648,7 @@ final class PiPPinController: NSObject, ObservableObject {
             // audio app, which can cost the background time the window needs.
             try session.setCategory(.playback, mode: .moviePlayback, options: mixes ? [.mixWithOthers] : [])
             try session.setActive(true)
-            log("audio session active, mixWithOthers=\(mixes)")
+            log("audio session active, mixWithOthers=\(mixes) otherAudioPlaying=\(session.isOtherAudioPlaying)")
         } catch {
             log("AUDIO SESSION FAILED: \(error.localizedDescription)")
         }
@@ -500,9 +656,17 @@ final class PiPPinController: NSObject, ObservableObject {
 
     private func attachHostView() -> Bool {
         if hostView != nil { return true }
-        guard let renderingLayer = playerLayer else {
+        guard let renderingLayer: CALayer = liveSource?.layer ?? playerLayer else {
             log("NO RENDERING LAYER — cannot attach the floating host view")
             return false
+        }
+        if videoReference != nil, let inlineVideoHost, inlineVideoHost.window != nil {
+            inlineVideoHost.playbackLayer = playerLayer
+            renderingLayer.frame = inlineVideoHost.bounds
+            inlineVideoHost.layer.addSublayer(renderingLayer)
+            hostView = inlineVideoHost
+            ownsHostView = false
+            return true
         }
         guard let window = UIApplication.shared.activeWindow else {
             log("NO KEY WINDOW — cannot host the layer")
@@ -519,12 +683,15 @@ final class PiPPinController: NSObject, ObservableObject {
         window.addSubview(container)
         window.sendSubviewToBack(container)
         hostView = container
+        ownsHostView = true
         log("host view attached")
         return true
     }
 
     /// Releases player-side state without touching status or the audio session.
     private func discardPlayback() {
+        videoPlayback?.stop()
+        videoPlayback = nil
         readinessWait?.finish(.cancelled)
         readinessWait = nil
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
@@ -533,13 +700,20 @@ final class PiPPinController: NSObject, ObservableObject {
         player = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
-        hostView?.removeFromSuperview()
+        if ownsHostView { hostView?.removeFromSuperview() }
+        (hostView as? FloatingVideoHostView)?.playbackLayer = nil
         hostView = nil
         if let clipURL { try? FileManager.default.removeItem(at: clipURL) }
         clipURL = nil
     }
 
-    private func teardown(keepStatus: Bool = false) {
+    private func teardown(keepStatus: Bool = false, preservingToolTimer: Bool = false) {
+        videoPlayback?.stop()
+        videoPlayback = nil
+        liveSource?.stop(preservingTimer: preservingToolTimer)
+        liveSource = nil
+        toolSession = nil
+        videoReference = nil
         if let foregroundObservation {
             NotificationCenter.default.removeObserver(foregroundObservation)
         }
@@ -561,7 +735,8 @@ final class PiPPinController: NSObject, ObservableObject {
         player = nil
         playerLayer?.removeFromSuperlayer()
         playerLayer = nil
-        hostView?.removeFromSuperview()
+        if ownsHostView { hostView?.removeFromSuperview() }
+        (hostView as? FloatingVideoHostView)?.playbackLayer = nil
         hostView = nil
         controller = nil
         isPossible = false
@@ -658,6 +833,8 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
             self.startTimeout?.cancel()
             self.startRetry?.cancel()
             self.status = .active
+            self.liveSource?.activate()
+            self.videoPlayback?.activate()
             Haptics.success()
         }
     }
@@ -666,6 +843,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
         Task { @MainActor in
             guard let owned = self.controller, owned === controller else { return }
             self.startRetry?.cancel()
+            self.liveSource?.nativePlaybackIsActive = false
             self.log("WILL STOP PiP")
         }
     }
@@ -677,7 +855,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
                 return
             }
             self.log("DID STOP PiP")
-            self.teardown()
+            self.teardown(preservingToolTimer: self.restorationState.isRestoring)
         }
     }
 
@@ -693,6 +871,7 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
                 return
             }
             self.log("FAILED TO START: \(error)")
+            if self.toolSession?.configuration.hasTimerAlarm == true { self.toolSession?.resume() }
             self.status = .failed(error.localizedDescription)
             self.teardown(keepStatus: true)
         }
@@ -712,7 +891,9 @@ extension PiPPinController: AVPictureInPictureControllerDelegate {
             self.restorationState.beginRestoration()
             self.startRetry?.cancel()
             self.startTimeout?.cancel()
-            self.restorationImage = self.currentImage
+            if let video = self.videoReference { self.restorationVideo = video }
+            else if let session = self.toolSession { self.restorationTool = session }
+            else { self.restorationImage = self.currentImage }
             completionHandler(true)
         }
     }

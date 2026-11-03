@@ -16,6 +16,13 @@ struct OneTapFloatGuide: View {
             }
 
             Section {
+                Text("Cod opens to start Picture in Picture. After it appears, open another app yourself; Cod doesn't switch apps for you.")
+                Text("The Cod app icon in Share runs a small extension, not the full Cod app. iOS doesn't let that extension launch Cod directly. A Shortcut or system control can open Cod; tapping a notification or opening Cod yourself also works.")
+                Text("For the fewest steps from a shared image, use Float with Cod in the Share action list below the app icons. One tap float only skips cropping—it doesn't change how iOS opens apps.")
+                Text("Cod uses the most direct supported route for each entry point, without private app-launch tricks. These steps follow iOS's app-opening rules; they're not an extra confirmation needed by Cod.")
+            } header: { Text("Why these steps?") }
+
+            Section {
                 shortcutButton(.shareImage)
                 step(
                     1,
@@ -63,7 +70,7 @@ struct OneTapFloatGuide: View {
                 step(
                     3, "Add **Float Latest Screenshot**. Grant Photos access in Cod, then use the control.")
                 Text(
-                    "The same control can be added when customizing the Lock Screen, or in Settings → Action Button → Controls on supported iPhones."
+                    "On supported iPhones, you can also assign it in Settings → Action Button → Controls."
                 )
                 .font(.subheadline)
             } header: {
@@ -75,10 +82,24 @@ struct OneTapFloatGuide: View {
             }
 
             Section {
+                step(1, "Touch and hold your **Lock Screen**, then choose **Customize → Lock Screen**.")
+                step(2, "Remove one of the bottom-corner controls, such as Camera or Flashlight, then tap **+**.")
+                step(3, "Search **Cod**, select **Float Latest Screenshot**, then finish customization.")
+                Text("This is optional and isn't added automatically. It uses the latest saved screenshot; iOS may ask you to unlock before Cod opens. It's separate from a timer's Lock Screen alarm display.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } header: { Label("Lock Screen control · add it yourself", systemImage: "lock") }
+
+            Section {
+                Text("Tap the floating window once to show iOS's playback buttons. The expand/return-to-full-screen button opens Cod and may close PiP. Apple calls it Restore Full Screen; its appearance and position are controlled by iOS.")
+                Text("If you don't see that button, open Cod normally. You don't need a separate restore option in Cod's settings.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } header: { Label("Return to Cod from PiP", systemImage: "pip.exit") }
+
+            Section {
                 step(1, "In Cod Settings, enable **Tap notification to float** and allow notifications.")
                 step(2, "From an image, use **Share → Cod**, then tap Cod's notification.")
                 Text(
-                    "With One tap float off, crop and tap Float before the notification. Without notifications, Share → Cod prepares the image; open Cod yourself to continue."
+                    "With One tap float off, crop and tap Float before the notification. If notifications are unavailable, follow the message to open Cod manually. With notification handoff turned off in Cod, just open Cod after sharing, cropping there if needed."
                 )
                 .font(.subheadline)
             } header: {
@@ -95,10 +116,11 @@ struct OneTapFloatGuide: View {
                 }
             } footer: {
                 Text(
-                    "Cod also supplies Float Latest Screenshot, Crop Latest Screenshot and Clear Pins actions in Shortcuts. iOS controls the PiP window's buttons and resizing; Cod never switches you back to another app automatically."
+                    "Cod also supplies Float Latest Screenshot and Crop Latest Screenshot actions in Shortcuts. iOS controls the PiP window's buttons and resizing; Cod never switches you back to another app automatically."
                 )
             }
         }
+        .codFormStyle()
         .navigationTitle("Floating Guide")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $installingShortcut) { shortcut in
@@ -116,8 +138,9 @@ struct OneTapFloatGuide: View {
                     shortcut == .shareImage ? "Add Share-Sheet Shortcut" : "Add Screenshot Shortcut",
                     systemImage: "plus.circle.fill"
                 )
-                .font(.headline).frame(minHeight: 44)
+                .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 44)
             }
+            .buttonStyle(CodActionStyle())
             .accessibilityIdentifier(
                 shortcut == .shareImage ? "install-share-shortcut" : "install-screenshot-shortcut")
         } else {
@@ -131,9 +154,8 @@ struct OneTapFloatGuide: View {
     private func step(_ number: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(number)")
-                .font(.caption.weight(.bold)).foregroundStyle(Color.accentColor)
+                .font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
                 .frame(minWidth: 24, minHeight: 24)
-                .background(Color.accentColor.opacity(0.1), in: Circle())
                 .accessibilityHidden(true)
             Text(.init(text)).font(.subheadline).fixedSize(horizontal: false, vertical: true)
         }

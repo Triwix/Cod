@@ -4,6 +4,7 @@ import SwiftUI
 struct ActionBar: View {
     let actions: [SnapAction]
     var onTap: (SnapAction) -> Void
+    var primaryTitle: String? = nil
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -23,7 +24,7 @@ struct ActionBar: View {
                                         .strokeBorder(action.tint.opacity(0.35), lineWidth: 0.5)
                                 )
                                 .foregroundStyle(action.tint)
-                            Text(action.title)
+                            Text(action == .float ? primaryTitle ?? action.title : action.title)
                                 .font(.caption2.weight(.medium))
                                 .foregroundStyle(.white.opacity(0.85))
                                 .lineLimit(1)
@@ -31,7 +32,7 @@ struct ActionBar: View {
                         .frame(minWidth: 60, minHeight: 64)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(action.title)
+                    .accessibilityLabel(action == .float ? primaryTitle ?? action.title : action.title)
                     .accessibilityHint(action.subtitle)
                 }
             }

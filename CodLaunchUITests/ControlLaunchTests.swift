@@ -21,6 +21,8 @@ final class ControlLaunchTests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
         search.typeText("Cod")
+        let savedControl = system.descendants(matching: .any).matching(NSPredicate(format: "label == 'Float Saved Reference'")).firstMatch
+        XCTAssertTrue(savedControl.waitForExistence(timeout: 8), "The configurable saved-reference control must be registered: \(system.debugDescription)")
         let control = system.descendants(matching: .any).matching(NSPredicate(format: "label == 'Float Latest Screenshot'")).firstMatch
         XCTAssertTrue(control.waitForExistence(timeout: 8), "Cod's control must be registered in the real system gallery: \(system.debugDescription)")
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())

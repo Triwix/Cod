@@ -1,6 +1,7 @@
 import Combine
 import Photos
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Central brain: owns the capture that's currently on the crop surface, runs
 /// the instant actions, and routes anything that needs its own UI.
@@ -20,6 +21,11 @@ final class CaptureCoordinator: ObservableObject {
             case barcodes([Recognizer.BarcodeHit])
             case translate(String)
             case annotate(UIImage)
+            case tool(FloatingToolSession)
+            case pdf(PDFReference)
+            case video(VideoReference, autoFloat: Bool = false)
+            case readable(UIImage)
+            case saved(SavedReference)
         }
 
         let id = UUID()
@@ -30,6 +36,9 @@ final class CaptureCoordinator: ObservableObject {
     @Published var route: Route?
     @Published var toast: Toast?
     @Published var isWorking = false
+    /// Invalidates asynchronous document loads when another explicit input wins.
+    private(set) var explicitInputID = UUID()
+    var isFloatListVisible = true
     @Published private(set) var sharedImages: [SharedImageInbox.Entry] = []
     @Published private(set) var sharedInboxError: String?
     private let sharedInbox: SharedImageInbox
@@ -43,7 +52,6 @@ final class CaptureCoordinator: ObservableObject {
 
     let store: SnapStore
     let settings: AppSettings
-    let pins: PinManager
     let pip: PiPPinController
 
     /// `CGRect` only gained `Hashable` conformance in iOS 18. The app targets
@@ -51,7 +59,7 @@ final class CaptureCoordinator: ObservableObject {
     /// by the pixel rectangle that was written rather than the fractional drag
     /// rectangle.
     /// History entries already written for the crop currently on screen, keyed
-    /// by selection rect — so pinning *and then* copying text from the same
+    /// by selection rect — so floating and then copying text from the same
     /// selection updates one entry instead of creating two.
     private var archivedCrops: [PixelRectKey: Snap.ID] = [:]
     private var pipStatusCancellable: AnyCancellable?
@@ -61,14 +69,12 @@ final class CaptureCoordinator: ObservableObject {
     init(
         store: SnapStore,
         settings: AppSettings,
-        pins: PinManager,
         pip: PiPPinController,
         sharedInbox: SharedImageInbox = .shared,
         quickHandoff: QuickFloatHandoff = .shared
     ) {
         self.store = store
         self.settings = settings
-        self.pins = pins
         self.pip = pip
         self.sharedInbox = sharedInbox
         self.quickHandoff = quickHandoff
@@ -79,12 +85,56 @@ final class CaptureCoordinator: ObservableObject {
         self.init(
             store: .shared,
             settings: .shared,
-            pins: .shared,
             pip: .shared
         )
     }
 
     // MARK: - Ingestion
+
+    func openReadableImage(_ image: UIImage) {
+        prioritizeExplicitInput(); dismissSelection()
+        floatOnlyLaunch = false
+        route = .init(kind: .readable(image))
+    }
+
+    func floatSavedReference(_ id: UUID) {
+        prioritizeExplicitInput()
+        do {
+            if let item = SavedReferenceStore.shared.items.first(where: { $0.id == id }) {
+                if let card = item.text {
+                    let image = try FloatingText.render(card.text, fontSize: card.fontSize, palette: card.palette,
+                        colors: card.colors ?? card.palette.colors(for: currentInterfaceStyle))
+                    receiveFloatIntentImage(image)
+                } else if var tool = item.tool {
+                    tool.interfaceStyle = currentInterfaceStyle
+                    if tool.hasTimerAlarm {
+                        Task {
+                            do { try await FloatingTimerAlarms.shared.authorize(); floatTool(.init(configuration: tool)) }
+                            catch { toast = .failure("Couldn't start alarm preset", error.localizedDescription) }
+                        }
+                    } else { floatTool(.init(configuration: tool)) }
+                } else { throw SavedReferenceError.invalidContent }
+                return
+            }
+            if let snap = store.snaps.first(where: { $0.id == id && $0.isFavorite }) {
+                if snap.isVideo { reopenVideo(snap, float: true) }
+                else if let image = store.image(for: snap) { receiveFloatIntentImage(image) }
+                else { throw SavedReferenceError.missing }
+                return
+            }
+            throw SavedReferenceError.missing
+        } catch { toast = .failure("Couldn't open reference", error.localizedDescription) }
+    }
+
+    private var currentInterfaceStyle: UIUserInterfaceStyle {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        // OpenIntent can arrive while Control Center is still dismissing and
+        // our scene is inactive. Its own key window already has valid traits.
+        let preferred = scenes.first(where: { $0.activationState == .foregroundActive })
+        let window = preferred?.windows.first(where: \.isKeyWindow)
+            ?? scenes.flatMap(\.windows).first(where: \.isKeyWindow)
+        return window?.traitCollection.userInterfaceStyle ?? .light
+    }
 
     func receiveExternalImage(_ image: UIImage, origin: Snap.Origin = .shared) {
         lastExternalImageSize = image.pixelSize
@@ -94,7 +144,7 @@ final class CaptureCoordinator: ObservableObject {
             CodDiagnosticLog.record("direct image received; automatic float \(Int(image.pixelSize.width))x\(Int(image.pixelSize.height))")
             floatImmediately(image: image, origin: origin, minimalUI: true, reusePreparedPlayback: false)
         } else {
-            restoreFloatingSelection(image)
+            restoreFloatingSelection(image, origin: origin)
         }
     }
 
@@ -143,6 +193,7 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func prioritizeExplicitInput() {
+        explicitInputID = UUID()
         finishQuickRequest(success: false)
         try? quickHandoff.deferAutomaticStart()
     }
@@ -219,8 +270,10 @@ final class CaptureCoordinator: ObservableObject {
                 toast = .info("History is off", "Select a region instead, or enable History in Settings.")
                 if settings.enabledActions.contains(.float) { pip.prewarm() }
             } else {
-                store.add(image: normalized, origin: origin)
-                toast = .success("Added to library")
+                let snap = store.add(image: normalized, origin: origin)
+                toast = store.snaps.contains(where: { $0.id == snap.id })
+                    ? .success("Added to library")
+                    : .failure("Couldn't add to Library", store.storageIssue)
             }
         }
     }
@@ -274,12 +327,12 @@ final class CaptureCoordinator: ObservableObject {
 
     /// Restore an image for explicit user action, regardless of the configured
     /// arrival mode. Instant Float must not reopen PiP in a restoration loop.
-    func restoreFloatingSelection(_ image: UIImage) {
+    func restoreFloatingSelection(_ image: UIImage, origin: Snap.Origin = .shared) {
         isAwaitingFloatResult = false
         dismissSelectionOnFloatSuccess = false
         floatOnlyLaunch = false
         archivedCrops.removeAll()
-        pending = Pending(image: image, origin: .shared)
+        pending = Pending(image: image, origin: origin)
     }
 
     /// Pulls the newest item from the Screenshots album onto the crop surface.
@@ -292,7 +345,8 @@ final class CaptureCoordinator: ObservableObject {
             let hit = try await PhotoLibraryService.latestScreenshot()
             if !force, hit.localIdentifier == settings.lastSeenScreenshotID { return }
             settings.lastSeenScreenshotID = hit.localIdentifier
-            present(image: hit.image, origin: .screenshot)
+            if force { restoreFloatingSelection(hit.image, origin: .screenshot) }
+            else { present(image: hit.image, origin: .screenshot) }
         } catch {
             toast = .failure("Couldn't load screenshot", error.localizedDescription)
         }
@@ -313,6 +367,15 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func pasteFromClipboard() {
+        if let data = UIPasteboard.general.data(forPasteboardType: UTType.gif.identifier), AnimatedImageImport.isAnimatedGIF(data) {
+            prioritizeExplicitInput(); isWorking = true
+            Task {
+                defer { isWorking = false }
+                do { route = .init(kind: .video(try await AnimatedImageImport.video(data))) }
+                catch { toast = .failure("Couldn't open animation", error.localizedDescription) }
+            }
+            return
+        }
         guard let image = UIPasteboard.general.image else {
             toast = .failure("Clipboard has no image")
             Haptics.warning()
@@ -322,6 +385,7 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func reopen(_ snap: Snap) {
+        if snap.isVideo { reopenVideo(snap); return }
         guard let image = store.image(for: snap) else {
             toast = .failure("That capture is missing its image")
             return
@@ -341,10 +405,9 @@ final class CaptureCoordinator: ObservableObject {
         origin: Snap.Origin = .unknown,
         dismiss: Bool = true
     ) {
-        // Pinning keeps the crop surface up so you can pull several snippets
-        // out of one screenshot in a row. Floating keeps it only until the
+        // Floating keeps the crop surface only until the
         // system window confirms success, so a failed attempt is still usable.
-        let keepSurface = action == .pin || action == .float
+        let keepSurface = action == .float
         if dismiss && !keepSurface { dismissSelection() }
 
         Task { await perform(action, image: image, rect: rect, origin: origin) }
@@ -372,11 +435,6 @@ final class CaptureCoordinator: ObservableObject {
             archive(image, rect: rect, origin: origin)
             startFloating(image, dismissSelectionOnSuccess: true)
 
-        case .pin:
-            pins.add(image: image)
-            archive(image, rect: rect, origin: origin)
-            if settings.autoCopyOnCapture { UIPasteboard.general.image = image }
-
         case .qr:
             await scanCodes(in: image, rect: rect, origin: origin)
 
@@ -387,8 +445,9 @@ final class CaptureCoordinator: ObservableObject {
             archive(image, rect: rect, origin: origin)
             route = Route(kind: .annotate(image))
 
-        case .upload:
-            toast = .failure("Uploads aren't included in this version", "Your images stay on this device unless you choose Share.")
+        case .upload, .pin:
+            // Decode retired preferences without exposing or running them.
+            break
         }
     }
 
@@ -471,27 +530,58 @@ final class CaptureCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Pin menu actions
+    // MARK: - Floating
 
-    func run(pinAction: PinAction, pin: Pin) {
-        switch pinAction {
-        case .copyImage:
-            UIPasteboard.general.image = pin.image
-            toast = .success("Image copied")
-        case .copyText:
-            Task { await copyText(from: pin.image, rect: nil, origin: .unknown) }
-        case .save:
-            Task { await save(pin.image, rect: nil, origin: .unknown) }
-        case .share:
-            route = Route(kind: .share([pin.image]))
-        case .sendToPiP:
-            startFloating(pin.image, dismissSelectionOnSuccess: false)
-        case .recrop:
-            withAnimation { pending = Pending(image: pin.image, origin: .unknown) }
+    private var archivedVideoIDs: Set<UUID> = []
+
+    func floatVideo(_ reference: VideoReference, sound: Bool = false, repeats: Bool = FloatingVideoPlayback.defaultRepeats) {
+        prioritizeExplicitInput()
+        pip.stop()
+        pending = nil
+        floatOnlyLaunch = false
+        isAwaitingFloatResult = true
+        dismissSelectionOnFloatSuccess = false
+        isWorking = true
+        pip.float(video: reference, sound: sound, repeats: repeats)
+        if settings.historyLimit != .off, !archivedVideoIDs.contains(reference.id) {
+            archivedVideoIDs.insert(reference.id)
+            Task {
+                do { _ = try await store.add(video: reference, limit: settings.historyLimit) }
+                catch {
+                    archivedVideoIDs.remove(reference.id)
+                    toast = .failure("Video wasn't saved in Library", error.localizedDescription)
+                }
+            }
         }
     }
 
-    // MARK: - Floating
+    func reopenVideo(_ snap: Snap, float: Bool = false) {
+        guard let url = store.videoURL(for: snap) else { return }
+        Task {
+            do {
+                let video = try await VideoReference.copy(from: url)
+                prioritizeExplicitInput()
+                // Replaying a saved video must not create a duplicate history item.
+                archivedVideoIDs.insert(video.id)
+                route = .init(kind: .video(video, autoFloat: float))
+            } catch { toast = .failure("Couldn't open video", error.localizedDescription) }
+        }
+    }
+
+    func floatTool(_ session: FloatingToolSession) {
+        do { try session.configuration.validate() }
+        catch { toast = .failure("Couldn't start tool", error.localizedDescription); return }
+        prioritizeExplicitInput()
+        // Stop the previous source before registering the new attempt: its
+        // idle notification must not finish this request by mistake.
+        pip.stop()
+        pending = nil
+        floatOnlyLaunch = false
+        isAwaitingFloatResult = true
+        dismissSelectionOnFloatSuccess = false
+        isWorking = true
+        pip.float(tool: session)
+    }
 
     private func observePiPStatus() {
         pipStatusCancellable = pip.$status
@@ -528,7 +618,8 @@ final class CaptureCoordinator: ObservableObject {
             finishQuickRequest(success: true)
             finishFloatAttempt()
             if shouldDismiss { dismissSelection() }
-            toast = .info("Floating", "Switch apps when you're ready. The image stays in Picture in Picture.")
+            let content = pip.videoReference != nil ? "video" : pip.toolSession == nil ? "image" : "tool"
+            toast = .info("Floating", "Switch apps when you're ready. The \(content) stays in Picture in Picture.")
 
         case .unsupported:
             finishQuickRequest(success: false)
@@ -557,7 +648,7 @@ final class CaptureCoordinator: ObservableObject {
 
     /// Writes the crop to history, or enriches the entry already written for
     /// this same selection. A `nil` rect means "don't file this at all"
-    /// (actions run from a pin's menu, where the snippet is already in there).
+    /// (for actions on an already archived capture).
     private func archive(
         _ image: UIImage,
         rect: CGRect?,

@@ -19,7 +19,7 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static var availableCases: [SnapAction] {
-        return allCases.filter { $0 != .upload }
+        return allCases.filter { $0 != .upload && $0 != .pin }
     }
 
     var title: String {
@@ -85,10 +85,10 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
 
     /// Floating is the primary action. Retired actions aren't in new defaults.
     static let defaultOrder: [SnapAction] = [
-        .float, .pin, .copyImage, .copyText, .save, .share, .qr, .translate, .annotate,
+        .float, .copyImage, .copyText, .save, .share, .qr, .translate, .annotate,
     ]
 
     static let defaultEnabled: Set<SnapAction> = [
-        .float, .pin, .copyImage, .copyText, .save, .share, .qr,
+        .float, .copyImage, .copyText, .save, .share, .qr,
     ]
 }

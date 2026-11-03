@@ -67,23 +67,6 @@ enum OCRAccuracy: String, CaseIterable, Identifiable, Codable {
     }
 }
 
-enum PinShadow: String, CaseIterable, Identifiable, Codable {
-    case none
-    case black
-    case white
-
-    var id: String { rawValue }
-    var label: String { rawValue.capitalized }
-
-    var color: Color? {
-        switch self {
-        case .none: return nil
-        case .black: return .black
-        case .white: return .white
-        }
-    }
-}
-
 /// User-facing preferences, including the optional setup tip.
 /// Backed by `UserDefaults`; each setter writes through immediately.
 final class AppSettings: ObservableObject {
@@ -109,21 +92,26 @@ final class AppSettings: ObservableObject {
         self.ocrAccuracy = defaults.decode(OCRAccuracy.self, forKey: Keys.ocrAccuracy) ?? .accurate
         self.ocrLanguages = defaults.decode([String].self, forKey: Keys.ocrLanguages) ?? ["en-US"]
         self.ocrLanguageCorrection = defaults.object(forKey: Keys.ocrLanguageCorrection) as? Bool ?? true
-        self.pinShadow = defaults.decode(PinShadow.self, forKey: Keys.pinShadow) ?? .black
-        self.pinOpacity = defaults.object(forKey: Keys.pinOpacity) as? Double ?? 1.0
-        self.pinCornerRadius = defaults.object(forKey: Keys.pinCornerRadius) as? Double ?? 10
         self.keepOtherAudioPlaying = defaults.object(forKey: Keys.keepOtherAudioPlaying) as? Bool ?? true
         self.captureDelay = defaults.object(forKey: Keys.captureDelay) as? Double ?? 0
         self.saveToDedicatedAlbum = defaults.object(forKey: Keys.saveToDedicatedAlbum) as? Bool ?? false
         self.albumName = defaults.string(forKey: Keys.albumName) ?? "Cod"
-        self.autoCopyOnCapture = defaults.object(forKey: Keys.autoCopyOnCapture) as? Bool ?? false
         self.watchScreenshots = defaults.object(forKey: Keys.watchScreenshots) as? Bool ?? true
         self.hapticsEnabled = defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
         self.smartRegions = defaults.object(forKey: Keys.smartRegions) as? Bool ?? true
         self.showMagnifier = defaults.object(forKey: Keys.showMagnifier) as? Bool ?? true
         self.lastSeenScreenshotID = defaults.string(forKey: Keys.lastSeenScreenshotID)
         self.hasDismissedFloatSetupTip = defaults.bool(forKey: Keys.hasDismissedFloatSetupTip)
+        self.hasCompletedIntroduction = defaults.bool(forKey: Keys.hasCompletedIntroduction)
         #if DEBUG
+        // Existing simulator flows can exercise imports without a first-run card.
+        if ProcessInfo.processInfo.arguments.contains("--launch-ui-test")
+            || ProcessInfo.processInfo.arguments.contains("--show-float-setup") {
+            self.hasCompletedIntroduction = true
+        }
+        if ProcessInfo.processInfo.arguments.contains("--show-introduction") {
+            self.hasCompletedIntroduction = false
+        }
         if ProcessInfo.processInfo.arguments.contains("--show-float-setup") {
             self.hasDismissedFloatSetupTip = false
         }
@@ -140,6 +128,9 @@ final class AppSettings: ObservableObject {
     /// stays user-controlled, and the installer remains available in the guide.
     @Published var hasDismissedFloatSetupTip: Bool {
         didSet { defaults.set(hasDismissedFloatSetupTip, forKey: Keys.hasDismissedFloatSetupTip) }
+    }
+    @Published var hasCompletedIntroduction: Bool {
+        didSet { defaults.set(hasCompletedIntroduction, forKey: Keys.hasCompletedIntroduction) }
     }
 
     /// On by default: skip cropping when the prepared share opens in Cod.
@@ -183,12 +174,6 @@ final class AppSettings: ObservableObject {
 
     @Published var historyLimit: HistoryLimit { didSet { defaults.encode(historyLimit, forKey: Keys.historyLimit) } }
 
-    // MARK: - Pins
-
-    @Published var pinShadow: PinShadow { didSet { defaults.encode(pinShadow, forKey: Keys.pinShadow) } }
-    @Published var pinOpacity: Double { didSet { defaults.set(pinOpacity, forKey: Keys.pinOpacity) } }
-    @Published var pinCornerRadius: Double { didSet { defaults.set(pinCornerRadius, forKey: Keys.pinCornerRadius) } }
-
     /// Floating needs an active audio session. Declaring it mixable leaves your
     /// music playing, but makes Cod a secondary audio app, which can cost it
     /// the background time the floating window needs to survive.
@@ -200,7 +185,6 @@ final class AppSettings: ObservableObject {
 
     @Published var saveToDedicatedAlbum: Bool { didSet { defaults.set(saveToDedicatedAlbum, forKey: Keys.saveToDedicatedAlbum) } }
     @Published var albumName: String { didSet { defaults.set(albumName, forKey: Keys.albumName) } }
-    @Published var autoCopyOnCapture: Bool { didSet { defaults.set(autoCopyOnCapture, forKey: Keys.autoCopyOnCapture) } }
 
     // MARK: - Feel
 
@@ -228,20 +212,17 @@ final class AppSettings: ObservableObject {
         static let ocrAccuracy = "ocrAccuracy"
         static let ocrLanguages = "ocrLanguages"
         static let ocrLanguageCorrection = "ocrLanguageCorrection"
-        static let pinShadow = "pinShadow"
-        static let pinOpacity = "pinOpacity"
-        static let pinCornerRadius = "pinCornerRadius"
         static let keepOtherAudioPlaying = "keepOtherAudioPlaying"
         static let captureDelay = "captureDelay"
         static let saveToDedicatedAlbum = "saveToDedicatedAlbum"
         static let albumName = "albumName"
-        static let autoCopyOnCapture = "autoCopyOnCapture"
         static let watchScreenshots = "watchScreenshots"
         static let hapticsEnabled = "hapticsEnabled"
         static let smartRegions = "smartRegions"
         static let showMagnifier = "showMagnifier"
         static let lastSeenScreenshotID = "lastSeenScreenshotID"
         static let hasDismissedFloatSetupTip = "hasDismissedFloatSetupTip"
+        static let hasCompletedIntroduction = "hasCompletedIntroduction"
     }
 }
 

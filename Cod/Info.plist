@@ -57,6 +57,22 @@
 				<string>public.image</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array><string>com.adobe.pdf</string></array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key><string>Video</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key><array><string>public.movie</string></array>
+		</dict>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
@@ -72,6 +88,10 @@
 
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Cod reads screenshots you allow so the latest-screenshot control and actions can float or crop them.</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>Cod sounds an alarm when a timer you enable finishes, even while your phone is locked.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
 

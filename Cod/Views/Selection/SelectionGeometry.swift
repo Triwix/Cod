@@ -34,18 +34,23 @@ struct SelectionGeometry: Equatable {
 
     var imageBounds: CGRect { CGRect(origin: .zero, size: imageSize) }
 
-    static func fit(imageSize: CGSize, in container: CGSize) -> SelectionGeometry {
+    static func fit(imageSize: CGSize, in container: CGSize, zoom: CGFloat = 1, pan: CGSize = .zero) -> SelectionGeometry {
         guard imageSize.width > 0, imageSize.height > 0, container.width > 0, container.height > 0 else {
             return SelectionGeometry(
                 imageSize: CGSize(width: 1, height: 1),
                 displayRect: CGRect(origin: .zero, size: container)
             )
         }
-        let ratio = min(container.width / imageSize.width, container.height / imageSize.height)
+        let boundedZoom = zoom.isFinite ? min(6, max(1, zoom)) : 1
+        let ratio = min(container.width / imageSize.width, container.height / imageSize.height) * boundedZoom
         let size = CGSize(width: imageSize.width * ratio, height: imageSize.height * ratio)
+        let maxX = max(0, (size.width - container.width) / 2)
+        let maxY = max(0, (size.height - container.height) / 2)
+        let panX = pan.width.isFinite ? min(maxX, max(-maxX, pan.width)) : 0
+        let panY = pan.height.isFinite ? min(maxY, max(-maxY, pan.height)) : 0
         let origin = CGPoint(
-            x: ((container.width - size.width) / 2).rounded(),
-            y: ((container.height - size.height) / 2).rounded()
+            x: ((container.width - size.width) / 2).rounded() + panX,
+            y: ((container.height - size.height) / 2).rounded() + panY
         )
         return SelectionGeometry(imageSize: imageSize, displayRect: CGRect(origin: origin, size: size))
     }

@@ -88,7 +88,7 @@ final class QuickFloatHandoffTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults)
         settings.historyLimit = .off
-        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pins: .shared, pip: PiPPinController(), quickHandoff: handoff)
+        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController(), quickHandoff: handoff)
         coordinator.restoreFloatingSelection(Self.image)
         let old = try XCTUnwrap(coordinator.pending?.id)
         let id = try handoff.store(Self.image, mode: .crop)
@@ -104,7 +104,7 @@ final class QuickFloatHandoffTests: XCTestCase {
         let suite = "CodQuickBusyTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        let coordinator = CaptureCoordinator(store: .shared, settings: AppSettings(defaults: defaults), pins: .shared, pip: PiPPinController(), quickHandoff: handoff)
+        let coordinator = CaptureCoordinator(store: .shared, settings: AppSettings(defaults: defaults), pip: PiPPinController(), quickHandoff: handoff)
         let id = try handoff.store(Self.image, mode: .crop)
         coordinator.isWorking = true
         XCTAssertFalse(coordinator.receiveQuickShare(expectedID: id))
@@ -211,7 +211,7 @@ final class QuickFloatHandoffTests: XCTestCase {
         settings.arrivalMode = .instant
         settings.instantAction = .copyImage
         settings.historyLimit = .off
-        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pins: .shared, pip: PiPPinController(), quickHandoff: handoff)
+        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController(), quickHandoff: handoff)
         let id = try handoff.store(Self.image, mode: .crop)
         coordinator.receiveQuickShare()
         XCTAssertEqual(coordinator.pending?.image.pixelSize, Self.image.pixelSize)

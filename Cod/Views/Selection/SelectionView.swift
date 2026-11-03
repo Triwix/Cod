@@ -12,6 +12,8 @@ struct SelectionView: View {
     var smartRegionsEnabled = true
     var onCancel: () -> Void
     var onAction: (SnapAction, UIImage, CGRect) -> Void
+    var onReadText: ((UIImage) -> Void)? = nil
+    var primaryTitle: String? = nil
 
     @EnvironmentObject private var settings: AppSettings
 
@@ -24,6 +26,13 @@ struct SelectionView: View {
     @State private var smartRegions: [CGRect] = []
     @State private var showSmartRegions = false
     @State private var didHintFade = false
+    @State private var zoom: CGFloat = 1
+    @State private var pan: CGSize = .zero
+    @State private var panStart: CGSize?
+    @State private var movingPage = false
+    @State private var magnifying = false
+    @State private var pinchStart: CGFloat?
+    @State private var selectionBeforeDrag: CGRect?
 
     private let minSelectionPixels: CGFloat = 8
     private let handleHitSlop: CGFloat = 30
@@ -45,6 +54,7 @@ struct SelectionView: View {
             VStack(spacing: 0) {
                 topBar
                 Spacer(minLength: 0)
+                zoomBar
                 bottomBar
             }
             .padding(.vertical, 8)
@@ -55,7 +65,7 @@ struct SelectionView: View {
 
     private var cropSurface: some View {
         GeometryReader { proxy in
-            let g = SelectionGeometry.fit(imageSize: image.pixelSize, in: proxy.size)
+            let g = SelectionGeometry.fit(imageSize: image.pixelSize, in: proxy.size, zoom: zoom, pan: pan)
 
             ZStack {
                 Color.black
@@ -77,7 +87,27 @@ struct SelectionView: View {
 
                 Color.clear
                     .contentShape(Rectangle())
-                    .gesture(dragGesture(g))
+                    .accessibilityElement()
+                    .accessibilityLabel("Crop canvas")
+                    .accessibilityIdentifier("crop-canvas")
+                    .gesture(dragGesture(g, container: proxy.size))
+                    .simultaneousGesture(MagnifyGesture()
+                        .onChanged { value in
+                            if pinchStart == nil {
+                                pinchStart = zoom
+                                if dragMode != nil { selection = selectionBeforeDrag }
+                                dragMode = nil
+                                activePoint = nil
+                            }
+                            magnifying = true
+                            zoom = min(6, max(1, (pinchStart ?? zoom) * value.magnification))
+                            didHintFade = true
+                        }
+                        .onEnded { _ in
+                            pinchStart = nil
+                            magnifying = false
+                            pan = boundedPan(in: proxy.size)
+                        })
 
                 if settings.showMagnifier, let activePoint {
                     loupe(at: activePoint, geometry: g, container: proxy.size)
@@ -89,6 +119,7 @@ struct SelectionView: View {
                         .allowsHitTesting(false)
                 }
             }
+            .clipped()
             .onAppear { loadSmartRegions() }
             .task {
                 // Get out of the way on its own if the user is just looking.
@@ -231,13 +262,26 @@ struct SelectionView: View {
 
     // MARK: - Gesture
 
-    private func dragGesture(_ g: SelectionGeometry) -> some Gesture {
+    private func dragGesture(_ g: SelectionGeometry, container: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
+                guard !magnifying else { return }
+                if movingPage {
+                    if panStart == nil { panStart = pan }
+                    let start = panStart ?? .zero
+                    // Keep the page bounded while moving; the stored crop
+                    // remains in image pixels, independent of zoom and pan.
+                    let candidate = CGSize(width: start.width + value.translation.width,
+                                           height: start.height + value.translation.height)
+                    pan = candidate
+                    pan = boundedPan(in: container)
+                    return
+                }
                 let startPixels = g.pixelPoint(value.startLocation)
                 let currentPixels = g.pixelPoint(value.location)
 
                 if dragMode == nil {
+                    selectionBeforeDrag = selection
                     dragMode = resolveMode(startLocation: value.startLocation, geometry: g, startPixels: startPixels)
                     Haptics.tick()
                     withAnimation(.easeOut(duration: 0.15)) { didHintFade = true }
@@ -271,6 +315,8 @@ struct SelectionView: View {
                 }
             }
             .onEnded { value in
+                if movingPage { panStart = nil; pan = boundedPan(in: container); return }
+                guard !magnifying else { return }
                 let travelled = hypot(value.translation.width, value.translation.height)
                 let wasCreating: Bool
                 if case .creating = dragMode { wasCreating = true } else { wasCreating = false }
@@ -337,6 +383,49 @@ struct SelectionView: View {
 
     // MARK: - Chrome
 
+    private var zoomBar: some View {
+        HStack(spacing: 12) {
+            Button { zoom = max(1, zoom - 0.5); if zoom == 1 { resetZoom() } } label: {
+                Image(systemName: "minus.magnifyingglass").frame(width: 40, height: 44)
+            }.accessibilityLabel("Zoom out").disabled(zoom <= 1)
+            Button { resetZoom() } label: {
+                Text("\(Int((zoom * 100).rounded()))%")
+                    .font(.system(.caption, design: .monospaced)).frame(minWidth: 48, minHeight: 44)
+            }.accessibilityLabel("Fit whole image")
+                .accessibilityValue("\(Int((zoom * 100).rounded()))%")
+                .accessibilityIdentifier("crop-zoom-level")
+            Button { zoom = min(6, zoom + 0.5); didHintFade = true } label: {
+                Image(systemName: "plus.magnifyingglass").frame(width: 40, height: 44)
+            }.accessibilityLabel("Zoom in").disabled(zoom >= 6)
+            Spacer(minLength: 0)
+            Button { movingPage.toggle(); didHintFade = true } label: {
+                Label(movingPage ? "Select" : "Move", systemImage: movingPage ? "rectangle.dashed" : "hand.draw")
+                    .font(.caption.weight(.semibold)).frame(minHeight: 44)
+            }
+            .accessibilityLabel(movingPage ? "Select region" : "Move image")
+            .disabled(zoom <= 1)
+        }
+        .padding(.horizontal, 12)
+        .foregroundStyle(.white)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+    }
+
+    private func resetZoom() {
+        zoom = 1
+        pan = .zero
+        movingPage = false
+        panStart = nil
+    }
+
+    private func boundedPan(in size: CGSize) -> CGSize {
+        let centered = SelectionGeometry.fit(imageSize: image.pixelSize, in: size, zoom: zoom)
+        let shifted = SelectionGeometry.fit(imageSize: image.pixelSize, in: size, zoom: zoom, pan: pan)
+        return CGSize(width: shifted.displayRect.minX - centered.displayRect.minX,
+                      height: shifted.displayRect.minY - centered.displayRect.minY)
+    }
+
     private var topBar: some View {
         HStack(spacing: 12) {
             Button(action: onCancel) {
@@ -355,6 +444,11 @@ struct SelectionView: View {
             Spacer(minLength: 0)
 
             Menu {
+                if let onReadText {
+                    Button { if let (image, _) = crop() { onReadText(image) } } label: {
+                        Label("Use in Text", systemImage: "text.viewfinder")
+                    }.accessibilityIdentifier("read-selection-text")
+                }
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
                         selection = CGRect(origin: .zero, size: image.pixelSize)
@@ -380,6 +474,7 @@ struct SelectionView: View {
                     .frame(width: 34, height: 34)
                     .background(.ultraThinMaterial, in: Circle())
             }
+            .accessibilityLabel("Selection options").accessibilityIdentifier("selection-options")
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 16)
@@ -407,13 +502,13 @@ struct SelectionView: View {
     }
 
     private var bottomBar: some View {
-        ActionBar(actions: availableActions ?? settings.visibleActions) { action in
+        ActionBar(actions: availableActions ?? settings.visibleActions, onTap: { action in
             guard let (cropped, rect) = crop() else {
                 Haptics.warning()
                 return
             }
             onAction(action, cropped, rect)
-        }
+        }, primaryTitle: primaryTitle)
         .padding(.bottom, 6)
     }
 
