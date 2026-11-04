@@ -190,6 +190,12 @@ Finish in… affect its finite playback; countdown is additional to reading time
 
 ## Screenshots and evidence
 
+Four unmodified 13-inch iPad screenshot candidates are available in
+[release-22 captures](release-hardening-22.md#ipad-screenshot-drafts). They use
+authored sample content, meet the 2064 × 2752 dimensions and have been visually
+inspected. They are not uploaded or approved final marketing assets, and do not
+replace the physical-device floating example below.
+
 Prepare final marketing screenshots from the signed release candidate, showing
 only content the owner has rights to use. Include the Float tab, Shortcut setup,
 crop editor and an actual physical-device PiP example. Simulator QA attachments

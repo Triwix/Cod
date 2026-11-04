@@ -18,35 +18,16 @@ enum FloatingClip {
         return base.appendingPathComponent("CodFloatingClips", isDirectory: true)
     }
 
-    /// AVFoundation's writer types predate `Sendable`. This state is created
-    /// before encoding and then touched only by the writer's serial queue.
-    private final class EncodingState: @unchecked Sendable {
-        let input: AVAssetWriterInput
-        let adaptor: AVAssetWriterInputPixelBufferAdaptor
-        let pixelBuffer: CVPixelBuffer
-        var frame = 0
-        var finished = false
-        var appendFailed = false
-
-        init(
-            input: AVAssetWriterInput,
-            adaptor: AVAssetWriterInputPixelBufferAdaptor,
-            pixelBuffer: CVPixelBuffer
-        ) {
-            self.input = input
-            self.adaptor = adaptor
-            self.pixelBuffer = pixelBuffer
-        }
-    }
-
     enum ClipError: LocalizedError {
         case noPixelBuffer
         case writerFailed(String)
+        case timedOut
 
         var errorDescription: String? {
             switch self {
             case .noPixelBuffer: return "Couldn't turn that snippet into a video frame."
             case let .writerFailed(reason): return "Couldn't build the floating clip: \(reason)"
+            case .timedOut: return "Preparing the floating image took too long. Please try again."
             }
         }
     }
@@ -57,6 +38,7 @@ enum FloatingClip {
     private static let seconds: Int32 = 2
 
     static func make(from image: UIImage) async throws -> URL {
+        try Task.checkCancellation()
         guard let pixelBuffer = image.pixelBuffer() else { throw ClipError.noPixelBuffer }
 
         let width = CVPixelBufferGetWidth(pixelBuffer)
@@ -96,44 +78,10 @@ enum FloatingClip {
         }
         writer.startSession(atSourceTime: .zero)
 
-        let totalFrames = Int(fps * seconds)
-        let queue = DispatchQueue(label: "com.josh.cod.clipwriter")
-        let state = EncodingState(input: input, adaptor: adaptor, pixelBuffer: pixelBuffer)
-
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            input.requestMediaDataWhenReady(on: queue) {
-                guard !state.finished else { return }
-                while state.input.isReadyForMoreMediaData {
-                    guard state.frame < totalFrames else {
-                        state.finished = true
-                        state.input.markAsFinished()
-                        continuation.resume()
-                        return
-                    }
-                    guard state.adaptor.append(
-                        state.pixelBuffer,
-                        withPresentationTime: CMTime(value: Int64(state.frame), timescale: fps)
-                    ) else {
-                        state.finished = true
-                        state.appendFailed = true
-                        continuation.resume()
-                        return
-                    }
-                    state.frame += 1
-                }
-            }
-        }
-
-        guard !state.appendFailed else {
-            writer.cancelWriting()
-            throw ClipError.writerFailed("writer rejected an image frame")
-        }
-
-        await writer.finishWriting()
-
-        guard writer.status == .completed else {
-            throw ClipError.writerFailed(writer.error?.localizedDescription ?? "status \(writer.status.rawValue)")
-        }
+        try await FloatingClipEncoder.encode(
+            ImageClipWriter(writer: writer, input: input, adaptor: adaptor, pixelBuffer: pixelBuffer, fps: fps),
+            frames: Int(fps * seconds)
+        )
         completed = true
         return url
     }
@@ -147,5 +95,96 @@ enum FloatingClip {
         for file in files where file.lastPathComponent.hasPrefix("cod-float-") && file != keep {
             try? fm.removeItem(at: file)
         }
+    }
+}
+
+/// Keep the wait independent of AVFoundation so failures before readiness,
+/// stalled finalization and cancellation can be exercised deterministically.
+protocol FloatingClipWriting: AnyObject {
+    var status: AVAssetWriter.Status { get }
+    var error: Error? { get }
+    var isReady: Bool { get }
+    func append(frame: Int) -> Bool
+    func finish()
+    func cancel()
+}
+
+enum FloatingClipEncoder {
+    static func encode(
+        _ writer: FloatingClipWriting, frames: Int,
+        timeout: Duration = .seconds(15), pollInterval: Duration = .milliseconds(10)
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        var completed = false
+        defer { if !completed { writer.cancel() } }
+
+        func check() throws {
+            try Task.checkCancellation()
+            guard clock.now < deadline else { throw FloatingClip.ClipError.timedOut }
+            guard writer.status == .writing else {
+                throw FloatingClip.ClipError.writerFailed(writer.error?.localizedDescription ?? "Video encoding stopped.")
+            }
+        }
+
+        // A cancellable wait also observes terminal writer states when an
+        // AVAssetWriterInput never becomes ready or stops issuing callbacks.
+        for frame in 0..<frames {
+            try check()
+            while !writer.isReady {
+                try await Task.sleep(for: pollInterval)
+                try check()
+            }
+            guard writer.append(frame: frame) else {
+                throw FloatingClip.ClipError.writerFailed(writer.error?.localizedDescription ?? "The video writer rejected an image frame.")
+            }
+        }
+        try check()
+        writer.finish()
+        while true {
+            try Task.checkCancellation()
+            guard clock.now < deadline else { throw FloatingClip.ClipError.timedOut }
+            // Read status once: finalization may complete between any two
+            // reads, which must never turn a successful clip into a failure.
+            switch writer.status {
+            case .completed:
+                completed = true
+                return
+            case .writing:
+                break
+            default:
+                throw FloatingClip.ClipError.writerFailed(writer.error?.localizedDescription ?? "Video finalization stopped.")
+            }
+            try await Task.sleep(for: pollInterval)
+        }
+    }
+}
+
+private final class ImageClipWriter: FloatingClipWriting {
+    let writer: AVAssetWriter
+    let input: AVAssetWriterInput
+    let adaptor: AVAssetWriterInputPixelBufferAdaptor
+    let pixelBuffer: CVPixelBuffer
+    let fps: Int32
+
+    init(writer: AVAssetWriter, input: AVAssetWriterInput, adaptor: AVAssetWriterInputPixelBufferAdaptor,
+         pixelBuffer: CVPixelBuffer, fps: Int32) {
+        self.writer = writer; self.input = input; self.adaptor = adaptor
+        self.pixelBuffer = pixelBuffer; self.fps = fps
+    }
+    var status: AVAssetWriter.Status { writer.status }
+    var error: Error? { writer.error }
+    var isReady: Bool { input.isReadyForMoreMediaData }
+    func append(frame: Int) -> Bool {
+        adaptor.append(pixelBuffer, withPresentationTime: CMTime(value: Int64(frame), timescale: fps))
+    }
+    func finish() {
+        input.markAsFinished()
+        // Observe status with the same deadline; a lost completion callback
+        // must not strand a checked continuation or keep a cancelled float alive.
+        writer.finishWriting(completionHandler: {})
+    }
+    func cancel() {
+        if writer.status == .writing { writer.cancelWriting() }
     }
 }

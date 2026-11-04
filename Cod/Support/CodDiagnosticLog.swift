@@ -6,7 +6,9 @@ enum CodDiagnosticLog {
   static let maximumFileBytes = 128 * 1_024
   private static let queue = DispatchQueue(label: "com.josh.cod.stage-diagnostics")
 
-  static func record(_ message: String) {
+  static func record(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    let message = message()
     queue.async {
       guard
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -14,6 +16,7 @@ enum CodDiagnosticLog {
       let url = directory.appendingPathComponent("cod-diagnostics.log")
       append(message, at: url)
     }
+    #endif
   }
 
   /// Each caller serializes writes to its own fixed, private log URL.

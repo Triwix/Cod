@@ -55,6 +55,18 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             print -u2 "Fast-share workaround unexpectedly present in $bundle_id"
             exit 1
         fi
+        if /usr/bin/strings "$binary_path" | rg 'cod-diagnostics\.log|share-diagnostics\.log|\[CodPiP\]|\[CodShare\]'; then
+            print -u2 "Debug diagnostic logging found in $bundle_id. Audit a Release build."
+            exit 1
+        fi
+        alarm_link=$(/usr/bin/otool -l "$binary_path" | /usr/bin/awk '
+            $1 == "cmd" { kind = $2 }
+            $1 == "name" && $2 ~ /\/AlarmKit.framework\// { print kind }
+        ')
+        [[ -z "$alarm_link" || "$alarm_link" == LC_LOAD_WEAK_DYLIB ]] || {
+            print -u2 "AlarmKit must be weak-linked for older iOS versions: $bundle_id"
+            exit 1
+        }
     done
     /usr/bin/plutil -lint "$bundle_path/PrivacyInfo.xcprivacy"
     if [[ "$bundle_id" != com.josh.cod.store.controls ]]; then

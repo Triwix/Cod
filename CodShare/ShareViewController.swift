@@ -23,13 +23,16 @@ final class ShareViewController: UIViewController {
 
     private static let diagnosticQueue = DispatchQueue(label: "com.josh.cod.share-diagnostics")
 
-    private func diagnostic(_ message: String) {
+    private func diagnostic(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        let message = message()
         print("[CodShare] \(message)")
         Self.diagnosticQueue.async {
             guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
             let url = directory.appendingPathComponent("share-diagnostics.log")
             CodDiagnosticLog.append(message, at: url)
         }
+        #endif
     }
 
     override func viewDidLoad() {
@@ -233,7 +236,9 @@ final class ShareViewController: UIViewController {
             if self.useFloatNotification {
                 var imageWasSaved = false
                 do {
-                    let id = try QuickFloatHandoff.shared.store(image, mode: .float)
+                    let id = try await Task.detached(priority: .userInitiated) {
+                        try QuickFloatHandoff.shared.store(image, mode: .float)
+                    }.value
                     imageWasSaved = true
                     try await ShareFloatNotifications().schedule(id)
                     self.handoffTask = nil
@@ -249,7 +254,10 @@ final class ShareViewController: UIViewController {
                 return
             }
             do {
-                try QuickFloatHandoff.shared.store(image, mode: self.oneTapFloat ? .float : .crop)
+                let mode: QuickFloatHandoff.Mode = self.oneTapFloat ? .float : .crop
+                _ = try await Task.detached(priority: .userInitiated) {
+                    try QuickFloatHandoff.shared.store(image, mode: mode)
+                }.value
                 self.handoffTask = nil
                 guard !self.completed else { return }
                 self.diagnostic("image queued automatically; no app launch requested")

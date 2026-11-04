@@ -1,8 +1,9 @@
 # MVP checklist
 
-Current candidate: **Cod Test 1.0 (21)**, locally verified and installed on Jay
-(iPhone 16 Pro Max) on November 2. The installed version was checked and the
-app launched successfully. Owner review and physical feature acceptance are open.
+Current candidate: **Cod Test 1.0 (22)**. Debug/Release builds and local artifact
+checks pass; automated test execution is still open. Build 22 was installed and
+launched on Jay (iPhone 16 Pro Max) on November 3. Physical feature acceptance
+remains open; the original Cod app and data are untouched.
 Automated checks are not a substitute
 for physical-device acceptance or App Review. Keep the original Cod app/data untouched.
 
@@ -12,7 +13,7 @@ to the previous app is not supported. Public APIs do not guarantee approval.
 
 Details: [release gates](APP_STORE_RELEASE.md),
 [latest UI refinement](docs/redesign-21.md),
-[latest audit follow-up](docs/audit-follow-up-20.md),
+[latest reliability pass](docs/release-hardening-22.md),
 [submission draft](docs/app-store-draft.md).
 
 Research: [feature candidates](docs/feature-candidates.md). Selected items
@@ -20,51 +21,67 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Open items
 
-1. Review the build-21 native UI refinement on the phone and confirm the
+1. Finish build-22 unit and affected sharing/layout UI test execution. The Mac's
+   Apple test service fails before running tests despite repaired Xcode setup
+   and enabled, owner-approved developer-tools authorization. macOS also refuses
+   to open Xcode as OS-incompatible. Use a working compatible toolchain; no new
+   passing run is claimed.
+2. Review the build-22 candidate on the phone and confirm the
    Share/Shortcut/document request-lifecycle fix carried forward from build 20.
    Complete iPhone PiP reliability checks: cold/warm launch, image replacement,
    early taps/restore, close/reopen, resizing, rotation, lock/unlock, music mixing
    and another app already using PiP. Verify prompter smoothness, native rewind,
    pause, countdown and replay. Simulator PiP is unavailable or shows black tool
    pictures; use the phone for actual floating-picture acceptance.
-2. Confirm physical-device setup and use of Back Tap, Control Center, Lock Screen,
+3. Confirm physical-device setup and use of Back Tap, Control Center, Lock Screen,
    Action Button and notification handoff, including permission denial and Focus.
    Check the new saved-card/favorite Shortcut, Home Screen widget and configurable
    control, including changed/deleted references and a locked phone.
-3. Investigate delayed timer-alarm sound on the phone. Verify short and longer
+4. Investigate delayed timer-alarm sound on the phone. Verify short and longer
    timers with music, Cod foreground/background and the screen locked; check
    alarm permission, pause/resume/restart, cancellation and both PiP-close settings.
-4. Verify video sound, repeat boundaries, Repeat Off, pause/seek, restore and
+5. Verify video sound, repeat boundaries, Repeat Off, pause/seek, restore and
    replacement on the phone, plus GIF motion/timing and video-region crop/reset.
-5. Finish phone acceptance of text/teleprompter, PDF cropping, time tools, numeric
+6. Finish phone acceptance of text/teleprompter, PDF cropping, time tools, numeric
    entry, Preview labels, live colors and Library favorites/clear-history behavior.
    Include image-to-text accuracy/original comparison, named-card/preset editing,
    finite image/PDF scrolling, and timed prompter guide/margins/line spacing.
    Check the unified Text/photo/Teleprompter flow, inline PDF toggle and optional
    first-run introduction on the phone.
    Retest end-of-script seeking and Library save/reopen behavior after build 19.
-6. Finish real-provider import recovery checks: denied/limited Photos access,
+7. Finish real-provider import recovery checks: denied/limited Photos access,
    cloud-only/slow media and interrupted downloads. Local corrupt/unsupported
    media, cancelled pickers and stale-result rejection have automated coverage.
-7. Finish iPad window-resizing and assistive-technology acceptance before making
+8. Finish iPad window-resizing and assistive-technology acceptance before making
    full-app accessibility claims. iPad landscape/dark, PDF and largest-text
    introduction checks have passed in the simulator.
-8. Set up Apple Developer Program membership and distribution signing. Confirm
+   Launch on iOS 17/18 when a compatible runtime/device is available; only iOS 26
+   runtimes are installed, and Xcode couldn't supply iOS 18.5. AlarmKit weak-linking
+   and minimum OS values are verified in the Release binaries.
+9. Set up Apple Developer Program membership and distribution signing. Confirm
    the publishing team, bundle IDs and App Groups; regenerate signed Shortcuts
    if their app/team identity changes.
-9. Owner: supply the publishing identity and support contact, host the privacy
-   and support pages, configure `COD_PRIVACY_POLICY_URL` and verify the link in
-   the built app. Deferred at the owner's request; it remains a submission gate.
-10. Approve the final name and App Store listing; capture final screenshots and
-    provide the support URL, privacy answers, age
-    rating, export compliance and reviewer instructions. Explain generated
+10. Owner: supply the publishing identity and support contact, host the privacy
+    and support pages, configure `COD_PRIVACY_POLICY_URL` and verify the link in
+    the built app. Deferred at the owner's request; it remains a submission gate.
+11. Approve the final name and App Store listing; select the screenshot drafts,
+    capture a physical-device PiP example and provide the support URL, privacy
+    answers, age rating, export compliance and reviewer instructions. Explain generated
     still-image/live-tool PiP honestly.
-11. Validate a signed Release archive/TestFlight build, embedded entitlements and
+12. Validate a signed Release archive/TestFlight build, embedded entitlements and
     installed Shortcuts; rerun unit/UI tests and the submission-mode artifact audit.
-12. Submit for App Review and address any review feedback before publishing.
+13. Submit for App Review and address any review feedback before publishing.
 
 ## Completed items
 
+- Implemented bounded/cancellable image-video encoding, a completion-race fix,
+  stale-safe background image preparation, background share encoding and
+  asynchronous Settings storage calculation. Added 15 regression/decode tests;
+  execution is the open gate above. Disabled routine Release logging and extended
+  the binary audit to check logging markers and AlarmKit weak-linking.
+- Prepared four unmodified, visually inspected 2064 × 2752 iPad screenshot drafts
+  using authored sample content. Debug/Release builds and local source/artifact
+  checks pass; these are not device playback or distribution acceptance.
 - Applied the approved native UI refinement to Home, Library, Settings, the
   preview/editor headers, setup and launch confirmation: clearer Float actions,
   aligned neutral icons, consistent shapes/touch targets, shorter guidance and

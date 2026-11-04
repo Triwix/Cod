@@ -7,7 +7,19 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
-## Release-polish candidate · 1.0 (21)
+## Reliability candidate · 1.0 (22)
+
+Build 22 bounds/cancels still-image video encoding, moves image preparation and
+share encoding off the UI thread, loads storage size asynchronously and disables
+routine Release diagnostics. Debug compilation, the Release archive and local
+source/artifact checks pass. Automated execution is blocked by the Mac's Apple
+test-service failure; Xcode's GUI is also rejected as OS-incompatible. The approved
+developer-tools authorization change didn't resolve it. Earlier build-21 results don't establish this candidate's
+acceptance. Four correctly sized 13-inch iPad screenshot drafts are prepared.
+Cod Test build 22 was installed and launched on the phone on November 3;
+physical feature acceptance remains open. See [reliability notes](docs/release-hardening-22.md).
+
+## Native UI refinement · 1.0 (21)
 
 Build 21 applies the approved native UI refinement: clearer Float/Crop hierarchy,
 neutral aligned navigation icons, consistent touch targets and action shapes,

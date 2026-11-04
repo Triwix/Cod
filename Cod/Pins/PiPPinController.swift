@@ -231,7 +231,11 @@ final class PiPPinController: NSObject, ObservableObject {
                     prepareTask = nil
                 }
             }
-            let prepared = prepare(image)
+            let maximumEdge = maxRenderEdge
+            let prepared = await Task.detached(priority: .userInitiated) {
+                Self.prepare(image, maximumEdge: maximumEdge)
+            }.value
+            guard !Task.isCancelled, preparationID == requestID else { return }
             log("float() size=\(Int(prepared.size.width))x\(Int(prepared.size.height)) prewarmed=\(wasPrewarmed) +\(elapsed())ms")
 
             do {
@@ -622,9 +626,9 @@ final class PiPPinController: NSObject, ObservableObject {
 
     // MARK: - Plumbing
 
-    private func prepare(_ image: UIImage) -> UIImage {
+    nonisolated private static func prepare(_ image: UIImage, maximumEdge: CGFloat) -> UIImage {
         let normalized = image.normalizedUp()
-        let fitted = normalized.fitted(within: CGSize(width: maxRenderEdge, height: maxRenderEdge))
+        let fitted = normalized.fitted(within: CGSize(width: maximumEdge, height: maximumEdge))
         // H.264 requires even dimensions; odd ones skew or fail to encode.
         let evenSize = CGSize(
             width: max(2, (fitted.size.width / 2).rounded(.down) * 2),
@@ -750,13 +754,16 @@ final class PiPPinController: NSObject, ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 
-    private func log(_ message: String) {
+    private func log(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        let message = message()
         // Plain stdout so `devicectl device process launch --console` picks it
         // up without needing root. stdout block-buffers when redirected, so
         // flush or the tail never arrives.
         print("[CodPiP] \(message)")
         fflush(stdout)
         CodDiagnosticLog.record("PiP \(message)")
+        #endif
     }
 }
 

@@ -250,12 +250,20 @@ final class SnapStore: ObservableObject {
         if persist { persistIndex() }
     }
 
-    var diskUsage: Int64 {
-        guard let contents = try? fileManager.contentsOfDirectory(
-            at: root, includingPropertiesForKeys: [.fileSizeKey]
-        ) else { return 0 }
-        return contents.reduce(into: Int64(0)) { total, url in
-            total += Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+    /// Queue behind pending saves/removals and keep directory enumeration out
+    /// of SwiftUI's body. Callers discard cancelled/stale view tasks.
+    func diskUsage() async -> Int64 {
+        let root = root
+        return await withCheckedContinuation { continuation in
+            ioQueue.async {
+                let contents = (try? FileManager.default.contentsOfDirectory(
+                    at: root, includingPropertiesForKeys: [.fileSizeKey]
+                )) ?? []
+                let bytes = contents.reduce(into: Int64(0)) { total, url in
+                    total += Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+                }
+                continuation.resume(returning: bytes)
+            }
         }
     }
 

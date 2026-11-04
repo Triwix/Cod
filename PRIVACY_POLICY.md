@@ -1,6 +1,6 @@
 # Cod privacy policy — release draft
 
-Last updated: October 29, 2026.
+Last updated: November 3, 2026.
 
 Publication requires the developer's approved identity/contact details below.
 This draft describes Cod 1.0's supported-only configuration. Unsupported launch,
@@ -35,11 +35,12 @@ Off, trimmed or cleared with Clear Recent History. Clear Library also offers
 Delete Everything, Including Favorites, after confirmation. Favorites have a locally
 stored ordering. History may be included in your normal device backup.
 Preferences, including whether the optional introduction has been completed or
-skipped, are stored locally. Cod also keeps bounded local diagnostic logs
-of operational events and errors; it does not automatically send them to the
-developer or include image pixels or recognized text in these logs.
-The app's and Share extension's diagnostic files have bounded lines and total
-size, and are marked to be excluded from device backups.
+skipped, are stored locally. Routine diagnostic logging is disabled in public
+Release builds. Development test builds keep bounded local logs of operational
+events and errors, without image pixels or recognized text. They are not
+automatically sent to the developer. These diagnostic files have bounded lines
+and total size and are excluded from device backups. Older development logs
+may remain in a test installation; disabling logging does not upload them.
 
 Selected local videos are copied into Cod for playback and, when history is enabled,
 kept in Library with a thumbnail. Deleting a library video never deletes the original

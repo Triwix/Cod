@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (21)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (22)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,17 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 22 hardens image encoding and cancellation, moves image/share preparation
+  and Settings storage enumeration off the UI thread, and disables routine
+  Release diagnostics. Debug compilation, the Release archive and artifact checks
+  pass, including a signed Debug device build. Unit/UI execution is blocked by
+  Apple's simulator test service, even after repaired setup and approved developer
+  authorization. LaunchServices also refuses Xcode as OS-incompatible. No new test
+  run is counted as passed. Build 22 was installed and launched on Jay (iPhone
+  16 Pro Max) on November 3; actual feature acceptance remains open. The original
+  Cod app and data were not targeted.
+  Four 2064 × 2752 iPad screenshot candidates are captured and visually inspected.
+  See [reliability evidence and limits](docs/release-hardening-22.md).
 - Build 21 refines the native UI while preserving features and supported entry
   points. Check the Home action hierarchy, short-card pinned previews, Library,
   optional Settings guidance and system-appearance launch confirmation on the

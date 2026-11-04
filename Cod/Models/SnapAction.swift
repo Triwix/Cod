@@ -33,7 +33,7 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
         case .qr: return "Scan Code"
         case .translate: return "Translate"
         case .annotate: return "Edit"
-        case .upload: return "Upload"
+        case .upload: return "Retired action"
         }
     }
 
@@ -49,7 +49,7 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
         case .qr: return "Read QR codes and barcodes in the crop"
         case .translate: return "Recognize text, then translate it"
         case .annotate: return "Draw, highlight and mark up"
-        case .upload: return "Upload to Imgur and copy the link"
+        case .upload: return "No longer available"
         }
     }
 

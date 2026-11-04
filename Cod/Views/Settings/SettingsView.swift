@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var isEnablingNotifications = false
     @State private var confirmClearHistory = false
     @State private var pendingHistoryLimit: HistoryLimit?
+    @State private var historyDiskUsage: Int64?
 
     var body: some View {
         NavigationStack {
@@ -268,8 +269,13 @@ struct SettingsView: View {
             HStack {
                 Text("History on disk")
                 Spacer()
-                Text(ByteCountFormatter.string(fromByteCount: store.diskUsage, countStyle: .file))
+                Text(historyDiskUsage.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "Calculating…")
                     .foregroundStyle(.secondary)
+            }
+            .task(id: store.snaps) {
+                let bytes = await store.diskUsage()
+                guard !Task.isCancelled else { return }
+                historyDiskUsage = bytes
             }
 
             Button("Clear Library…", role: .destructive) { confirmClearHistory = true }

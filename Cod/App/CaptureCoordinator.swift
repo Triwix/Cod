@@ -65,6 +65,8 @@ final class CaptureCoordinator: ObservableObject {
     private var pipStatusCancellable: AnyCancellable?
     private var isAwaitingFloatResult = false
     private var dismissSelectionOnFloatSuccess = false
+    private var imagePreparationID: UUID?
+    private var imagePreparationTask: Task<Void, Never>?
 
     init(
         store: SnapStore,
@@ -193,6 +195,7 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func prioritizeExplicitInput() {
+        cancelImagePreparation()
         explicitInputID = UUID()
         finishQuickRequest(success: false)
         try? quickHandoff.deferAutomaticStart()
@@ -245,7 +248,12 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func present(image: UIImage, origin: Snap.Origin) {
-        let normalized = image.normalizedUp()
+        prepareImage(image) { [weak self] normalized in
+            self?.presentPreparedImage(normalized, origin: origin)
+        }
+    }
+
+    private func presentPreparedImage(_ normalized: UIImage, origin: Snap.Origin) {
         archivedCrops.removeAll()
         Haptics.prepare()
 
@@ -286,7 +294,14 @@ final class CaptureCoordinator: ObservableObject {
         minimalUI: Bool = false,
         reusePreparedPlayback: Bool = true
     ) {
-        let normalized = image.normalizedUp()
+        prepareImage(image) { [weak self] normalized in
+            self?.floatPreparedImage(normalized, origin: origin, minimalUI: minimalUI,
+                                     reusePreparedPlayback: reusePreparedPlayback)
+        }
+    }
+
+    private func floatPreparedImage(_ normalized: UIImage, origin: Snap.Origin,
+                                    minimalUI: Bool, reusePreparedPlayback: Bool) {
         pending = nil
         archivedCrops.removeAll()
         if minimalUI { floatOnlyLaunch = true }
@@ -299,6 +314,33 @@ final class CaptureCoordinator: ObservableObject {
         if pip.status != .unsupported {
             archive(normalized, rect: CGRect(origin: .zero, size: normalized.pixelSize), origin: origin)
         }
+    }
+
+    private func prepareImage(_ image: UIImage, then action: @escaping @MainActor (UIImage) -> Void) {
+        cancelImagePreparation()
+        // Already decoded imports keep their synchronous request bookkeeping;
+        // only an actual redraw leaves the main actor.
+        guard image.imageOrientation != .up || image.scale != 1 else { action(image); return }
+        let id = UUID()
+        imagePreparationID = id
+        isWorking = true
+        imagePreparationTask = Task { @MainActor [weak self] in
+            guard !Task.isCancelled else { return }
+            let normalized = await Task.detached(priority: .userInitiated) { image.normalizedUp() }.value
+            guard let self, !Task.isCancelled, self.imagePreparationID == id else { return }
+            self.imagePreparationID = nil
+            self.imagePreparationTask = nil
+            self.isWorking = self.isAwaitingFloatResult
+            action(normalized)
+        }
+    }
+
+    private func cancelImagePreparation() {
+        guard imagePreparationID != nil else { return }
+        imagePreparationID = nil
+        imagePreparationTask?.cancel()
+        imagePreparationTask = nil
+        if !isAwaitingFloatResult { isWorking = false }
     }
 
     /// Floats the newest screenshot whole, for Back Tap / Action Button.
@@ -321,6 +363,7 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func dismissSelection() {
+        cancelImagePreparation()
         finishQuickRequest(success: false)
         withAnimation(.easeOut(duration: 0.2)) { pending = nil }
     }
@@ -328,6 +371,7 @@ final class CaptureCoordinator: ObservableObject {
     /// Restore an image for explicit user action, regardless of the configured
     /// arrival mode. Instant Float must not reopen PiP in a restoration loop.
     func restoreFloatingSelection(_ image: UIImage, origin: Snap.Origin = .shared) {
+        cancelImagePreparation()
         isAwaitingFloatResult = false
         dismissSelectionOnFloatSuccess = false
         floatOnlyLaunch = false
@@ -385,6 +429,7 @@ final class CaptureCoordinator: ObservableObject {
     }
 
     func reopen(_ snap: Snap) {
+        cancelImagePreparation()
         if snap.isVideo { reopenVideo(snap); return }
         guard let image = store.image(for: snap) else {
             toast = .failure("That capture is missing its image")
