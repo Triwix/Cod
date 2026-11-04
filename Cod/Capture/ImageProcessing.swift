@@ -76,15 +76,44 @@ extension UIImage {
         return UIImage(cgImage: cropped, scale: 1, orientation: .up)
     }
 
-    /// Aspect-fit resize used by thumbnails and the Picture in Picture encoder.
-    /// Never upscales.
-    func fitted(within bounds: CGSize) -> UIImage {
+    /// Aspect-fit resize used by Library thumbnails. Never upscales; an explicit
+    /// range also converts smaller images instead of retaining extended buffers.
+    func fitted(
+        within bounds: CGSize,
+        preferredRange: UIGraphicsImageRendererFormat.Range = .automatic
+    ) -> UIImage {
         let ratio = min(bounds.width / size.width, bounds.height / size.height, 1)
-        guard ratio < 1 else { return self }
+        guard ratio < 1 || preferredRange != .automatic else { return self }
         let target = CGSize(width: max(1, (size.width * ratio).rounded()), height: max(1, (size.height * ratio).rounded()))
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
+        format.preferredRange = preferredRange
         return UIGraphicsImageRenderer(size: target, format: format).image { _ in
+            draw(in: CGRect(origin: .zero, size: target))
+        }
+    }
+
+    /// A disposable SDR frame for the H.264 PiP encoder. Draw once at the
+    /// final size instead of allocating full-size extended-color intermediates.
+    /// Source pixels, alpha, orientation and saved originals aren't mutated.
+    func renderedForPiP(maximumEdge: CGFloat) -> UIImage? {
+        let pixels = pixelSize
+        guard maximumEdge.isFinite, maximumEdge >= 2,
+              pixels.width.isFinite, pixels.height.isFinite,
+              pixels.width > 0, pixels.height > 0 else { return nil }
+        let ratio = min(maximumEdge / max(pixels.width, pixels.height), 1)
+        let target = CGSize(
+            width: max(2, (pixels.width * ratio / 2).rounded(.down) * 2),
+            height: max(2, (pixels.height * ratio / 2).rounded(.down) * 2)
+        )
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        format.preferredRange = .standard
+        return UIGraphicsImageRenderer(size: target, format: format).image { context in
+            // Video has no alpha channel; composite transparency explicitly.
+            UIColor.black.setFill()
+            context.fill(CGRect(origin: .zero, size: target))
             draw(in: CGRect(origin: .zero, size: target))
         }
     }

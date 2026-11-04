@@ -1,7 +1,7 @@
 # MVP checklist
 
-Current candidate: **Cod Test 1.0 (22)**. Debug/Release builds and local artifact
-checks pass; automated test execution is still open. Build 22 was installed and
+Current candidate: **Cod Test 1.0 (23)**. Debug/Release builds and local artifact
+checks pass; app test execution is still open. Build 23 was installed and
 launched on Jay (iPhone 16 Pro Max) on November 3. Physical feature acceptance
 remains open; the original Cod app and data are untouched.
 Automated checks are not a substitute
@@ -14,6 +14,7 @@ to the previous app is not supported. Public APIs do not guarantee approval.
 Details: [release gates](APP_STORE_RELEASE.md),
 [latest UI refinement](docs/redesign-21.md),
 [latest reliability pass](docs/release-hardening-22.md),
+[verifier/rendering evidence](docs/verifier-rendering-23.md),
 [submission draft](docs/app-store-draft.md).
 
 Research: [feature candidates](docs/feature-candidates.md). Selected items
@@ -21,18 +22,21 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Open items
 
-1. Finish build-22 unit and affected sharing/layout UI test execution. The Mac's
+1. Finish build-23 unit and affected sharing/layout UI test execution, including
+   build 22's unexecuted regressions. The Mac's
    Apple test service fails before running tests despite repaired Xcode setup
    and enabled, owner-approved developer-tools authorization. macOS also refuses
    to open Xcode as OS-incompatible. Use a working compatible toolchain; no new
-   passing run is claimed.
-2. Review the build-22 candidate on the phone and confirm the
+   passing app test run is claimed. Fourteen host-side audit tests pass separately.
+2. Review the installed build-23 candidate on the phone and confirm the
    Share/Shortcut/document request-lifecycle fix carried forward from build 20.
    Complete iPhone PiP reliability checks: cold/warm launch, image replacement,
    early taps/restore, close/reopen, resizing, rotation, lock/unlock, music mixing
    and another app already using PiP. Verify prompter smoothness, native rewind,
    pause, countdown and replay. Simulator PiP is unavailable or shows black tool
    pictures; use the phone for actual floating-picture acceptance.
+   Include rotated, transparent and wide-color still images after the temporary
+   PiP-rendering change; confirm originals/crops retain their existing behavior.
 3. Confirm physical-device setup and use of Back Tap, Control Center, Lock Screen,
    Action Button and notification handoff, including permission denial and Focus.
    Check the new saved-card/favorite Shortcut, Home Screen widget and configurable
@@ -74,6 +78,14 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Completed items
 
+- Removed the artifact verifier's ripgrep dependency, made scan errors/missing
+  executables/malformed binaries fail explicitly and verified raw-byte marker
+  scanning across the app and extensions. The source guard also rejects missing
+  tooling and scan errors. Fourteen host-side regression tests pass.
+- Added a single bounded standard-range PiP render and explicit standard-range
+  thumbnails, preserving original-image normalization/cropping policy. Debug and
+  Release builds plus the hardened artifact audit pass; six new rendering tests
+  compile but execution remains blocked above. See [build 23](docs/verifier-rendering-23.md).
 - Implemented bounded/cancellable image-video encoding, a completion-race fix,
   stale-safe background image preparation, background share encoding and
   asynchronous Settings storage calculation. Added 15 regression/decode tests;

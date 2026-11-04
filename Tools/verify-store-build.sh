@@ -3,6 +3,26 @@
 # Add --submission to require the hosted policy URL before store submission.
 set -euo pipefail
 
+# This verifier must work on a stock Mac and distinguish "no match" from a
+# failed scan. An if-pipeline would otherwise hide missing tools/read errors.
+for audit_tool in /usr/bin/grep /usr/bin/otool /usr/bin/awk /usr/bin/plutil /usr/bin/mktemp /usr/libexec/PlistBuddy; do
+    [[ -x "$audit_tool" ]] || { print -u2 "Required audit tool is unavailable: $audit_tool"; exit 1; }
+done
+scratch_directory=$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/cod-store-audit.XXXXXX")
+trap '/bin/rm -f -- "$scratch_directory/load-commands"; /bin/rmdir -- "$scratch_directory"' EXIT
+
+has_pattern() {
+    local scan_pattern="$1" scan_file="$2" match_result=0
+    # Scan all bytes, including Mach-O sections/trailing data that strings can
+    # skip. Byte-oriented matching also avoids locale-dependent binary errors.
+    LC_ALL=C /usr/bin/grep -aE -- "$scan_pattern" "$scan_file" > /dev/null || match_result=$?
+    case "$match_result" in
+        0) return 0 ;;
+        1) return 1 ;;
+        *) print -u2 "Couldn't search audit input: $scan_file"; exit 1 ;;
+    esac
+}
+
 app_path="${1:?Pass the absolute path to the built Cod.app}"
 extension_path="$app_path/PlugIns/CodShare.appex"
 check_mode="${2:-}"
@@ -37,32 +57,47 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             exit 1
         }
     fi
+    [[ -n "$executable_name" && "$executable_name" != */* && -s "$bundle_path/$executable_name" && -r "$bundle_path/$executable_name" ]] || {
+        print -u2 "Missing or unreadable executable in $bundle_id"
+        exit 1
+    }
     for binary_path in "$bundle_path/$executable_name" "$bundle_path/$executable_name.debug.dylib"; do
-        [[ -f "$binary_path" ]] || continue
-        if /usr/bin/strings "$binary_path" | rg "$private_patterns"; then
+        # The main executable is mandatory; a separate debug dylib is optional.
+        [[ "$binary_path" == "$bundle_path/$executable_name" || -e "$binary_path" ]] || continue
+        [[ -f "$binary_path" && -s "$binary_path" && -r "$binary_path" ]] || {
+            print -u2 "Missing or unreadable binary: $binary_path"
+            exit 1
+        }
+        /usr/bin/otool -l "$binary_path" > "$scratch_directory/load-commands" || {
+            print -u2 "Couldn't inspect load commands in $binary_path"; exit 1
+        }
+        has_pattern '^[[:space:]]*cmd LC_(BUILD_VERSION|VERSION_MIN_IPHONEOS)[[:space:]]*$' "$scratch_directory/load-commands" || {
+            print -u2 "Not a supported iOS Mach-O binary: $binary_path"; exit 1
+        }
+        if has_pattern "$private_patterns" "$binary_path"; then
             print -u2 "Removed implementation found in $bundle_id"
             exit 1
         fi
-        if /usr/bin/strings "$binary_path" | rg 'FloatPendingWithCodIntent|Public launch experiment|Test system Float'; then
+        if has_pattern 'FloatPendingWithCodIntent|Public launch experiment|Test system Float' "$binary_path"; then
             print -u2 "Simulator launch-probe code found in $bundle_id"
             exit 1
         fi
-        if /usr/bin/strings "$binary_path" | rg 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup|--show-introduction'; then
+        if has_pattern 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup|--show-introduction' "$binary_path"; then
             print -u2 "Debug-only UI testing code found in $bundle_id. Audit a Release build."
             exit 1
         fi
-        if /usr/bin/strings "$binary_path" | rg 'FastShareAppLauncher|FastShareLaunchAttempt'; then
+        if has_pattern 'FastShareAppLauncher|FastShareLaunchAttempt' "$binary_path"; then
             print -u2 "Fast-share workaround unexpectedly present in $bundle_id"
             exit 1
         fi
-        if /usr/bin/strings "$binary_path" | rg 'cod-diagnostics\.log|share-diagnostics\.log|\[CodPiP\]|\[CodShare\]'; then
+        if has_pattern 'cod-diagnostics\.log|share-diagnostics\.log|\[CodPiP\]|\[CodShare\]' "$binary_path"; then
             print -u2 "Debug diagnostic logging found in $bundle_id. Audit a Release build."
             exit 1
         fi
-        alarm_link=$(/usr/bin/otool -l "$binary_path" | /usr/bin/awk '
+        alarm_link=$(/usr/bin/awk '
             $1 == "cmd" { kind = $2 }
             $1 == "name" && $2 ~ /\/AlarmKit.framework\// { print kind }
-        ')
+        ' "$scratch_directory/load-commands")
         [[ -z "$alarm_link" || "$alarm_link" == LC_LOAD_WEAK_DYLIB ]] || {
             print -u2 "AlarmKit must be weak-linked for older iOS versions: $bundle_id"
             exit 1
@@ -77,7 +112,7 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
     [[ "$group_id" == group.com.josh.cod.store ]] || { print -u2 'Incorrect App Group configuration'; exit 1; }
     if [[ "$bundle_id" != com.josh.cod.store.share ]]; then
         metadata_path="$bundle_path/Metadata.appintents/extract.actionsdata"
-        [[ -s "$metadata_path" ]] && rg -q 'FloatSavedReferenceIntent' "$metadata_path" || {
+        [[ -f "$metadata_path" && -s "$metadata_path" ]] && has_pattern 'FloatSavedReferenceIntent' "$metadata_path" || {
             print -u2 "Saved-reference intent metadata is missing from $bundle_id"
             exit 1
         }

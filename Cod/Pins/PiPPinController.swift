@@ -233,9 +233,14 @@ final class PiPPinController: NSObject, ObservableObject {
             }
             let maximumEdge = maxRenderEdge
             let prepared = await Task.detached(priority: .userInitiated) {
-                Self.prepare(image, maximumEdge: maximumEdge)
+                image.renderedForPiP(maximumEdge: maximumEdge)
             }.value
             guard !Task.isCancelled, preparationID == requestID else { return }
+            guard let prepared else {
+                if wasActive { currentImage = previousImage }
+                status = .failed("Cod couldn't prepare this image for playback.")
+                return
+            }
             log("float() size=\(Int(prepared.size.width))x\(Int(prepared.size.height)) prewarmed=\(wasPrewarmed) +\(elapsed())ms")
 
             do {
@@ -625,24 +630,6 @@ final class PiPPinController: NSObject, ObservableObject {
     }
 
     // MARK: - Plumbing
-
-    nonisolated private static func prepare(_ image: UIImage, maximumEdge: CGFloat) -> UIImage {
-        let normalized = image.normalizedUp()
-        let fitted = normalized.fitted(within: CGSize(width: maximumEdge, height: maximumEdge))
-        // H.264 requires even dimensions; odd ones skew or fail to encode.
-        let evenSize = CGSize(
-            width: max(2, (fitted.size.width / 2).rounded(.down) * 2),
-            height: max(2, (fitted.size.height / 2).rounded(.down) * 2)
-        )
-        guard evenSize != fitted.size else { return fitted }
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        format.opaque = true
-        return UIGraphicsImageRenderer(size: evenSize, format: format).image { _ in
-            fitted.draw(in: CGRect(origin: .zero, size: evenSize))
-        }
-    }
 
     private func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()

@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (22)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (23)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,16 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 23 removes the verifier's ripgrep dependency, checks failed scans and
+  missing/malformed binaries explicitly. The source guard also rejects missing
+  tooling and scan errors; fourteen host-side audit regression tests pass.
+  PiP rendering now makes one bounded standard-range frame;
+  thumbnails explicitly use standard range. Source normalization/crop color
+  policy is preserved. Debug/Release compilation and the hardened artifact audit
+  pass. Six focused rendering tests compile, but the existing Apple test-service
+  failure prevents execution. Build 23 was installed and launched on Jay
+  (iPhone 16 Pro Max) on November 3; physical feature acceptance is open. See
+  [evidence and limits](docs/verifier-rendering-23.md).
 - Build 22 hardens image encoding and cancellation, moves image/share preparation
   and Settings storage enumeration off the UI thread, and disables routine
   Release diagnostics. Debug compilation, the Release archive and artifact checks

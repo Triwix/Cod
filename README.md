@@ -7,7 +7,19 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
-## Reliability candidate · 1.0 (22)
+## Verifier/rendering candidate · 1.0 (23)
+
+Build 23 makes the artifact audit independent of ripgrep and rejects failed
+scans, missing executables and malformed binaries. The source guard also rejects
+missing tooling and scan errors. Fourteen audit regression tests pass.
+PiP uses one bounded standard-range render and Library thumbnails
+request standard range; original normalization/crop color handling is preserved.
+Debug/Release compilation and the candidate archive audit pass. App test execution
+is still blocked by the documented Apple test-service failure. Cod Test 23 was
+installed and launched on the phone on November 3; physical feature acceptance
+remains open. See [evidence and remaining checks](docs/verifier-rendering-23.md).
+
+## Reliability pass · 1.0 (22)
 
 Build 22 bounds/cancels still-image video encoding, moves image preparation and
 share encoding off the UI thread, loads storage size asynchronously and disables

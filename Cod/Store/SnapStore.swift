@@ -271,7 +271,7 @@ final class SnapStore: ObservableObject {
 
     private func write(image: UIImage, for snap: Snap) {
         imageCache.setObject(image, forKey: snap.imageFilename as NSString, cost: Self.decodedMemoryCost(image))
-        let thumb = image.fitted(within: CGSize(width: 400, height: 400))
+        let thumb = image.fitted(within: CGSize(width: 400, height: 400), preferredRange: .standard)
         imageCache.setObject(thumb, forKey: snap.thumbnailFilename as NSString, cost: Self.decodedMemoryCost(thumb))
 
         let imageURL = root.appendingPathComponent(snap.imageFilename)
