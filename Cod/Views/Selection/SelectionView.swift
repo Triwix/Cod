@@ -21,6 +21,7 @@ struct SelectionView: View {
     /// in which case actions operate on the whole image.
     @State private var selection: CGRect?
     @State private var dragMode: DragMode?
+    @GestureState private var dragInFlight = false
     /// View-space point the loupe should follow while dragging.
     @State private var activePoint: CGPoint?
     @State private var smartRegions: [CGRect] = []
@@ -30,7 +31,7 @@ struct SelectionView: View {
     @State private var pan: CGSize = .zero
     @State private var panStart: CGSize?
     @State private var movingPage = false
-    @State private var magnifying = false
+    @GestureState private var magnifying = false
     @State private var pinchStart: CGFloat?
     @State private var selectionBeforeDrag: CGRect?
     @State private var adjustingCrop = false
@@ -104,7 +105,7 @@ struct SelectionView: View {
                             Button("Float selection") { performAction(.float) }
                         }
                     }
-                    .gesture(dragGesture(g, container: proxy.size).exclusively(before: singleTapGesture(g)))
+                    .gesture(singleTapGesture(g))
 
                 // Only this existing selection needs a double-tap recognizer.
                 // Everywhere else, a single tap can select a block or clear
@@ -117,7 +118,7 @@ struct SelectionView: View {
                             .contentShape(Rectangle())
                             .position(x: visible.midX, y: visible.midY)
                             .accessibilityHidden(true)
-                            .gesture(dragGesture(g, container: proxy.size).exclusively(before: doubleTapGesture(g)))
+                            .gesture(doubleTapGesture(g))
                     }
                 }
 
@@ -133,7 +134,16 @@ struct SelectionView: View {
             }
             .clipped()
             .coordinateSpace(name: "crop-canvas-space")
+            // The stable canvas owns every drag. A disappearing selection
+            // layer can cancel only its tap recognizer, never an active drag.
+            .highPriorityGesture(dragGesture(g, container: proxy.size))
             .simultaneousGesture(magnifyGesture(container: proxy.size))
+            .onChange(of: dragInFlight) { wasActive, isActive in
+                if wasActive && !isActive { finishDrag(geometry: g, container: proxy.size, haptic: false) }
+            }
+            .onChange(of: magnifying) { wasActive, isActive in
+                if wasActive && !isActive { finishMagnification(container: proxy.size) }
+            }
             .onAppear { loadSmartRegions() }
             .task {
                 // Get out of the way on its own if the user is just looking.
@@ -305,6 +315,7 @@ struct SelectionView: View {
 
     private func magnifyGesture(container: CGSize) -> some Gesture {
         MagnifyGesture()
+            .updating($magnifying) { _, active, _ in active = true }
             .onChanged { value in
                 if pinchStart == nil {
                     pinchStart = zoom
@@ -312,21 +323,24 @@ struct SelectionView: View {
                     dragMode = nil
                     activePoint = nil
                 }
-                magnifying = true
                 zoom = min(6, max(1, (pinchStart ?? zoom) * value.magnification))
                 didHintFade = true
             }
             .onEnded { _ in
-                pinchStart = nil
-                magnifying = false
-                pan = boundedPan(in: container)
+                finishMagnification(container: container)
             }
+    }
+
+    private func finishMagnification(container: CGSize) {
+        pinchStart = nil
+        pan = boundedPan(in: container)
     }
 
     private func dragGesture(_ g: SelectionGeometry, container: CGSize) -> some Gesture {
         // Taps belong to the tap recognizers. Starting a drag on touch-down
         // would mutate the crop before a double-tap can be recognized.
         DragGesture(minimumDistance: 6, coordinateSpace: .named("crop-canvas-space"))
+            .updating($dragInFlight) { _, active, _ in active = true }
             .onChanged { value in
                 guard !magnifying else { return }
                 if movingPage {
@@ -370,28 +384,35 @@ struct SelectionView: View {
                         dx: currentPixels.x - start.x,
                         dy: currentPixels.y - start.y
                     )
-                    selection = resized.intersection(g.imageBounds)
+                    let bounded = resized.intersection(g.imageBounds)
+                    selection = bounded.isNull ? nil : bounded
                     activePoint = g.viewPoint(handle.point(in: resized))
 
                 case .none:
                     break
                 }
             }
-            .onEnded { value in
-                if movingPage { panStart = nil; pan = boundedPan(in: container); return }
-                guard !magnifying else { return }
-                dragMode = nil
-                withAnimation(.easeOut(duration: 0.18)) { activePoint = nil }
-
-                // Discard slivers produced by a stray drag.
-                let minimum = CropSelectionPolicy.minimumSize(in: g.imageBounds)
-                if let current = selection,
-                   current.width < minimum.width || current.height < minimum.height {
-                    withAnimation(.easeOut(duration: 0.18)) { selection = nil }
-                    return
-                }
-                Haptics.snap()
+            .onEnded { _ in
+                finishDrag(geometry: g, container: container, haptic: true)
             }
+    }
+
+    /// onEnded covers a completed drag; GestureState's reset also covers system
+    /// cancellation. Cleanup is idempotent, including a pinch taking over.
+    private func finishDrag(geometry: SelectionGeometry, container: CGSize, haptic: Bool) {
+        let changedSelection = dragMode != nil
+        let movedPage = panStart != nil
+        guard changedSelection || movedPage || activePoint != nil || selectionBeforeDrag != nil else { return }
+        if changedSelection && !magnifying {
+            selection = CropSelectionPolicy.resolvedSelection(
+                selection, previous: selectionBeforeDrag, in: geometry.imageBounds)
+        }
+        dragMode = nil
+        activePoint = nil
+        panStart = nil
+        selectionBeforeDrag = nil
+        if movedPage { pan = boundedPan(in: container) }
+        if haptic && !magnifying && changedSelection { Haptics.snap() }
     }
 
     private func resolveMode(

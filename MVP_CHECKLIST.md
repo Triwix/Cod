@@ -1,8 +1,8 @@
 # MVP checklist
 
-Current candidate: **Cod Test 1.0 (25)**. Debug/Release builds and local artifact
+Current candidate: **Cod Test 1.0 (26)**. Debug/Release builds and local artifact
 checks pass; iOS test execution and physical crop/PiP acceptance are still open.
-Build 25 is prepared but not installed; build 23 was installed and launched on
+Build 26 is prepared but not installed; build 23 was installed and launched on
 Jay (iPhone 16 Pro Max) on November 3. Physical feature acceptance remains open;
 the original Cod app and data are untouched.
 Automated checks are not a substitute
@@ -18,6 +18,7 @@ Details: [release gates](APP_STORE_RELEASE.md),
 [verifier/rendering evidence](docs/verifier-rendering-23.md),
 [crop/audit evidence](docs/crop-audit-24.md),
 [crop interaction follow-up](docs/crop-follow-up-25.md),
+[drag lifecycle follow-up](docs/crop-lifecycle-26.md),
 [submission draft](docs/app-store-draft.md).
 
 Research: [feature candidates](docs/feature-candidates.md). Selected items
@@ -25,17 +26,21 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Open items
 
-1. Finish build-25 iOS unit and affected crop/sharing/layout UI test execution,
-   including build 22/23/24's unexecuted regressions. The Mac's
+1. Finish build-26 iOS unit and affected crop/sharing/layout UI test execution,
+   including build 22–25's unexecuted regressions. The Mac's
    Apple test service fails before running tests despite repaired Xcode setup
    and enabled, owner-approved developer-tools authorization. macOS also refuses
    to open Xcode as OS-incompatible. Use a working compatible toolchain; no new
-   passing iOS test run is claimed. Nine host geometry/settings tests and sixteen
+   passing iOS test run is claimed. Twelve host geometry/settings/policy tests and sixteen
    host-side audit tests pass separately. Interactive simulator checks confirmed
    double-tap dispatch, edge controls, zoom/Move mode and the crop-first guide;
    drag/resize/pinch, boundary taps and tap latency still need verification.
-2. Install/review the build-25 candidate on the phone and confirm the
+   Specifically run the new collapse → recover → draw-again UI regression and
+   check off-screen drag and system/pinch interruption without a stuck magnifier.
+2. Install/review the build-26 candidate on the phone and confirm the
    Share/Shortcut/document request-lifecycle fix carried forward from build 20.
+   Refresh development provisioning if expired; the current app profile expires
+   November 4 at 10:33 PM Pacific, as confirmed in the build-26 evidence.
    Complete iPhone PiP reliability checks: cold/warm launch, image replacement,
    early taps/restore, close/reopen, resizing, rotation, lock/unlock, music mixing
    and another app already using PiP. Verify prompter smoothness, native rewind,
@@ -84,6 +89,11 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Completed items
 
+- Moved drag ownership from the conditional selection layer to the stable canvas;
+  added automatic drag/pinch cancellation cleanup and recovery from collapsed or
+  invalid crops. Twelve host policy/geometry/settings cases pass. The dedicated
+  UI regression compiles; runtime execution remains open above. See
+  [build 26](docs/crop-lifecycle-26.md).
 - Aligned double-tap/VoiceOver Float with the visible action list, removed the
   double-tap wait from outside single taps and shared the eight-pixel crop minimum
   across dragging/edge controls, preserving genuinely thin images. Nine host

@@ -100,6 +100,25 @@ enum CropSelectionPolicy {
     static func minimumSize(in bounds: CGRect) -> CGSize {
         CGSize(width: min(minimumEdge, bounds.width), height: min(minimumEdge, bounds.height))
     }
+
+    /// A collapsed/cancelled resize must not leave an unusable rectangle. Keep
+    /// the preceding valid crop, or return to whole-image actions for a failed
+    /// new selection. Normal completion and cancellation use the same rule.
+    static func resolvedSelection(_ current: CGRect?, previous: CGRect?, in bounds: CGRect) -> CGRect? {
+        func valid(_ candidate: CGRect?, minimum: CGSize) -> CGRect? {
+            guard let candidate, !candidate.isNull, !candidate.isEmpty,
+                  [candidate.minX, candidate.minY, candidate.width, candidate.height].allSatisfy(\.isFinite)
+            else { return nil }
+            let bounded = candidate.intersection(bounds)
+            guard !bounded.isNull, bounded.width >= minimum.width, bounded.height >= minimum.height
+            else { return nil }
+            return bounded
+        }
+        // Keep a previously selected small block as a recovery target, just as
+        // the edge controls preserve existing sub-eight-pixel selections.
+        return valid(current, minimum: minimumSize(in: bounds))
+            ?? valid(previous, minimum: CGSize(width: min(1, bounds.width), height: min(1, bounds.height)))
+    }
 }
 
 /// Pixel-edge adjustments share the canvas coordinate space. Clamp each edge

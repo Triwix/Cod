@@ -200,6 +200,35 @@ final class LaunchFlowTests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
 
+    func testCollapsingAResizeRecoversAndTheNextDragCreatesAFreshCrop() {
+        XCUIDevice.shared.orientation = .portrait
+        cod.launch(); setOneTapFloat(false)
+        defer { cod.launch(); setOneTapFloat(true) }
+        lab.launch(); lab.buttons["Share Test Image"].tap()
+        selectCod(); waitForShareToFinish(); cod.activate()
+        XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8))
+        let canvas = cod.descendants(matching: .any).matching(identifier: "crop-canvas").firstMatch
+        func point(_ x: CGFloat, _ y: CGFloat) -> XCUICoordinate {
+            canvas.coordinate(withNormalizedOffset: .init(dx: x, dy: y))
+        }
+        point(0.25, 0.42).press(forDuration: 0.1, thenDragTo: point(0.75, 0.58))
+        let original = canvas.value as? String
+        XCTAssertNotNil(original); XCTAssertFalse(original?.hasPrefix("Full") ?? true)
+        // End the handle exactly on its opposite corner. The selection's tap
+        // layer becomes empty before lift; the parent must retain the drag.
+        point(0.25, 0.42).press(forDuration: 0.1, thenDragTo: point(0.75, 0.58))
+        expectation(for: NSPredicate(format: "value == %@", original ?? ""), evaluatedWith: canvas)
+        waitForExpectations(timeout: 5)
+        // Begin outside the recovered crop/handle slop. Reusing the old resize
+        // mode would produce a different rectangle instead of this new crop.
+        point(0.1, 0.45).press(forDuration: 0.1, thenDragTo: point(0.35, 0.55))
+        let width = (canvas.value as? String)?.components(separatedBy: "×").first
+            .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        XCTAssertNotNil(width)
+        XCTAssertEqual(Double(width ?? -1000), 75, accuracy: 2)
+        cod.buttons["cancel-selection"].tap()
+    }
+
     private func setOneTapFloat(_ enabled: Bool) {
         let settings = tab("Settings")
         if !settings.isHittable { print("TAB NAVIGATION STATE: \(cod.debugDescription)") }

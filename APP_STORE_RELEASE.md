@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (25)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (26)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,11 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 26 fixes conditional drag ownership, adds drag/pinch cancellation cleanup
+  and recovers collapsed crops. Twelve host policy/geometry/settings tests and
+  sixteen verifier tests pass; Debug/Release packaging checks pass. Execute the
+  new collapse/recovery UI case and physical cancellation/PiP checks before
+  calling the interaction validated. See [evidence and limits](docs/crop-lifecycle-26.md).
 - Build 25 follows the visible Float action preference, scopes double-tap to an
   existing selection and shares the crop minimum across controls. Nine host
   geometry/settings tests and sixteen audit tests pass. Interactive simulator

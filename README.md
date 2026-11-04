@@ -7,6 +7,14 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Crop lifecycle candidate · 1.0 (26)
+
+The fixed canvas now owns drags, so a collapsing or off-screen crop cannot remove
+the drag handler. Drag/pinch cancellation clears temporary interaction state;
+invalid resizing recovers the previous crop. Twelve host tests and sixteen audit
+tests pass. The new collapse/recovery UI regression compiles, but the iOS test
+service remains unavailable. See [evidence and runtime limits](docs/crop-lifecycle-26.md).
+
 ## Crop follow-up candidate · 1.0 (25)
 
 Crop gestures now honor the visible action list. Single taps outside the selected
