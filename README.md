@@ -7,6 +7,17 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Crop and audit candidate · 1.0 (24)
+
+Double-tap inside a selected crop to Float, or use Selection options → Adjust
+Crop to adjust each edge without dragging. The Floating Guide now explains both
+Back Tap workflows, including Take Screenshot → Crop With Cod and its required
+image binding. Temporary PiP images choose a light/dark matte for transparency;
+originals remain unchanged. Targeted concurrency, source checks and the encryption
+declaration are tightened. Seven host geometry and sixteen audit tests pass;
+iOS test execution and physical gesture/PiP acceptance remain open. See
+[verification and limits](docs/crop-audit-24.md).
+
 ## Verifier/rendering candidate · 1.0 (23)
 
 Build 23 makes the artifact audit independent of ripgrep and rejects failed

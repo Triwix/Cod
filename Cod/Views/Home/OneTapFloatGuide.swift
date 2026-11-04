@@ -57,11 +57,22 @@ struct OneTapFloatGuide: View {
                 step(2, "iPhone Settings → **Accessibility → Touch → Back Tap**.")
                 step(3, "Assign **Screenshot and Float with Cod** to Double Tap or Triple Tap.")
             } header: {
-                Label("Back Tap · a fresh screenshot", systemImage: "hand.tap")
+                Label("Back Tap · float immediately", systemImage: "hand.tap")
             } footer: {
                 Text(
                     "This takes a new screenshot when you trigger it and sends that image to Cod. Setup and Back Tap assignment remain under your control. You can also assign the Shortcut to an available Action Button."
                 )
+            }
+
+            Section {
+                step(1, "In **Shortcuts**, create a new shortcut with **Take Screenshot**.")
+                step(2, "Add Cod's **Crop With Cod** action. Press and hold its **Image** field → **Select Variable** → choose the **Screenshot** output from Take Screenshot.")
+                step(3, "Name it **Screenshot, Crop, then Float**. In iPhone Settings → **Accessibility → Touch → Back Tap**, assign it to Double Tap or Triple Tap.")
+                step(4, "Back Tap to open the fresh screenshot in Cod's crop editor. Draw a region, then **double-tap inside it** or tap **Float**.")
+            } header: {
+                Label("Back Tap · crop first", systemImage: "crop")
+            } footer: {
+                Text("Choose one Back Tap flow, or assign one to Double Tap and the other to Triple Tap. Crop With Cod always opens the editor, even when One tap float is on. Crop Latest Screenshot uses a previously saved photo instead of taking a new screenshot.")
             }
 
             Section {

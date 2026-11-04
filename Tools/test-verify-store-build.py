@@ -126,6 +126,34 @@ class StoreVerifierTests(unittest.TestCase):
         info_path.write_bytes(plistlib.dumps(info))
         self.assert_rejected("A real hosted HTTPS privacy policy", "--submission")
 
+    def test_encryption_declaration_must_be_explicit(self):
+        path = self.app / "Info.plist"
+        original = plistlib.loads(path.read_bytes())
+        for value in [None, True]:
+            info = dict(original)
+            if value is None:
+                info.pop("ITSAppUsesNonExemptEncryption", None)
+            else:
+                info["ITSAppUsesNonExemptEncryption"] = value
+            path.write_bytes(plistlib.dumps(info))
+            self.assert_rejected()
+
+    def test_source_guard_rejects_short_markers_that_swift_may_inline(self):
+        root = self.directory / "Source"
+        tools = root / "Tools"
+        tools.mkdir(parents=True)
+        guard = tools / "verify-supported-source.sh"
+        shutil.copyfile(self.verifier.with_name(guard.name), guard)
+        for name in ["Cod", "CodShare", "CodControls", "CodTests", "CodLaunchUITests", "Cod.xcodeproj"]:
+            (root / name).mkdir()
+        (root / "project.yml").write_text("name: Fixture\n")
+        fixture = root / "Cod" / "Fixture.swift"
+        for marker in ["controlsStyle", "_FBSScene", "BSProcessHandle"]:
+            fixture.write_text(f'let value = "{marker}"\n')
+            result = subprocess.run(["/bin/zsh", "-f", str(guard)], capture_output=True, text=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unsupported entry point", result.stderr)
+
     def test_source_guard_also_rejects_a_missing_search_tool(self):
         environment = os.environ.copy()
         environment["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"

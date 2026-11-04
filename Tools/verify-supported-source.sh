@@ -14,7 +14,7 @@ reject_matches() {
         *) print -u2 'Source audit could not read all requested inputs.'; exit 1 ;;
     esac
 }
-forbidden='COD_PERSONAL|COD_FAST_SHARE|COD_LAUNCH_PROBE|NSSelectorFromString|NSClassFromString|unsafeBitCast|dlsym|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle|controlsStyle|FastShareAppLauncher|SourceAppReturn|ShareSourceContext|ShareFloatHandoff|returnAfterFloating|hideFloatingControls'
+forbidden='COD_PERSONAL|COD_FAST_SHARE|COD_LAUNCH_PROBE|NSSelectorFromString|NSClassFromString|unsafeBitCast|dlsym|LSApplicationWorkspace|BSProcessHandle|_FBSScene|SSEnvironmentDescription|openThroughResponderChain|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle|controlsStyle|FastShareAppLauncher|SourceAppReturn|ShareSourceContext|ShareFloatHandoff|returnAfterFloating|hideFloatingControls'
 reject_matches "$forbidden" Cod CodShare CodControls CodTests CodLaunchUITests project.yml Cod.xcodeproj
 reject_matches 'UIApplication|extensionContext\??\.open|AVPictureInPicture' CodShare
 print 'Supported-only source regression checks passed. App Review is a separate decision.'

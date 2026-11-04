@@ -61,6 +61,24 @@ final class ReleaseUXTests: XCTestCase {
         capture("Float setup - accessibility text")
     }
 
+    func testGuideExplainsBothBackTapFlowsAndTheRequiredScreenshotBinding() {
+        cod.launchArguments = ["--launch-ui-test"]
+        cod.launch()
+        let guide = cod.buttons["Floating guide & setup"]
+        for _ in 0..<10 where !guide.isHittable { cod.swipeUp() }
+        guide.tap()
+        let crop = cod.staticTexts["Back Tap · crop first"]
+        for _ in 0..<16 where !crop.isHittable { cod.swipeUp() }
+        XCTAssertTrue(crop.isHittable)
+        let binding = cod.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Crop With Cod action")).firstMatch
+        for _ in 0..<4 where !binding.isHittable { cod.swipeUp() }
+        XCTAssertTrue(binding.isHittable)
+        let explanation = cod.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Crop With Cod always opens the editor")).firstMatch
+        for _ in 0..<4 where !explanation.isHittable { cod.swipeUp() }
+        XCTAssertTrue(explanation.exists)
+        capture("24 - Back Tap crop-first setup")
+    }
+
     func testLandscapeAndDarkAppearance() throws {
         cod.launchArguments = ["--show-float-setup", "--dark-ui-test", "--landscape-ui-test"]
         cod.launch()

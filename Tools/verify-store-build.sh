@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Read-only artifact check. Run with zsh Tools/verify-store-build.sh /path/Cod.app
 # Add --submission to require the hosted policy URL before store submission.
+# Pair with verify-supported-source.sh: Swift can inline short strings, so a
+# binary byte scan alone cannot prove those short source markers are absent.
 set -euo pipefail
 
 # This verifier must work on a stock Mac and distinguish "no match" from a
@@ -116,6 +118,10 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             print -u2 "Saved-reference intent metadata is missing from $bundle_id"
             exit 1
         }
+    fi
+    if [[ "$bundle_id" == com.josh.cod.store ]]; then
+        encryption=$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "$bundle_path/Info.plist")
+        [[ "$encryption" == false ]] || { print -u2 'Recheck the non-exempt encryption declaration.'; exit 1; }
     fi
     print "Checked $bundle_id: privacy resource present; known private methods absent."
 done

@@ -15,18 +15,28 @@ enum AnimatedImageError: LocalizedError {
 }
 
 enum AnimatedImageImport {
-  /// AVFoundation's legacy writer objects are confined to one encoding queue.
+  /// All image-source, options and mutable progress state is owned by the one
+  /// serial encoding queue. Only the writer's documented completion/status is
+  /// read by finishWriting's completion handler; progress never crosses queues.
   private final class WriterState: @unchecked Sendable {
     let writer: AVAssetWriter
     let input: AVAssetWriterInput
     let adaptor: AVAssetWriterInputPixelBufferAdaptor
+    let source: CGImageSource
+    let options: CFDictionary
+    var index = 0
+    var finished = false
+    var elapsed = 0.0
     init(
       _ writer: AVAssetWriter, _ input: AVAssetWriterInput,
-      _ adaptor: AVAssetWriterInputPixelBufferAdaptor
+      _ adaptor: AVAssetWriterInputPixelBufferAdaptor,
+      source: CGImageSource, options: CFDictionary
     ) {
       self.writer = writer
       self.input = input
       self.adaptor = adaptor
+      self.source = source
+      self.options = options
     }
   }
   static func isAnimatedGIF(_ data: Data) -> Bool {
@@ -101,16 +111,13 @@ enum AnimatedImageImport {
           writer.add(input)
           guard writer.startWriting() else { throw writer.error ?? AnimatedImageError.encoding }
           writer.startSession(atSourceTime: .zero)
-          let state = WriterState(writer, input, adaptor)
-          var index = 0
-          var finished = false
-          var elapsed = 0.0
+          let state = WriterState(writer, input, adaptor, source: source, options: options)
           input.requestMediaDataWhenReady(on: queue) {
-            guard !finished else { return }
+            guard !state.finished else { return }
             while state.input.isReadyForMoreMediaData {
               do {
-                if index > count {
-                  finished = true
+                if state.index > count {
+                  state.finished = true
                   state.writer.endSession(
                     atSourceTime: CMTime(seconds: duration, preferredTimescale: 600))
                   state.input.markAsFinished()
@@ -127,7 +134,7 @@ enum AnimatedImageImport {
                 try autoreleasepool {
                   guard
                     let cg = CGImageSourceCreateThumbnailAtIndex(
-                      source, min(index, count - 1), options)
+                      state.source, min(state.index, count - 1), state.options)
                   else { throw AnimatedImageError.invalid }
                   let format = UIGraphicsImageRendererFormat()
                   format.scale = 1
@@ -151,14 +158,14 @@ enum AnimatedImageImport {
                     state.adaptor.append(
                       pixels,
                       withPresentationTime: CMTime(
-                        seconds: index == count ? duration - 1 / 600.0 : elapsed,
+                        seconds: state.index == count ? duration - 1 / 600.0 : state.elapsed,
                         preferredTimescale: 600))
                   else { throw state.writer.error ?? AnimatedImageError.encoding }
                 }
-                if index < count { elapsed += delays[index] }
-                index += 1
+                if state.index < count { state.elapsed += delays[state.index] }
+                state.index += 1
               } catch {
-                finished = true
+                state.finished = true
                 state.writer.cancelWriting()
                 continuation.resume(throwing: error)
                 return

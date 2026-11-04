@@ -112,10 +112,40 @@ extension UIImage {
         format.preferredRange = .standard
         return UIGraphicsImageRenderer(size: target, format: format).image { context in
             // Video has no alpha channel; composite transparency explicitly.
-            UIColor.black.setFill()
+            pipMatteColor.setFill()
             context.fill(CGRect(origin: .zero, size: target))
             draw(in: CGRect(origin: .zero, size: target))
         }
+    }
+
+    /// Estimate foreground brightness with a tiny premultiplied sample, ignoring
+    /// transparent pixels. Dark logos/text need a light matte; white artwork
+    /// needs a dark one. This changes only the disposable opaque video frame.
+    private var pipMatteColor: UIColor {
+        guard let cgImage,
+              ![CGImageAlphaInfo.none, .noneSkipFirst, .noneSkipLast].contains(cgImage.alphaInfo)
+        else { return .black }
+        let edge = 16
+        var sample = [UInt8](repeating: 0, count: edge * edge * 4)
+        let sampled = sample.withUnsafeMutableBytes { bytes -> Bool in
+            guard let context = CGContext(data: bytes.baseAddress, width: edge, height: edge,
+                bitsPerComponent: 8, bytesPerRow: edge * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+            else { return false }
+            context.interpolationQuality = .high
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: edge, height: edge))
+            return true
+        }
+        guard sampled else { return .white }
+        var brightness = 0.0
+        var alpha = 0.0
+        for offset in stride(from: 0, to: sample.count, by: 4) {
+            brightness += 0.2126 * Double(sample[offset]) + 0.7152 * Double(sample[offset + 1]) + 0.0722 * Double(sample[offset + 2])
+            alpha += Double(sample[offset + 3])
+        }
+        guard alpha > 0 else { return .white }
+        brightness /= alpha
+        return brightness < 0.55 ? .white : .black
     }
 
     func pixelBuffer() -> CVPixelBuffer? {

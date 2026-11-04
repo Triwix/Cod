@@ -64,4 +64,40 @@ final class SelectionGeometryTests: XCTestCase {
 
         XCTAssertEqual(resized, CGRect(x: 100, y: 90, width: 20, height: 30))
     }
+
+    func testAccessibleEdgeAdjustmentsKeepOppositeEdgesAndStayInTheImage() {
+        let bounds = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let crop = CGRect(x: 40, y: 30, width: 180, height: 120)
+        XCTAssertEqual(SelectionEdge.left.adjusting(crop, to: 50, in: bounds), CGRect(x: 50, y: 30, width: 170, height: 120))
+        XCTAssertEqual(SelectionEdge.top.adjusting(crop, to: 50, in: bounds), CGRect(x: 40, y: 50, width: 180, height: 100))
+        XCTAssertEqual(SelectionEdge.right.adjusting(crop, to: 200, in: bounds), CGRect(x: 40, y: 30, width: 160, height: 120))
+        XCTAssertEqual(SelectionEdge.bottom.adjusting(crop, to: 130, in: bounds), CGRect(x: 40, y: 30, width: 180, height: 100))
+        for edge in SelectionEdge.allCases {
+            for value: CGFloat in [-10_000, 0, 75.6, 10_000] {
+                let result = edge.adjusting(crop, to: value, in: bounds)
+                XCTAssertTrue(bounds.contains(result))
+                XCTAssertGreaterThanOrEqual(result.width, 1)
+                XCTAssertGreaterThanOrEqual(result.height, 1)
+                XCTAssertEqual(edge.value(in: result), edge.value(in: result).rounded())
+            }
+            XCTAssertEqual(edge.adjusting(crop, to: .nan, in: bounds), crop)
+        }
+    }
+
+    func testAccessibleEdgesHandleSinglePixelImagesAndFractionalCrops() {
+        let tiny = CGRect(x: 0, y: 0, width: 1, height: 1)
+        for edge in SelectionEdge.allCases {
+            XCTAssertEqual(edge.adjusting(tiny, to: 5, in: tiny), tiny)
+        }
+        let bounds = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let fractional = CGRect(x: 40.4, y: 30.6, width: 180.2, height: 120.3)
+        for edge in SelectionEdge.allCases {
+            for value: CGFloat in [-1_000, 100_000] {
+                let result = edge.adjusting(fractional, to: value, in: bounds)
+                XCTAssertTrue(bounds.contains(result))
+                XCTAssertGreaterThanOrEqual(result.width, 1)
+                XCTAssertGreaterThanOrEqual(result.height, 1)
+            }
+        }
+    }
 }

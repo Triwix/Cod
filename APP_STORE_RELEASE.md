@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (23)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (24)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,13 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 24 adds crop double-tap, accessible pixel-edge controls and explicit
+  crop-first Back Tap guidance. Transparent PiP images choose a contrasting
+  matte. Targeted concurrency warnings are resolved, the source guard covers
+  short forbidden markers and non-exempt encryption is explicitly false for
+  current OS-only use. Seven host geometry and sixteen audit tests pass.
+  iOS test execution still fails before cases; visual/phone acceptance remains
+  open. See [verification and limits](docs/crop-audit-24.md).
 - Build 23 removes the verifier's ripgrep dependency, checks failed scans and
   missing/malformed binaries explicitly. The source guard also rejects missing
   tooling and scan errors; fourteen host-side audit regression tests pass.

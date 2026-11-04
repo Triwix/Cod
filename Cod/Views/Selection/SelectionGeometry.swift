@@ -92,6 +92,46 @@ struct SelectionGeometry: Equatable {
     }
 }
 
+/// Pixel-edge adjustments share the canvas coordinate space. Clamp each edge
+/// independently so assistive controls cannot invert a crop or leave the image.
+enum SelectionEdge: String, CaseIterable {
+    case left, top, right, bottom
+
+    var title: String { rawValue.capitalized }
+
+    func value(in rect: CGRect) -> CGFloat {
+        switch self {
+        case .left: return rect.minX
+        case .top: return rect.minY
+        case .right: return rect.maxX
+        case .bottom: return rect.maxY
+        }
+    }
+
+    func range(in rect: CGRect, bounds: CGRect) -> ClosedRange<Int> {
+        // Existing small crops still remain adjustable. Never force them to
+        // expand, but stop the controls from reducing an edge below one pixel.
+        switch self {
+        case .left: return Int(bounds.minX)...Int(rect.maxX - 1)
+        case .top: return Int(bounds.minY)...Int(rect.maxY - 1)
+        case .right: return Int(ceil(rect.minX + 1))...Int(bounds.maxX)
+        case .bottom: return Int(ceil(rect.minY + 1))...Int(bounds.maxY)
+        }
+    }
+
+    func adjusting(_ rect: CGRect, to proposed: CGFloat, in bounds: CGRect) -> CGRect {
+        guard proposed.isFinite else { return rect }
+        let limits = range(in: rect, bounds: bounds)
+        let position = min(CGFloat(limits.upperBound), max(CGFloat(limits.lowerBound), proposed.rounded()))
+        switch self {
+        case .left: return CGRect(x: position, y: rect.minY, width: rect.maxX - position, height: rect.height)
+        case .top: return CGRect(x: rect.minX, y: position, width: rect.width, height: rect.maxY - position)
+        case .right: return CGRect(x: rect.minX, y: rect.minY, width: position - rect.minX, height: rect.height)
+        case .bottom: return CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: position - rect.minY)
+        }
+    }
+}
+
 /// The eight drag handles around a selection.
 enum SelectionHandle: CaseIterable {
     case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left

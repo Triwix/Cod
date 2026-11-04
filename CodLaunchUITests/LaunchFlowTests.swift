@@ -136,6 +136,49 @@ final class LaunchFlowTests: XCTestCase {
         setOneTapFloat(true)
     }
 
+    func testCropDoubleTapUsesTheAdjustedRegionAndIgnoresTheBackdrop() {
+        cod.launch()
+        tab("Library").tap()
+        if cod.buttons["enable-history"].exists { cod.buttons["enable-history"].tap() }
+        setOneTapFloat(false)
+        defer { cod.launch(); setOneTapFloat(true) }
+        lab.launch()
+        lab.buttons["Share Test Image"].tap()
+        selectCod(); waitForShareToFinish(); cod.activate()
+        XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8))
+        let canvas = cod.descendants(matching: .any).matching(identifier: "crop-canvas").firstMatch
+        // A double-tap before selecting must not float the whole image.
+        canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
+        XCTAssertTrue(cod.buttons["cancel-selection"].exists)
+        cod.buttons["selection-options"].tap()
+        cod.buttons["Select whole image"].tap()
+        cod.buttons["selection-options"].tap()
+        cod.buttons["adjust-crop"].tap()
+        let left = cod.steppers["crop-edge-left"]
+        XCTAssertTrue(left.waitForExistence(timeout: 5))
+        left.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Increment'")).firstMatch.tap()
+        let size = cod.descendants(matching: .any).matching(identifier: "adjusted-crop-size").firstMatch
+        XCTAssertEqual(size.value as? String, "299 × 200 pixels")
+        cod.buttons["Done"].tap()
+        XCTAssertEqual(canvas.value as? String, "299 × 200")
+        canvas.coordinate(withNormalizedOffset: .init(dx: 0.1, dy: 0.1)).doubleTap()
+        XCTAssertTrue(cod.buttons["cancel-selection"].exists)
+        XCTAssertEqual(canvas.value as? String, "299 × 200")
+        canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
+        // Actual PiP pictures need hardware; on a simulator the same action
+        // can finish successfully or report AVKit's supported failure state.
+        let finished = NSPredicate { _, _ in
+            !self.cod.buttons["cancel-selection"].exists
+                || self.cod.staticTexts["Not available here"].exists
+                || self.cod.staticTexts["Couldn't start floating"].exists
+        }
+        expectation(for: finished, evaluatedWith: nil); waitForExpectations(timeout: 20)
+        if cod.buttons["cancel-selection"].exists { cod.buttons["cancel-selection"].tap() }
+        tab("Library").tap()
+        XCTAssertTrue(cod.buttons["Saved shared, 299 × 200"].waitForExistence(timeout: 8),
+                      "Double-tap must dispatch Float with the actual adjusted crop, not the original")
+    }
+
     private func dismissConfirmation(titled title: String) {
         let cancel = cod.sheets.buttons["Cancel"]
         if cancel.exists {

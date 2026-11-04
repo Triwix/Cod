@@ -33,6 +33,7 @@ struct SelectionView: View {
     @State private var magnifying = false
     @State private var pinchStart: CGFloat?
     @State private var selectionBeforeDrag: CGRect?
+    @State private var adjustingCrop = false
 
     private let minSelectionPixels: CGFloat = 8
     private let handleHitSlop: CGFloat = 30
@@ -61,6 +62,12 @@ struct SelectionView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .statusBarHidden()
+        .sheet(isPresented: $adjustingCrop) {
+            SelectionAdjustmentView(selection: Binding(
+                get: { selection ?? CGRect(origin: .zero, size: image.pixelSize) },
+                set: { selection = $0 }
+            ), imageSize: image.pixelSize)
+        }
     }
 
     private var cropSurface: some View {
@@ -89,8 +96,16 @@ struct SelectionView: View {
                     .contentShape(Rectangle())
                     .accessibilityElement()
                     .accessibilityLabel("Crop canvas")
+                    .accessibilityValue(readoutText)
+                    .accessibilityHint("Use Selection options to adjust crop edges without dragging.")
                     .accessibilityIdentifier("crop-canvas")
-                    .gesture(dragGesture(g, container: proxy.size))
+                    .accessibilityActions {
+                        Button("Adjust crop", action: showAdjustment)
+                        if supportsDoubleTapFloat {
+                            Button("Float selection") { performAction(.float) }
+                        }
+                    }
+                    .gesture(dragGesture(g, container: proxy.size).exclusively(before: tapGesture(g)))
                     .simultaneousGesture(MagnifyGesture()
                         .onChanged { value in
                             if pinchStart == nil {
@@ -262,8 +277,38 @@ struct SelectionView: View {
 
     // MARK: - Gesture
 
+    private var supportsDoubleTapFloat: Bool {
+        // The video-region editor reuses this surface with Apply Crop. Never
+        // silently apply/export a video when the person asks to float a crop.
+        primaryTitle == nil && (availableActions?.contains(.float) ?? true)
+    }
+
+    private func tapGesture(_ g: SelectionGeometry) -> some Gesture {
+        SpatialTapGesture(count: 2)
+            .exclusively(before: SpatialTapGesture())
+            .onEnded { result in
+                guard !magnifying, !movingPage, dragMode == nil else { return }
+                switch result {
+                case .first(let tap):
+                    guard supportsDoubleTapFloat, let selection,
+                          g.viewRect(selection).contains(tap.location) else { return }
+                    Haptics.tick()
+                    performAction(.float)
+                case .second(let tap):
+                    // A tap on an existing selection/handle leaves it alone.
+                    // Exclusivity prevents the first tap of a double-tap from
+                    // clearing or smart-selecting a different crop.
+                    if let selection,
+                       g.viewRect(selection).insetBy(dx: -handleHitSlop, dy: -handleHitSlop).contains(tap.location) { return }
+                    handleTap(at: tap.location, geometry: g)
+                }
+            }
+    }
+
     private func dragGesture(_ g: SelectionGeometry, container: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 0)
+        // Taps belong to the tap recognizers. Starting a drag on touch-down
+        // would mutate the crop before a double-tap can be recognized.
+        DragGesture(minimumDistance: 6)
             .onChanged { value in
                 guard !magnifying else { return }
                 if movingPage {
@@ -317,17 +362,8 @@ struct SelectionView: View {
             .onEnded { value in
                 if movingPage { panStart = nil; pan = boundedPan(in: container); return }
                 guard !magnifying else { return }
-                let travelled = hypot(value.translation.width, value.translation.height)
-                let wasCreating: Bool
-                if case .creating = dragMode { wasCreating = true } else { wasCreating = false }
-
                 dragMode = nil
                 withAnimation(.easeOut(duration: 0.18)) { activePoint = nil }
-
-                if travelled < 6 && wasCreating {
-                    handleTap(at: value.location, geometry: g)
-                    return
-                }
 
                 // Discard slivers produced by a stray drag.
                 if let current = selection,
@@ -444,6 +480,8 @@ struct SelectionView: View {
             Spacer(minLength: 0)
 
             Menu {
+                Button("Adjust Crop…", systemImage: "slider.horizontal.3", action: showAdjustment)
+                    .accessibilityIdentifier("adjust-crop")
                 if let onReadText {
                     Button { if let (image, _) = crop() { onReadText(image) } } label: {
                         Label("Use in Text", systemImage: "text.viewfinder")
@@ -482,7 +520,12 @@ struct SelectionView: View {
     }
 
     private var readout: some View {
-        Text(readoutText)
+        VStack(spacing: 3) {
+            Text(readoutText)
+            if selection != nil && supportsDoubleTapFloat {
+                Text("Double-tap inside to float").font(.caption2)
+            }
+        }
             .font(.system(.footnote, design: .monospaced).weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 12)
@@ -502,14 +545,20 @@ struct SelectionView: View {
     }
 
     private var bottomBar: some View {
-        ActionBar(actions: availableActions ?? settings.visibleActions, onTap: { action in
-            guard let (cropped, rect) = crop() else {
-                Haptics.warning()
-                return
-            }
-            onAction(action, cropped, rect)
-        }, primaryTitle: primaryTitle)
+        ActionBar(actions: availableActions ?? settings.visibleActions, onTap: performAction, primaryTitle: primaryTitle)
         .padding(.bottom, 6)
+    }
+
+    private func performAction(_ action: SnapAction) {
+        guard let (cropped, rect) = crop() else { Haptics.warning(); return }
+        onAction(action, cropped, rect)
+    }
+
+    private func showAdjustment() {
+        // Start from exactly the integral rectangle the output crop consumes.
+        selection = effectiveCropRect(selection ?? CGRect(origin: .zero, size: image.pixelSize))
+        adjustingCrop = true
+        didHintFade = true
     }
 
     private func crop() -> (UIImage, CGRect)? {

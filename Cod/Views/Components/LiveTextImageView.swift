@@ -31,7 +31,7 @@ struct LiveTextImageView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    final class Coordinator {
+    @MainActor final class Coordinator {
         var interaction: ImageAnalysisInteraction?
         private let analyzer = ImageAnalyzer()
         private var task: Task<Void, Never>?
@@ -43,7 +43,8 @@ struct LiveTextImageView: UIViewRepresentable {
                 guard let self else { return }
                 let configuration = ImageAnalyzer.Configuration([.text, .machineReadableCode])
                 guard let analysis = try? await analyzer.analyze(image, configuration: configuration) else { return }
-                await MainActor.run { self.interaction?.analysis = analysis }
+                guard !Task.isCancelled else { return }
+                interaction?.analysis = analysis
             }
         }
 
