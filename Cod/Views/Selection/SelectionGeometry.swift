@@ -92,6 +92,16 @@ struct SelectionGeometry: Equatable {
     }
 }
 
+/// The canvas and accessible controls share one minimum. A source image can
+/// itself be thinner than eight pixels; preserve that valid full-image extent.
+enum CropSelectionPolicy {
+    static let minimumEdge: CGFloat = 8
+
+    static func minimumSize(in bounds: CGRect) -> CGSize {
+        CGSize(width: min(minimumEdge, bounds.width), height: min(minimumEdge, bounds.height))
+    }
+}
+
 /// Pixel-edge adjustments share the canvas coordinate space. Clamp each edge
 /// independently so assistive controls cannot invert a crop or leave the image.
 enum SelectionEdge: String, CaseIterable {
@@ -109,13 +119,16 @@ enum SelectionEdge: String, CaseIterable {
     }
 
     func range(in rect: CGRect, bounds: CGRect) -> ClosedRange<Int> {
-        // Existing small crops still remain adjustable. Never force them to
-        // expand, but stop the controls from reducing an edge below one pixel.
+        let minimum = CropSelectionPolicy.minimumSize(in: bounds)
+        // Don't shrink a normal crop below the canvas minimum. Previously
+        // created smaller selections can grow without an invalid Stepper range.
+        let width = min(minimum.width, rect.width)
+        let height = min(minimum.height, rect.height)
         switch self {
-        case .left: return Int(bounds.minX)...Int(rect.maxX - 1)
-        case .top: return Int(bounds.minY)...Int(rect.maxY - 1)
-        case .right: return Int(ceil(rect.minX + 1))...Int(bounds.maxX)
-        case .bottom: return Int(ceil(rect.minY + 1))...Int(bounds.maxY)
+        case .left: return Int(bounds.minX)...Int(rect.maxX - width)
+        case .top: return Int(bounds.minY)...Int(rect.maxY - height)
+        case .right: return Int(ceil(rect.minX + width))...Int(bounds.maxX)
+        case .bottom: return Int(ceil(rect.minY + height))...Int(bounds.maxY)
         }
     }
 

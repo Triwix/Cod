@@ -7,6 +7,14 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Crop follow-up candidate · 1.0 (25)
+
+Crop gestures now honor the visible action list. Single taps outside the selected
+region act immediately, and the crop canvas/edge controls share their minimum
+size. Nine host geometry/settings tests pass. Double-tap dispatch, precise edge
+controls, zoom/Move mode and the Back Tap guide were checked in the simulator;
+phone PiP and iOS suite execution remain open. See [evidence and limits](docs/crop-follow-up-25.md).
+
 ## Crop and audit candidate · 1.0 (24)
 
 Double-tap inside a selected crop to Float, or use Selection options → Adjust

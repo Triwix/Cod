@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0017AAC9DB17486914C34FA6 /* CropInteractionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FF50BF090D3E65F71DC109 /* CropInteractionPolicy.swift */; };
 		0061D16627766D5F64497FA3 /* TeleprompterOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C531F9AB9B625424E2ECBF6 /* TeleprompterOptions.swift */; };
 		027CB813156841D1468C7326 /* BarcodePayloadRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B6ABD3BE82288D69A8878B /* BarcodePayloadRow.swift */; };
 		0378CABA66E463424E9CFFDB /* SelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739E62ED49B390D5613B1DBA /* SelectionView.swift */; };
@@ -15,6 +16,7 @@
 		0907932E66A993D3F4F23AC7 /* SelectionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C8E41F359131CC83F9FED0 /* SelectionGeometryTests.swift */; };
 		09E8B4624E017B7A3085FF6B /* Release23Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF299367DFDCAF4A9458FBE /* Release23Tests.swift */; };
 		0A9B75EC9F20E981BAD04AA4 /* SnapAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7BB940A8D0E98B7C13907D /* SnapAction.swift */; };
+		0C1EBE269B6DA4FACFE92531 /* CropInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */; };
 		0E60E2ACB791083462FBDF8F /* SharedImageInboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633D067508EA8F41B434B242 /* SharedImageInboxTests.swift */; };
 		10AA0EDB499130CFDA0D267D /* Polish13Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B695F5E96524C34B177525 /* Polish13Tests.swift */; };
 		10F89808EF79032284E27DDA /* MagnifierLoupe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA6296F3699703A3454C430 /* MagnifierLoupe.swift */; };
@@ -127,6 +129,7 @@
 		D1E2792A86CE545BE458FB5A /* ControlLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */; };
 		D41F3AEAD7D1887FA011F724 /* SubmissionScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53653A4645DC87E61F7556E /* SubmissionScreenshotTests.swift */; };
 		D56B838063EEC8FCE1E6DF01 /* PiPPinController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 936E5D575F764091F4514631 /* PiPPinController.swift */; };
+		D6F4B87D81ACFBCAA9752185 /* CropInteractionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FF50BF090D3E65F71DC109 /* CropInteractionPolicy.swift */; };
 		DA48D6B487BB6D0FA37113F5 /* Polish10Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FD180EA584AE7BA4C17B70 /* Polish10Tests.swift */; };
 		DC4C06A88807A6FAAE2301FA /* FloatingLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E1A69AC90327DD549C57FC2 /* FloatingLaunchView.swift */; };
 		DCD127164517BECFB1164307 /* FixtureMusic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514F69363A267F25769C809 /* FixtureMusic.swift */; };
@@ -270,6 +273,7 @@
 		61AB10BFD98FA4A83028DBF4 /* Hardening19Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hardening19Tests.swift; sourceTree = "<group>"; };
 		633D067508EA8F41B434B242 /* SharedImageInboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedImageInboxTests.swift; sourceTree = "<group>"; };
 		6366B822B82C56FED4800146 /* SnapStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapStore.swift; sourceTree = "<group>"; };
+		64FF50BF090D3E65F71DC109 /* CropInteractionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropInteractionPolicy.swift; sourceTree = "<group>"; };
 		67B695F5E96524C34B177525 /* Polish13Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Polish13Tests.swift; sourceTree = "<group>"; };
 		68BA39B5C92B1B4BB7A681DA /* SharePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharePreferences.swift; sourceTree = "<group>"; };
 		695B11F136719BB0356A2954 /* CodTimerAlarmMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodTimerAlarmMetadata.swift; sourceTree = "<group>"; };
@@ -310,6 +314,7 @@
 		B3A16E84E63D91B32AB92980 /* FloatingToolsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingToolsTests.swift; sourceTree = "<group>"; };
 		B54DEF76C895E9B9DD36ACEB /* ShareRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareRootView.swift; sourceTree = "<group>"; };
 		B6EE847FAA88E99648BEBDF8 /* AnimatedImageImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedImageImport.swift; sourceTree = "<group>"; };
+		BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropInteractionTests.swift; sourceTree = "<group>"; };
 		C3A47D156EC252ADFB3C7ABD /* Polish11Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Polish11Tests.swift; sourceTree = "<group>"; };
 		C4FAC67581B2199C1A31CD11 /* FloatingClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingClip.swift; sourceTree = "<group>"; };
 		C719D79A5BD2C1E200B3C6A8 /* ControlLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlLaunchTests.swift; sourceTree = "<group>"; };
@@ -475,6 +480,7 @@
 		7F4C631D063AD71495BF2E0C /* CodTests */ = {
 			isa = PBXGroup;
 			children = (
+				BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */,
 				9E9E5FBBDF8B3ECD746A987D /* Features16Tests.swift */,
 				54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */,
 				B3A16E84E63D91B32AB92980 /* FloatingToolsTests.swift */,
@@ -533,6 +539,7 @@
 		921BAFAD8D79D1ACE3A87CC6 /* Selection */ = {
 			isa = PBXGroup;
 			children = (
+				64FF50BF090D3E65F71DC109 /* CropInteractionPolicy.swift */,
 				3BA6296F3699703A3454C430 /* MagnifierLoupe.swift */,
 				13B6D16DF1DEC90D223588A4 /* SelectionAdjustmentView.swift */,
 				7CC5CD87EF60BD9915E1687D /* SelectionGeometry.swift */,
@@ -906,6 +913,7 @@
 				AD54D96AC906D303998A4E8A /* ActionBar.swift in Sources */,
 				E989FE5E231477784184933B /* AppSettings.swift in Sources */,
 				93E020A1714D1102BAC2BC5C /* CodDiagnosticLog.swift in Sources */,
+				D6F4B87D81ACFBCAA9752185 /* CropInteractionPolicy.swift in Sources */,
 				DCF694B1206B09259442F013 /* Design.swift in Sources */,
 				C14AD889F2DD7634493029FD /* FloatingText.swift in Sources */,
 				9E11AB1A78E3385ADEAEA578 /* Haptics.swift in Sources */,
@@ -943,6 +951,7 @@
 				39D1C7D830AA832FD9B3713C /* CodDiagnosticLog.swift in Sources */,
 				9126943E2923AA79E829D8D5 /* CodIntents.swift in Sources */,
 				7BA677F70DBAAF088F6E6B39 /* CodTimerAlarmMetadata.swift in Sources */,
+				0017AAC9DB17486914C34FA6 /* CropInteractionPolicy.swift in Sources */,
 				9AA153165FD16539382C28D1 /* Design.swift in Sources */,
 				43BED1EF010C0BBBEED9BBB4 /* ExampleTextEditor.swift in Sources */,
 				FC670F10BB3FBBB028101466 /* FloatControlIntent.swift in Sources */,
@@ -1025,6 +1034,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0C1EBE269B6DA4FACFE92531 /* CropInteractionTests.swift in Sources */,
 				C8C68E3C5233B72BBB8793F4 /* Features16Tests.swift in Sources */,
 				B334299C114CD8E46DFD7DE8 /* FloatEntryPointTests.swift in Sources */,
 				21A6BC42CE686FB095C9790C /* FloatLifecycle20Tests.swift in Sources */,
@@ -1196,7 +1206,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1392,7 +1402,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;

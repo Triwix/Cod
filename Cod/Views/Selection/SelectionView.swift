@@ -35,7 +35,6 @@ struct SelectionView: View {
     @State private var selectionBeforeDrag: CGRect?
     @State private var adjustingCrop = false
 
-    private let minSelectionPixels: CGFloat = 8
     private let handleHitSlop: CGFloat = 30
 
     private enum DragMode {
@@ -105,24 +104,22 @@ struct SelectionView: View {
                             Button("Float selection") { performAction(.float) }
                         }
                     }
-                    .gesture(dragGesture(g, container: proxy.size).exclusively(before: tapGesture(g)))
-                    .simultaneousGesture(MagnifyGesture()
-                        .onChanged { value in
-                            if pinchStart == nil {
-                                pinchStart = zoom
-                                if dragMode != nil { selection = selectionBeforeDrag }
-                                dragMode = nil
-                                activePoint = nil
-                            }
-                            magnifying = true
-                            zoom = min(6, max(1, (pinchStart ?? zoom) * value.magnification))
-                            didHintFade = true
-                        }
-                        .onEnded { _ in
-                            pinchStart = nil
-                            magnifying = false
-                            pan = boundedPan(in: proxy.size)
-                        })
+                    .gesture(dragGesture(g, container: proxy.size).exclusively(before: singleTapGesture(g)))
+
+                // Only this existing selection needs a double-tap recognizer.
+                // Everywhere else, a single tap can select a block or clear
+                // the crop immediately, without waiting for a second tap.
+                if let selection, supportsDoubleTapFloat, !movingPage {
+                    let visible = g.viewRect(selection).intersection(CGRect(origin: .zero, size: proxy.size))
+                    if !visible.isNull && !visible.isEmpty {
+                        Color.clear
+                            .frame(width: visible.width, height: visible.height)
+                            .contentShape(Rectangle())
+                            .position(x: visible.midX, y: visible.midY)
+                            .accessibilityHidden(true)
+                            .gesture(dragGesture(g, container: proxy.size).exclusively(before: doubleTapGesture(g)))
+                    }
+                }
 
                 if settings.showMagnifier, let activePoint {
                     loupe(at: activePoint, geometry: g, container: proxy.size)
@@ -135,6 +132,8 @@ struct SelectionView: View {
                 }
             }
             .clipped()
+            .coordinateSpace(name: "crop-canvas-space")
+            .simultaneousGesture(magnifyGesture(container: proxy.size))
             .onAppear { loadSmartRegions() }
             .task {
                 // Get out of the way on its own if the user is just looking.
@@ -280,35 +279,54 @@ struct SelectionView: View {
     private var supportsDoubleTapFloat: Bool {
         // The video-region editor reuses this surface with Apply Crop. Never
         // silently apply/export a video when the person asks to float a crop.
-        primaryTitle == nil && (availableActions?.contains(.float) ?? true)
+        CropInteractionPolicy.allowsDoubleTapFloat(
+            actions: availableActions ?? settings.visibleActions, primaryTitle: primaryTitle)
     }
 
-    private func tapGesture(_ g: SelectionGeometry) -> some Gesture {
-        SpatialTapGesture(count: 2)
-            .exclusively(before: SpatialTapGesture())
-            .onEnded { result in
+    private func singleTapGesture(_ g: SelectionGeometry) -> some Gesture {
+        SpatialTapGesture(coordinateSpace: .named("crop-canvas-space"))
+            .onEnded { tap in
                 guard !magnifying, !movingPage, dragMode == nil else { return }
-                switch result {
-                case .first(let tap):
-                    guard supportsDoubleTapFloat, let selection,
-                          g.viewRect(selection).contains(tap.location) else { return }
-                    Haptics.tick()
-                    performAction(.float)
-                case .second(let tap):
-                    // A tap on an existing selection/handle leaves it alone.
-                    // Exclusivity prevents the first tap of a double-tap from
-                    // clearing or smart-selecting a different crop.
-                    if let selection,
-                       g.viewRect(selection).insetBy(dx: -handleHitSlop, dy: -handleHitSlop).contains(tap.location) { return }
-                    handleTap(at: tap.location, geometry: g)
+                if let selection,
+                   g.viewRect(selection).insetBy(dx: -handleHitSlop, dy: -handleHitSlop).contains(tap.location) { return }
+                handleTap(at: tap.location, geometry: g)
+            }
+    }
+
+    private func doubleTapGesture(_ g: SelectionGeometry) -> some Gesture {
+        SpatialTapGesture(count: 2, coordinateSpace: .named("crop-canvas-space"))
+            .onEnded { tap in
+                guard supportsDoubleTapFloat, !magnifying, !movingPage, dragMode == nil,
+                      let selection, g.viewRect(selection).contains(tap.location) else { return }
+                Haptics.tick()
+                performAction(.float)
+            }
+    }
+
+    private func magnifyGesture(container: CGSize) -> some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                if pinchStart == nil {
+                    pinchStart = zoom
+                    if dragMode != nil { selection = selectionBeforeDrag }
+                    dragMode = nil
+                    activePoint = nil
                 }
+                magnifying = true
+                zoom = min(6, max(1, (pinchStart ?? zoom) * value.magnification))
+                didHintFade = true
+            }
+            .onEnded { _ in
+                pinchStart = nil
+                magnifying = false
+                pan = boundedPan(in: container)
             }
     }
 
     private func dragGesture(_ g: SelectionGeometry, container: CGSize) -> some Gesture {
         // Taps belong to the tap recognizers. Starting a drag on touch-down
         // would mutate the crop before a double-tap can be recognized.
-        DragGesture(minimumDistance: 6)
+        DragGesture(minimumDistance: 6, coordinateSpace: .named("crop-canvas-space"))
             .onChanged { value in
                 guard !magnifying else { return }
                 if movingPage {
@@ -366,8 +384,9 @@ struct SelectionView: View {
                 withAnimation(.easeOut(duration: 0.18)) { activePoint = nil }
 
                 // Discard slivers produced by a stray drag.
+                let minimum = CropSelectionPolicy.minimumSize(in: g.imageBounds)
                 if let current = selection,
-                   current.width < minSelectionPixels || current.height < minSelectionPixels {
+                   current.width < minimum.width || current.height < minimum.height {
                     withAnimation(.easeOut(duration: 0.18)) { selection = nil }
                     return
                 }
@@ -522,7 +541,7 @@ struct SelectionView: View {
     private var readout: some View {
         VStack(spacing: 3) {
             Text(readoutText)
-            if selection != nil && supportsDoubleTapFloat {
+            if selection != nil && supportsDoubleTapFloat && !movingPage {
                 Text("Double-tap inside to float").font(.caption2)
             }
         }

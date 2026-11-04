@@ -147,23 +147,29 @@ final class LaunchFlowTests: XCTestCase {
         selectCod(); waitForShareToFinish(); cod.activate()
         XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8))
         let canvas = cod.descendants(matching: .any).matching(identifier: "crop-canvas").firstMatch
+        func selectAdjustedRegion() {
+            cod.buttons["selection-options"].tap()
+            cod.buttons["Select whole image"].tap()
+            cod.buttons["selection-options"].tap()
+            cod.buttons["adjust-crop"].tap()
+            let left = cod.steppers["crop-edge-left"]
+            XCTAssertTrue(left.waitForExistence(timeout: 5))
+            left.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Increment'")).firstMatch.tap()
+            let size = cod.descendants(matching: .any).matching(identifier: "adjusted-crop-size").firstMatch
+            XCTAssertEqual(size.value as? String, "299 × 200 pixels")
+            cod.buttons["Done"].tap()
+            XCTAssertEqual(canvas.value as? String, "299 × 200")
+        }
         // A double-tap before selecting must not float the whole image.
         canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
         XCTAssertTrue(cod.buttons["cancel-selection"].exists)
-        cod.buttons["selection-options"].tap()
-        cod.buttons["Select whole image"].tap()
-        cod.buttons["selection-options"].tap()
-        cod.buttons["adjust-crop"].tap()
-        let left = cod.steppers["crop-edge-left"]
-        XCTAssertTrue(left.waitForExistence(timeout: 5))
-        left.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Increment'")).firstMatch.tap()
-        let size = cod.descendants(matching: .any).matching(identifier: "adjusted-crop-size").firstMatch
-        XCTAssertEqual(size.value as? String, "299 × 200 pixels")
-        cod.buttons["Done"].tap()
-        XCTAssertEqual(canvas.value as? String, "299 × 200")
+        selectAdjustedRegion()
         canvas.coordinate(withNormalizedOffset: .init(dx: 0.1, dy: 0.1)).doubleTap()
         XCTAssertTrue(cod.buttons["cancel-selection"].exists)
-        XCTAssertEqual(canvas.value as? String, "299 × 200")
+        // Outside taps retain their normal immediate clear/select behavior;
+        // they must not dispatch Float, even when tapped twice.
+        XCTAssertFalse(cod.staticTexts["Not available here"].exists)
+        selectAdjustedRegion()
         canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
         // Actual PiP pictures need hardware; on a simulator the same action
         // can finish successfully or report AVKit's supported failure state.

@@ -2,6 +2,11 @@
 
 November 3, 2026. Branch: `codex/crop-gesture-and-audit24`.
 
+Follow-up November 4: the Mac was unlocked and the interaction/guide checks
+continued with build 25, which also addresses the next audit's three low notes.
+See [current evidence and limits](crop-follow-up-25.md). The locked-screen
+statement below records the original build-24 check, not a current blocker.
+
 ## Interaction
 
 - Double-tap **inside an existing selected image/PDF region** to perform the

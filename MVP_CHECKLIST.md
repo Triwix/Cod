@@ -1,8 +1,8 @@
 # MVP checklist
 
-Current candidate: **Cod Test 1.0 (24)**. Debug/Release builds and local artifact
-checks pass; iOS test execution and crop-gesture acceptance are still open.
-Build 24 is prepared but not installed; build 23 was installed and launched on
+Current candidate: **Cod Test 1.0 (25)**. Debug/Release builds and local artifact
+checks pass; iOS test execution and physical crop/PiP acceptance are still open.
+Build 25 is prepared but not installed; build 23 was installed and launched on
 Jay (iPhone 16 Pro Max) on November 3. Physical feature acceptance remains open;
 the original Cod app and data are untouched.
 Automated checks are not a substitute
@@ -17,6 +17,7 @@ Details: [release gates](APP_STORE_RELEASE.md),
 [latest reliability pass](docs/release-hardening-22.md),
 [verifier/rendering evidence](docs/verifier-rendering-23.md),
 [crop/audit evidence](docs/crop-audit-24.md),
+[crop interaction follow-up](docs/crop-follow-up-25.md),
 [submission draft](docs/app-store-draft.md).
 
 Research: [feature candidates](docs/feature-candidates.md). Selected items
@@ -24,16 +25,16 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Open items
 
-1. Finish build-24 iOS unit and affected crop/sharing/layout UI test execution,
-   including build 22/23's unexecuted regressions. The Mac's
+1. Finish build-25 iOS unit and affected crop/sharing/layout UI test execution,
+   including build 22/23/24's unexecuted regressions. The Mac's
    Apple test service fails before running tests despite repaired Xcode setup
    and enabled, owner-approved developer-tools authorization. macOS also refuses
    to open Xcode as OS-incompatible. Use a working compatible toolchain; no new
-   passing iOS test run is claimed. Seven host geometry tests and sixteen
-   host-side audit tests pass separately. Unlock the Mac for the blocked visual
-   crop check; verify double-tap inside/outside a selection, drag/resize/zoom,
-   precise edge controls and the crop-first Back Tap guide.
-2. Install/review the build-24 candidate on the phone and confirm the
+   passing iOS test run is claimed. Nine host geometry/settings tests and sixteen
+   host-side audit tests pass separately. Interactive simulator checks confirmed
+   double-tap dispatch, edge controls, zoom/Move mode and the crop-first guide;
+   drag/resize/pinch, boundary taps and tap latency still need verification.
+2. Install/review the build-25 candidate on the phone and confirm the
    Share/Shortcut/document request-lifecycle fix carried forward from build 20.
    Complete iPhone PiP reliability checks: cold/warm launch, image replacement,
    early taps/restore, close/reopen, resizing, rotation, lock/unlock, music mixing
@@ -83,6 +84,11 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Completed items
 
+- Aligned double-tap/VoiceOver Float with the visible action list, removed the
+  double-tap wait from outside single taps and shared the eight-pixel crop minimum
+  across dragging/edge controls, preserving genuinely thin images. Nine host
+  geometry/settings tests pass; simulator interaction evidence and limits are
+  recorded in [build 25](docs/crop-follow-up-25.md).
 - Added double-tap inside a selected image/PDF crop to perform Float through the
   existing action; the video editor retains Apply Crop. Added native pixel-edge
   steppers and VoiceOver actions, and explicit immediate/crop-first Back Tap

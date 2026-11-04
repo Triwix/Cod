@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (24)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (25)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,12 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 25 follows the visible Float action preference, scopes double-tap to an
+  existing selection and shares the crop minimum across controls. Nine host
+  geometry/settings tests and sixteen audit tests pass. Interactive simulator
+  checks confirm action dispatch, edge dimensions, zoom/Move mode and the guide;
+  actual phone PiP, drag/pinch/boundary acceptance and iOS suite execution remain
+  open. See [evidence and limits](docs/crop-follow-up-25.md).
 - Build 24 adds crop double-tap, accessible pixel-edge controls and explicit
   crop-first Back Tap guidance. Transparent PiP images choose a contrasting
   matte. Targeted concurrency warnings are resolved, the source guard covers

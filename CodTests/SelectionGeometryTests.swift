@@ -76,8 +76,8 @@ final class SelectionGeometryTests: XCTestCase {
             for value: CGFloat in [-10_000, 0, 75.6, 10_000] {
                 let result = edge.adjusting(crop, to: value, in: bounds)
                 XCTAssertTrue(bounds.contains(result))
-                XCTAssertGreaterThanOrEqual(result.width, 1)
-                XCTAssertGreaterThanOrEqual(result.height, 1)
+                XCTAssertGreaterThanOrEqual(result.width, CropSelectionPolicy.minimumEdge)
+                XCTAssertGreaterThanOrEqual(result.height, CropSelectionPolicy.minimumEdge)
                 XCTAssertEqual(edge.value(in: result), edge.value(in: result).rounded())
             }
             XCTAssertEqual(edge.adjusting(crop, to: .nan, in: bounds), crop)
@@ -95,8 +95,25 @@ final class SelectionGeometryTests: XCTestCase {
             for value: CGFloat in [-1_000, 100_000] {
                 let result = edge.adjusting(fractional, to: value, in: bounds)
                 XCTAssertTrue(bounds.contains(result))
-                XCTAssertGreaterThanOrEqual(result.width, 1)
-                XCTAssertGreaterThanOrEqual(result.height, 1)
+                XCTAssertGreaterThanOrEqual(result.width, CropSelectionPolicy.minimumEdge)
+                XCTAssertGreaterThanOrEqual(result.height, CropSelectionPolicy.minimumEdge)
+            }
+        }
+    }
+
+    func testMinimumCropSizePreservesThinSourceImagesAndExistingSmallCrops() {
+        let thin = CGRect(x: 0, y: 0, width: 1, height: 4_000)
+        XCTAssertEqual(CropSelectionPolicy.minimumSize(in: thin), CGSize(width: 1, height: 8))
+        let result = SelectionEdge.top.adjusting(thin, to: 5_000, in: thin)
+        XCTAssertEqual(result, CGRect(x: 0, y: 3_992, width: 1, height: 8))
+        let bounds = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let oldSmallCrop = CGRect(x: 50, y: 50, width: 3, height: 2)
+        for edge in SelectionEdge.allCases {
+            for value: CGFloat in [-1000, 1000] {
+                let adjusted = edge.adjusting(oldSmallCrop, to: value, in: bounds)
+                XCTAssertTrue(bounds.contains(adjusted))
+                XCTAssertGreaterThanOrEqual(adjusted.width, oldSmallCrop.width)
+                XCTAssertGreaterThanOrEqual(adjusted.height, oldSmallCrop.height)
             }
         }
     }
