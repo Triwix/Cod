@@ -2,6 +2,11 @@
 
 November 4, 2026. Branch: `codex/crop-drag-lifecycle26`.
 
+Subsequent phone follow-up: build 26 was installed/launched on Jay, and the owner
+confirmed double-tap on a drawn crop floats the correct crop. See
+[current phone/toolchain evidence](device-toolchain-26.md) for acceptance scope
+and the now-confirmed unsupported Xcode/macOS pairing.
+
 ## Finding and fix
 
 The [build-25 audit](https://cod-launch-b13d0b.sites.tab.bot/) identified a valid
@@ -75,8 +80,9 @@ test runner or physical device. The earlier simulator-control pointer limitation
 is not treated as a successful drag test. This pass fixes the identified source
 ownership/lifecycle paths and records the remaining runtime gap explicitly.
 
-Build 26 is prepared but **not installed on the phone**. The original Cod app and
-data are untouched. Publishing/contact/privacy hosting remains owner-deferred;
+Build 26 is now **installed on the phone**, with basic crop/double-tap Float
+confirmed by the owner. The original Cod app/data are untouched.
+Publishing/contact/privacy hosting remains owner-deferred;
 distribution signing, supported-old-OS launch and physical acceptance remain in
 the [MVP checklist](../MVP_CHECKLIST.md).
 

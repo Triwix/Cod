@@ -15,6 +15,11 @@ invalid resizing recovers the previous crop. Twelve host tests and sixteen audit
 tests pass. The new collapse/recovery UI regression compiles, but the iOS test
 service remains unavailable. See [evidence and runtime limits](docs/crop-lifecycle-26.md).
 
+Build 26 is now installed on the iPhone, and the owner confirms double-tapping
+a drawn crop floats the correct image. Apple's compatibility table also confirms
+the installed Xcode 26.6/macOS 27.2 pairing is unsupported; stable Xcode 27.2 is
+the next toolchain to try. See [phone and toolchain evidence](docs/device-toolchain-26.md).
+
 ## Crop follow-up candidate · 1.0 (25)
 
 Crop gestures now honor the visible action list. Single taps outside the selected

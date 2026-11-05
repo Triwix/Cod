@@ -2,9 +2,9 @@
 
 Current candidate: **Cod Test 1.0 (26)**. Debug/Release builds and local artifact
 checks pass; iOS test execution and physical crop/PiP acceptance are still open.
-Build 26 is prepared but not installed; build 23 was installed and launched on
-Jay (iPhone 16 Pro Max) on November 3. Physical feature acceptance remains open;
-the original Cod app and data are untouched.
+Build 26 was installed and launched on Jay (iPhone 16 Pro Max) on November 4.
+The owner confirmed Crop Photo → draw a crop → double-tap floats the correct
+crop. Extended physical acceptance remains open; original Cod app/data are untouched.
 Automated checks are not a substitute
 for physical-device acceptance or App Review. Keep the original Cod app/data untouched.
 
@@ -19,6 +19,7 @@ Details: [release gates](APP_STORE_RELEASE.md),
 [crop/audit evidence](docs/crop-audit-24.md),
 [crop interaction follow-up](docs/crop-follow-up-25.md),
 [drag lifecycle follow-up](docs/crop-lifecycle-26.md),
+[phone/toolchain evidence](docs/device-toolchain-26.md),
 [submission draft](docs/app-store-draft.md).
 
 Research: [feature candidates](docs/feature-candidates.md). Selected items
@@ -29,15 +30,17 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 1. Finish build-26 iOS unit and affected crop/sharing/layout UI test execution,
    including build 22–25's unexecuted regressions. The Mac's
    Apple test service fails before running tests despite repaired Xcode setup
-   and enabled, owner-approved developer-tools authorization. macOS also refuses
-   to open Xcode as OS-incompatible. Use a working compatible toolchain; no new
+   and enabled, owner-approved developer-tools authorization. Installed Xcode
+   26.6 supports macOS 26.x, while this Mac runs 27.2. Use stable Xcode 27.2, then
+   rerun; Apple's compatibility table is linked in the phone/toolchain evidence.
+   The mismatch is confirmed; its being the sole test-service cause is not. No new
    passing iOS test run is claimed. Twelve host geometry/settings/policy tests and sixteen
    host-side audit tests pass separately. Interactive simulator checks confirmed
    double-tap dispatch, edge controls, zoom/Move mode and the crop-first guide;
    drag/resize/pinch, boundary taps and tap latency still need verification.
    Specifically run the new collapse → recover → draw-again UI regression and
    check off-screen drag and system/pinch interruption without a stuck magnifier.
-2. Install/review the build-26 candidate on the phone and confirm the
+2. Continue reviewing the installed build-26 candidate on the phone and confirm the
    Share/Shortcut/document request-lifecycle fix carried forward from build 20.
    Refresh development provisioning if expired; the current app profile expires
    November 4 at 10:33 PM Pacific, as confirmed in the build-26 evidence.
@@ -89,6 +92,11 @@ Research: [feature candidates](docs/feature-candidates.md). Selected items
 
 ## Completed items
 
+- Installed/launched Cod Test 1.0 (26) on Jay (iPhone 16 Pro Max); the owner
+  confirmed double-tapping a drawn crop floats the correct crop. The original
+  Cod app/data are untouched. Confirmed the installed Xcode/macOS combination is
+  outside Apple's supported range and identified stable Xcode 27.2 as the next
+  toolchain to validate; no toolchain update has been performed yet.
 - Moved drag ownership from the conditional selection layer to the stable canvas;
   added automatic drag/pinch cancellation cleanup and recovery from collapsed or
   invalid crops. Twelve host policy/geometry/settings cases pass. The dedicated

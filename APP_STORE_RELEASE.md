@@ -14,6 +14,10 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
   sixteen verifier tests pass; Debug/Release packaging checks pass. Execute the
   new collapse/recovery UI case and physical cancellation/PiP checks before
   calling the interaction validated. See [evidence and limits](docs/crop-lifecycle-26.md).
+  On November 4, build 26 was installed/launched on the iPhone 16 Pro Max and the
+  owner confirmed a drawn crop floats correctly by double-tap. The installed
+  Xcode 26.6/macOS 27.2 combination is now confirmed unsupported by Apple's
+  table; validate with stable Xcode 27.2 next. See [phone/toolchain evidence](docs/device-toolchain-26.md).
 - Build 25 follows the visible Float action preference, scopes double-tap to an
   existing selection and shares the crop minimum across controls. Nine host
   geometry/settings tests and sixteen audit tests pass. Interactive simulator
