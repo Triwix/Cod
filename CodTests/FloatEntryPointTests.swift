@@ -1,4 +1,5 @@
 import AppIntents
+import Combine
 import CoreVideo
 import UserNotifications
 import XCTest
@@ -22,21 +23,27 @@ final class FloatEntryPointTests: XCTestCase {
     }
 
     @MainActor
-    func testExplicitFloatIntentReceiptIgnoresTheCropPreference() {
+    func testExplicitFloatIntentReceiptIgnoresTheCropPreference() async {
         let suite = "Cod.FloatIntentReceipt.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let settings = AppSettings(defaults: defaults, sharePreferences: CropFirstPreferences())
         XCTAssertFalse(settings.oneTapFloat)
         settings.historyLimit = .off
-        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController())
-        let image = UIGraphicsImageRenderer(size: CGSize(width: 37, height: 19)).image { context in
+        let coordinator = CaptureCoordinator(store: .shared, settings: settings, pip: PiPPinController(isSupported: false))
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 2
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 37, height: 19), format: format).image { context in
             UIColor.green.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 37, height: 19))
         }
         coordinator.restoreFloatingSelection(image)
+        let clearedSelection = expectation(description: "Explicit Float replaces the crop after image preparation")
+        let observation = coordinator.$pending.filter { $0 == nil }.first().sink { _ in clearedSelection.fulfill() }
+        defer { observation.cancel() }
         coordinator.receiveFloatIntentImage(image)
         XCTAssertEqual(coordinator.lastExternalImageSize, image.pixelSize)
+        await fulfillment(of: [clearedSelection], timeout: 3)
         XCTAssertNil(coordinator.pending)
     }
 

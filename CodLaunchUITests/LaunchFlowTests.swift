@@ -121,7 +121,7 @@ final class LaunchFlowTests: XCTestCase {
         expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: library)
         waitForExpectations(timeout: 5)
         library.tap()
-        let saved = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Saved '")).firstMatch
+        let saved = cod.buttons["Saved shared, 300 × 200"].firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 5), cod.debugDescription)
         saved.tap()
         let floatImage = cod.buttons["Float Image"]
@@ -137,6 +137,7 @@ final class LaunchFlowTests: XCTestCase {
     }
 
     func testCropDoubleTapUsesTheAdjustedRegionAndIgnoresTheBackdrop() {
+        XCUIDevice.shared.orientation = .portrait
         cod.launch()
         tab("Library").tap()
         if cod.buttons["enable-history"].exists { cod.buttons["enable-history"].tap() }
@@ -164,11 +165,14 @@ final class LaunchFlowTests: XCTestCase {
         canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
         XCTAssertTrue(cod.buttons["cancel-selection"].exists)
         selectAdjustedRegion()
-        canvas.coordinate(withNormalizedOffset: .init(dx: 0.1, dy: 0.1)).doubleTap()
+        // Tap the letterbox below the top toolbar. The top-left corner of
+        // the canvas is covered by Cancel on an iPhone with a Dynamic Island.
+        canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.22)).doubleTap()
         XCTAssertTrue(cod.buttons["cancel-selection"].exists)
         // Outside taps retain their normal immediate clear/select behavior;
         // they must not dispatch Float, even when tapped twice.
         XCTAssertFalse(cod.staticTexts["Not available here"].exists)
+        XCTAssertEqual(canvas.value as? String, "Full · 300 × 200")
         selectAdjustedRegion()
         canvas.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5)).doubleTap()
         // Actual PiP pictures need hardware; on a simulator the same action
@@ -179,10 +183,13 @@ final class LaunchFlowTests: XCTestCase {
                 || self.cod.staticTexts["Couldn't start floating"].exists
         }
         expectation(for: finished, evaluatedWith: nil); waitForExpectations(timeout: 20)
-        if cod.buttons["cancel-selection"].exists { cod.buttons["cancel-selection"].tap() }
+        // The fallback toast can cover Cancel. Relaunch to verify that the
+        // exact crop survives on disk and is available from Library.
+        cod.launch()
         tab("Library").tap()
+        XCTAssertTrue(cod.navigationBars["Library"].waitForExistence(timeout: 5), cod.debugDescription)
         XCTAssertTrue(cod.buttons["Saved shared, 299 × 200"].waitForExistence(timeout: 8),
-                      "Double-tap must dispatch Float with the actual adjusted crop, not the original")
+                      "Double-tap must save the actual adjusted crop. UI: \(cod.debugDescription)")
     }
 
     private func dismissConfirmation(titled title: String) {
@@ -244,13 +251,16 @@ final class LaunchFlowTests: XCTestCase {
         }
         let toggle = cod.switches["One tap float"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        if (toggle.value as? String == "1") != enabled {
-            // SwiftUI exposes a row-wide switch; its center can be the label,
-            // not the actual thumb. Tap the trailing native control.
-            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        let expectedValue = enabled ? "1" : "0"
+        let hasExpectedValue = NSPredicate(format: "value == %@", expectedValue)
+        if toggle.value as? String != expectedValue {
+            // SwiftUI can expose both a labeled row and its native switch.
+            let control = toggle.switches.firstMatch
+            if control.exists { control.tap() }
+            else { toggle.tap() }
         }
-        expectation(for: NSPredicate(format: "value == %@", enabled ? "1" : "0"), evaluatedWith: toggle)
-        waitForExpectations(timeout: 5)
+        let settled = XCTNSPredicateExpectation(predicate: hasExpectedValue, object: toggle)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 5), .completed, cod.debugDescription)
         tab("Float").tap()
     }
 
