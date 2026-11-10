@@ -3,6 +3,13 @@ import ImageIO
 import UIKit
 
 extension UIImage {
+    /// Shortcut input decodes inside the app, which has a normal memory budget.
+    /// Keep native screenshots and typical photos sharp for cropping and OCR.
+    static let appImportMaximumEdge = 4_096
+    /// Share extensions have a much smaller memory budget. This still keeps
+    /// every current iPhone and iPad screenshot at its native size.
+    static let shareExtensionMaximumEdge = 3_000
+
     static func decodedImage(data: Data, maximumEdge: Int = 2_048) -> UIImage? {
         guard maximumEdge > 0, data.count <= SharedImageInbox.maximumImageBytes,
               let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),

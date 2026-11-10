@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (26)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (27)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,11 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 27 keeps native resolution for Shortcut and Share images, and shows an
+  "open Cod" screen after sharing to the Cod icon. 250 unit tests, 13
+  share/notification UI tests, the Release archive and both verifiers pass.
+  Check the ready screen and a sharp Back Tap crop on the phone. See
+  [build-27 notes](docs/share-resolution-27.md).
 - Build 26 fixes conditional drag ownership, adds drag/pinch cancellation cleanup
   and recovers collapsed crops. Xcode 27.2 restored simulator test execution.
   All 248 signed unit tests, 19 iPhone UI checks, five iPad UI checks and 16

@@ -141,7 +141,7 @@ final class ShareViewController: UIViewController {
         if provider.canLoadObject(ofClass: UIImage.self) {
             diagnostic("file wasn't ImageIO-readable; requesting typed UIImage")
             imageLoadProgress = provider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
-                let image = (object as? UIImage)?.boundedShareImage()
+                let image = (object as? UIImage)?.boundedShareImage(maximumEdge: CGFloat(UIImage.shareExtensionMaximumEdge))
                 self?.diagnostic("typed image callback error=\(error?.localizedDescription ?? "none")")
                 DispatchQueue.main.async { self?.completeImageLoad(image, requestID: requestID) }
             }
@@ -152,10 +152,10 @@ final class ShareViewController: UIViewController {
             imageLoadProgress = nil // This legacy API has no cancellable Progress.
             provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { [weak self] object, error in
                 let image: UIImage?
-                if let native = object as? UIImage { image = native.boundedShareImage() }
-                else if let url = object as? URL { image = UIImage.decodedImage(at: url) }
+                if let native = object as? UIImage { image = native.boundedShareImage(maximumEdge: CGFloat(UIImage.shareExtensionMaximumEdge)) }
+                else if let url = object as? URL { image = UIImage.decodedImage(at: url, maximumEdge: UIImage.shareExtensionMaximumEdge) }
                 else if let data = object as? Data, data.count <= SharedImageInbox.maximumImageBytes {
-                    image = UIImage(data: data)?.boundedShareImage()
+                    image = UIImage(data: data)?.boundedShareImage(maximumEdge: CGFloat(UIImage.shareExtensionMaximumEdge))
                 } else { image = nil }
                 self?.diagnostic("legacy image callback class=\(object.map { String(describing: type(of: $0)) } ?? "none") error=\(error?.localizedDescription ?? "none")")
                 DispatchQueue.main.async { self?.completeImageLoad(image, requestID: requestID) }
@@ -185,7 +185,7 @@ final class ShareViewController: UIViewController {
     /// a frame. ImageIO creates an oriented thumbnail without first expanding
     /// the full source bitmap in memory.
     private static func memorySafeImage(at url: URL) -> UIImage? {
-        UIImage.decodedImage(at: url)
+        UIImage.decodedImage(at: url, maximumEdge: UIImage.shareExtensionMaximumEdge)
     }
 
     private func presentStatus() {
@@ -249,7 +249,7 @@ final class ShareViewController: UIViewController {
                     self.handoffTask = nil
                     guard !self.completed else { return }
                     self.diagnostic("notification handoff failed: \(error.localizedDescription)")
-                    self.state.phase = imageWasSaved ? .ready : .failed(error.localizedDescription)
+                    self.state.phase = imageWasSaved ? .ready(.notificationUnavailable) : .failed(error.localizedDescription)
                 }
                 return
             }
@@ -260,8 +260,10 @@ final class ShareViewController: UIViewController {
                 }.value
                 self.handoffTask = nil
                 guard !self.completed else { return }
-                self.diagnostic("image queued automatically; no app launch requested")
-                self.finish()
+                self.diagnostic("image queued; showing open-Cod instructions")
+                // Don't vanish silently: the extension can't open Cod, so say
+                // what happens next and let the user dismiss it.
+                self.state.phase = .ready(.openCod(crop: mode == .crop))
             } catch {
                 self.handoffTask = nil
                 guard !self.completed else { return }

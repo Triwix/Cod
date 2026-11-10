@@ -7,6 +7,13 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Share resolution candidate · 1.0 (27)
+
+Crop With Cod, Float With Cod and the Share extension now keep native screenshot
+resolution instead of shrinking images to 2048 px. Sharing to the Cod icon now
+ends on an "Image ready — open Cod" screen instead of closing silently. 250 unit
+tests and 13 share/notification UI tests pass. See [build-27 notes](docs/share-resolution-27.md).
+
 ## Crop lifecycle candidate · 1.0 (26)
 
 The fixed canvas now owns drags, so a collapsing or off-screen crop cannot remove

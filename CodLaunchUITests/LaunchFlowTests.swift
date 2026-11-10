@@ -284,6 +284,13 @@ final class LaunchFlowTests: XCTestCase {
     }
 
     private func waitForShareToFinish() {
+        // The manual route must explain the next step instead of vanishing,
+        // and must still never open Cod by itself.
+        let done = lab.buttons["share-ready-done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 12), "Share must say to open Cod. UI: \(lab.debugDescription)")
+        XCTAssertTrue(lab.staticTexts["share-ready-instructions"].label.contains("open Cod"))
+        XCTAssertNotEqual(cod.state, .runningForeground)
+        done.tap()
         // A background button still "exists" behind an extension. Require
         // the system's presented sheet to have actually disappeared.
         let sharingUI = XCUIApplication(bundleIdentifier: "com.apple.SharingUIService")

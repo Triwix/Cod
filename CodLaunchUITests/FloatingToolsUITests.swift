@@ -87,6 +87,9 @@ final class FloatingToolsUITests: XCTestCase {
         lab.launch()
         lab.buttons["Share Test Text"].tap()
         selectCod(in: lab)
+        let done = lab.buttons["share-ready-done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 12), "Share must say to open Cod. UI: \(lab.debugDescription)")
+        done.tap()
         let finished = NSPredicate { _, _ in lab.buttons["Share Test Text"].isHittable && lab.sheets.count == 0 }
         expectation(for: finished, evaluatedWith: nil)
         waitForExpectations(timeout: 15)

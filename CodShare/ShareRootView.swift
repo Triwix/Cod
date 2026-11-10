@@ -6,15 +6,22 @@ final class ShareFloatState: ObservableObject {
     case loading
     case opening
     case selecting(UIImage)
-    case ready
+    case ready(ReadyReason)
     case failed(String)
+  }
+
+  enum ReadyReason: Equatable {
+    /// The normal app-icon route: the image is queued for the next Cod launch.
+    case openCod(crop: Bool)
+    /// Notification mode saved the image but couldn't schedule the banner.
+    case notificationUnavailable
   }
 
   @Published var phase: Phase = .loading
 }
 
-/// Notification handoffs can crop here; the manual-open fallback prepares its
-/// request without a confirmation tap and opens cropping in Cod when needed.
+/// Notification handoffs can crop here; the manual-open route prepares its
+/// request without a confirmation tap, then says to open Cod to continue.
 struct ShareRootView: View {
   @ObservedObject var state: ShareFloatState
   var onFinish: () -> Void
@@ -65,14 +72,22 @@ struct ShareRootView: View {
         Button("Try Again", action: onRetry)
           .buttonStyle(.borderedProminent)
           .tint(.codActionBackground).foregroundStyle(.white)
-      case .ready:
+      case .ready(let reason):
         Image(systemName: "checkmark.circle.fill").font(.largeTitle).foregroundStyle(.green)
         Text("Image ready").font(.headline)
           .accessibilityIdentifier("share-image-ready")
-        Text(
-          "Your image is saved, but notifications are off or unavailable. Tap Done, then open Cod manually to float it."
-        )
+        Group {
+          switch reason {
+          case .openCod(let crop):
+            Text("Tap Done, then open Cod to \(crop ? "crop and float" : "float") it.")
+          case .notificationUnavailable:
+            Text(
+              "Your image is saved, but notifications are off or unavailable. Tap Done, then open Cod manually to float it."
+            )
+          }
+        }
         .multilineTextAlignment(.center)
+        .accessibilityIdentifier("share-ready-instructions")
         Text(
           "The Cod icon in Share prepares the image; iOS doesn't let this Share extension open the app. The Float with Cod Shortcut can open it directly."
         )

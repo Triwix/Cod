@@ -30,13 +30,19 @@ final class QuickFloatHandoff {
 
     @discardableResult
     func store(_ image: UIImage, mode: Mode = .float, now: Date = Date()) throws -> UUID {
-        guard let png = image.pngData(), png.count <= SharedImageInbox.maximumImageBytes else {
-            throw SharedImageInbox.InboxError.tooLarge
-        }
-        let record = Record(id: UUID(), png: png, mode: mode, createdAt: now, state: .pending)
+        guard let encoded = Self.encoded(image) else { throw SharedImageInbox.InboxError.tooLarge }
+        let record = Record(id: UUID(), png: encoded, mode: mode, createdAt: now, state: .pending)
         try coordinate { url in try self.write(record, to: url) }
-        CodDiagnosticLog.record("quick share stored id=\(record.id) bytes=\(png.count) mode=\(mode)")
+        CodDiagnosticLog.record("quick share stored id=\(record.id) bytes=\(encoded.count) mode=\(mode)")
         return record.id
+    }
+
+    /// PNG keeps screenshots lossless. A detailed photo can exceed the size
+    /// limit as PNG, so fall back to high-quality JPEG rather than failing.
+    static func encoded(_ image: UIImage, maximumBytes: Int = SharedImageInbox.maximumImageBytes) -> Data? {
+        if let png = image.pngData(), png.count <= maximumBytes { return png }
+        guard let jpeg = image.jpegData(compressionQuality: 0.92), jpeg.count <= maximumBytes else { return nil }
+        return jpeg
     }
 
     /// A delayed ordinary app launch shouldn't unexpectedly float an old

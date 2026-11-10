@@ -119,7 +119,7 @@ struct CropWithCodIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        guard let decoded = UIImage.decodedImage(data: image.data) else {
+        guard let decoded = UIImage.decodedImage(data: image.data, maximumEdge: UIImage.appImportMaximumEdge) else {
             throw $image.needsValueError("Cod couldn't read that as an image.")
         }
         IntentInbox.shared.deliver(decoded)
@@ -187,7 +187,7 @@ struct FloatWithCodIntent: AppIntent {
             IntentInbox.shared.deliverReference(.animated(image.data))
             return .result()
         }
-        guard let decoded = UIImage.decodedImage(data: image.data) else {
+        guard let decoded = UIImage.decodedImage(data: image.data, maximumEdge: UIImage.appImportMaximumEdge) else {
             CodDiagnosticLog.record("float intent couldn't decode supplied image")
             throw $image.needsValueError("Cod couldn't read that as an image.")
         }

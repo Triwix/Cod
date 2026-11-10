@@ -238,6 +238,52 @@ final class QuickFloatHandoffTests: XCTestCase {
         XCTAssertNil(UIImage.decodedImage(at: url, maximumEdge: 0))
     }
 
+    /// Shortcut and Share input must keep a native iPhone 16/17 Pro Max
+    /// screenshot (1320 × 2868) at full size, so crops and OCR stay sharp.
+    func testShortcutAndShareDecodingKeepNativeScreenshotSize() throws {
+        let native = CGSize(width: 1_320, height: 2_868)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let screenshot = UIGraphicsImageRenderer(size: native, format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: native))
+        }
+        let data = try XCTUnwrap(screenshot.pngData())
+        let fromShortcut = try XCTUnwrap(UIImage.decodedImage(data: data, maximumEdge: UIImage.appImportMaximumEdge))
+        XCTAssertEqual(fromShortcut.pixelSize, native)
+
+        let url = container.appendingPathComponent("screenshot.png")
+        try data.write(to: url)
+        let fromShare = try XCTUnwrap(UIImage.decodedImage(at: url, maximumEdge: UIImage.shareExtensionMaximumEdge))
+        XCTAssertEqual(fromShare.pixelSize, native)
+        XCTAssertEqual(screenshot.boundedShareImage(maximumEdge: CGFloat(UIImage.shareExtensionMaximumEdge))?.pixelSize, native)
+    }
+
+    func testHandoffEncodingFallsBackToJPEGWhenPNGIsTooLarge() throws {
+        // Photo-like detail: PNG can't compress noise, JPEG can.
+        let size = CGSize(width: 256, height: 256)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        var seed: UInt64 = 42
+        let detailed = UIGraphicsImageRenderer(size: size, format: format).image { context in
+            for y in 0..<256 {
+                for x in 0..<256 {
+                    seed = seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+                    let value = CGFloat((seed >> 33) % 256) / 255
+                    UIColor(red: value, green: 1 - value, blue: CGFloat(x) / 255, alpha: 1).setFill()
+                    context.fill(CGRect(x: x, y: y, width: 1, height: 1))
+                }
+            }
+        }
+        let png = try XCTUnwrap(detailed.pngData())
+        XCTAssertEqual(QuickFloatHandoff.encoded(detailed), png, "Images stay lossless when they fit")
+        let jpeg = try XCTUnwrap(QuickFloatHandoff.encoded(detailed, maximumBytes: png.count - 1))
+        XCTAssertLessThan(jpeg.count, png.count)
+        XCTAssertEqual(UIImage(data: jpeg)?.pixelSize, size)
+        XCTAssertNil(QuickFloatHandoff.encoded(detailed, maximumBytes: 1))
+    }
+
     func testTypedImageFallbackBoundsPixelsNotPoints() throws {
         let cg = try XCTUnwrap(Self.image.cgImage)
         let scaled = UIImage(cgImage: cg, scale: 3, orientation: .up)
