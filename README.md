@@ -7,6 +7,13 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## UI test repair · 1.0 (30)
+
+Fixes the eight tool UI tests that had failed since build 27. Xcode 27.2
+simulators report Picture in Picture unsupported, so the native-PiP checks now
+skip with that reason and need a phone. Also hides the tool switcher in phone
+landscape so the preview and settings fit. See [build-30 notes](docs/ui-tests-30.md).
+
 ## Floathing parity candidate · 1.0 (29)
 
 Adds Countdown To, World Clock, System Monitor (with optional speedometer),

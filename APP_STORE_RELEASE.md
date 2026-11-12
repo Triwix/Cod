@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (29)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (30)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,14 +9,17 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 30 repairs the tool UI tests. The native PiP checks (Current Time
+  controls, timer close, video repeat, teleprompter rewind) skip on Xcode 27.2
+  simulators, which report PiP unsupported; run them on the phone. See
+  [build-30 notes](docs/ui-tests-30.md).
 - Build 29 adds the Floathing feature set and the reorganized Float tab. It
   also adds a location background mode (speedometer) and a Safari web
   extension, both new review topics; explain them in reviewer notes. Test the
   extension, speedometer, battery readings and image-set skipping on the
   phone. See [build-29 notes](docs/floathing-parity-29.md).
 - Build 28 adds the signed crop Shortcut, iPhone-only packaging, Translate on
-  by default and the new icon. Eight tool UI tests that already failed on build
-  27 still need fixing. Test the crop Back Tap flow on the phone. See
+  by default and the new icon. Test the crop Back Tap flow on the phone. See
   [build-28 notes](docs/crop-shortcut-28.md).
 - Build 27 keeps native resolution for Shortcut and Share images, and shows an
   "open Cod" screen after sharing to the Cod icon. 250 unit tests, 13

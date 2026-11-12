@@ -22,6 +22,7 @@ struct FloatingToolEditor: View {
   @FocusState private var focusedNumber: PomodoroField?
   @Environment(\.dynamicTypeSize) private var textSize
   @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.verticalSizeClass) private var verticalSizeClass
   @State private var session: FloatingToolSession?
   @State private var errorMessage: String?
   @State private var isStarting = false
@@ -39,7 +40,10 @@ struct FloatingToolEditor: View {
 
   var body: some View {
     FloatingEditorLayout {
-      if !restoresConfiguration, let category = FloatCategory.category(for: configuration.kind),
+      // Phone landscape has too little height for the switcher and the
+      // pinned preview; Back still reaches the other tools there.
+      if !restoresConfiguration, verticalSizeClass != .compact,
+        let category = FloatCategory.category(for: configuration.kind),
         category.kinds.count > 1
       {
         ToolCategorySwitcher(kinds: category.kinds, selection: kindSelection)

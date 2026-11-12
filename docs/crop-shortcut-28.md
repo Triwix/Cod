@@ -50,7 +50,7 @@ build 28, so they aren't regressions:
 
 Most wait for PiP to start in the simulator, or scroll to a control in a tool
 editor. Earlier notes counted only a subset of the UI suite as passing on
-Xcode 27.2. These still need investigating.
+Xcode 27.2. Fixed in build 30; see [build-30 notes](ui-tests-30.md).
 
 `SubmissionScreenshotTests.testCaptureThirteenInchIPadScreenshots` fails on
 an iPhone simulator by design. iPad screenshots are no longer needed.

@@ -165,6 +165,26 @@ final class FloatingToolsUITests: XCTestCase {
         else { matches.allElementsBoundByIndex.last(where: { $0.isHittable })?.tap() }
     }
 
+    /// Waits for Cod to report the result of a Float tap. Simulators from
+    /// Xcode 27.2 report `isPictureInPictureSupported() == false`, and Cod
+    /// then shows its documented "Not available here" fallback. Returns
+    /// false in that case so a test can skip only its native-PiP checks.
+    private func nativePiPStarted(timeout: TimeInterval = 25) -> Bool {
+        let started = cod.staticTexts["Floating"]
+        let unavailable = cod.staticTexts["Not available here"]
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            started.exists || unavailable.exists
+        }, object: nil)
+        _ = XCTWaiter.wait(for: [settled], timeout: timeout)
+        return !unavailable.exists
+    }
+
+    private func requireNativePiP() throws {
+        guard nativePiPStarted() else {
+            throw XCTSkip("This simulator reports Picture in Picture unsupported; run the native PiP checks on an iPhone.")
+        }
+    }
+
     func testToolFormsRemainUsableWithLargeTextAndDarkAppearance() {
         cod.terminate()
         cod.launchArguments = ["--large-text-ui-test", "--dark-ui-test"]
@@ -179,7 +199,7 @@ final class FloatingToolsUITests: XCTestCase {
         capture("Pomodoro - largest text and dark appearance")
     }
 
-    func testCurrentTimeHasNoMeaninglessResumeOrRestartControls() {
+    func testCurrentTimeHasNoMeaninglessResumeOrRestartControls() throws {
         openTools()
         let entry = cod.buttons["tool-clock"]
         reveal(entry)
@@ -188,6 +208,7 @@ final class FloatingToolsUITests: XCTestCase {
         let float = cod.buttons["float-tool"]
         reveal(float)
         float.tap()
+        try requireNativePiP()
         cod.navigationBars.buttons.element(boundBy: 0).tap()
         let controls = cod.buttons["Playback controls"]
         XCTAssertTrue(controls.waitForExistence(timeout: 12))
@@ -217,10 +238,15 @@ final class FloatingToolsUITests: XCTestCase {
 
     func testAllColorCapableEditorsHaveNativeColorSelectors() {
         openTools()
-        for kind in ["text", "countdown", "stopwatch", "clock", "pomodoro", "teleprompter"] {
-            let entry = cod.buttons["tool-\(kind)"]
-            reveal(entry)
-            entry.tap()
+        // The teleprompter is a mode of the Text tool, not a separate tile.
+        for kind in ["text", "teleprompter", "countdown", "stopwatch", "clock", "pomodoro", "event", "worldClock", "system"] {
+            if kind == "text" || kind == "teleprompter" {
+                openTextEditor(prompter: kind == "teleprompter")
+            } else {
+                let entry = cod.buttons["tool-\(kind)"]
+                reveal(entry)
+                entry.tap()
+            }
             XCTAssertEqual(cod.staticTexts["floating-preview-label"].label, "Preview")
             for identifier in ["floating-background-color", "floating-text-color"] {
                 let selector = cod.descendants(matching: .any).matching(identifier: identifier).firstMatch
@@ -232,9 +258,7 @@ final class FloatingToolsUITests: XCTestCase {
     }
 
     func testNativeColorPickerKeepsPreviewVisibleAndAllowsLiveChanges() throws {
-        openTools()
-        let entry = cod.buttons["tool-text"]
-        reveal(entry); entry.tap()
+        openTextEditor(prompter: false)
         let preset = cod.buttons["floating-preset"]
         reveal(preset); preset.tap()
         cod.buttons["Dark"].tap()
@@ -290,10 +314,9 @@ final class FloatingToolsUITests: XCTestCase {
         openLibrary()
         if cod.buttons["enable-history"].exists { cod.buttons["enable-history"].tap() }
         cod.segmentedControls["library-filter"].buttons["All"].tap()
-        openTools()
-        let entry = cod.buttons["tool-text"]
-        reveal(entry); entry.tap()
-        cod.buttons["float-text"].tap()
+        openTextEditor(prompter: false)
+        let float = cod.buttons["float-text"]
+        reveal(float); float.tap()
         let stop = cod.buttons["Stop Floating"]
         if stop.waitForExistence(timeout: 12) { reveal(stop); stop.tap() }
         openLibrary()
@@ -402,6 +425,15 @@ final class FloatingToolsUITests: XCTestCase {
                 let bounds = viewport()
                 // Drag the list gutter, not a wheel, slider or switch. A
                 // center drag can edit the control instead of scrolling.
+                // In a landscape simulator scene, coordinate drags don't
+                // scroll the list (they land in portrait space). Swipe the
+                // list itself, slowly enough not to fling past the target.
+                let window = cod.windows.firstMatch.frame
+                if window.width > window.height {
+                    let velocity = XCUIGestureVelocity(rawValue: 120)
+                    if down { scroll.swipeDown(velocity: velocity) } else { scroll.swipeUp(velocity: velocity) }
+                    continue
+                }
                 let x = bounds.minX + 8
                 let first = CGPoint(x: x, y: down ? bounds.minY + bounds.height * 0.25 : bounds.minY + bounds.height * 0.75)
                 let last = CGPoint(x: x, y: down ? bounds.minY + bounds.height * 0.65 : bounds.minY + bounds.height * 0.35)
@@ -504,7 +536,7 @@ final class FloatingToolsUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "1")
     }
 
-    func testNativeTimerCloseHonorsBothKeepRunningChoices() {
+    func testNativeTimerCloseHonorsBothKeepRunningChoices() throws {
         for keepRunning in [false, true] {
             openTools()
             let entry = cod.buttons["tool-countdown"]
@@ -524,6 +556,7 @@ final class FloatingToolsUITests: XCTestCase {
             let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
             let permission = system.alerts.firstMatch
             if permission.waitForExistence(timeout: 2), permission.buttons["Allow"].exists { permission.buttons["Allow"].tap() }
+            try requireNativePiP()
             let controls = cod.buttons["Playback controls"]
             reveal(controls); controls.tap()
             let stop = cod.buttons["Stop Floating"]
@@ -724,14 +757,20 @@ final class FloatingToolsUITests: XCTestCase {
         XCTAssertTrue(cod.staticTexts["floating-preview-label"].isHittable)
         capture("Video - actual imported movie")
         float.tap()
-        let stop = cod.buttons["stop-video-float"]
-        XCTAssertTrue(stop.waitForExistence(timeout: 35), cod.debugDescription)
-        capture("Video - native PiP active")
-        stop.tap()
         let close = cod.buttons["Close"]
-        let canClose = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in close.isHittable }, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [canClose], timeout: 8), .completed)
-        close.tap()
+        if nativePiPStarted(timeout: 35) {
+            let stop = cod.buttons["stop-video-float"]
+            XCTAssertTrue(stop.waitForExistence(timeout: 35), cod.debugDescription)
+            capture("Video - native PiP active")
+            stop.tap()
+            let canClose = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in close.isHittable }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [canClose], timeout: 8), .completed)
+            close.tap()
+        } else {
+            // No native PiP here (see nativePiPStarted); still verify the import reaches Library.
+            capture("Video - PiP unavailable fallback")
+            if close.exists && close.isHittable { close.tap() }
+        }
         openLibrary()
         let saved = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Saved imported'")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 8), cod.debugDescription)
@@ -762,7 +801,7 @@ final class FloatingToolsUITests: XCTestCase {
         }
     }
 
-    func testVideoRepeatsByDefaultWithNativePiPAndCanBeSwitchedOff() {
+    func testVideoRepeatsByDefaultWithNativePiPAndCanBeSwitchedOff() throws {
         let lab = XCUIApplication()
         lab.launchArguments = ["--short-video"]
         lab.launch()
@@ -773,6 +812,7 @@ final class FloatingToolsUITests: XCTestCase {
         XCTAssertEqual(repeatToggle.value as? String, "1")
         XCTAssertEqual(cod.switches["Video sound"].value as? String, "0")
         cod.buttons["float-video"].tap()
+        try requireNativePiP()
         let stop = cod.buttons["stop-video-float"]
         XCTAssertTrue(stop.waitForExistence(timeout: 25), cod.debugDescription)
         let counter = cod.staticTexts["video-repeat-count"]
@@ -906,7 +946,7 @@ final class FloatingToolsUITests: XCTestCase {
         capture("PDF - invalid page corrected")
     }
 
-    func testFinitePrompterCountdownAndRealNativeRewind() {
+    func testFinitePrompterCountdownAndRealNativeRewind() throws {
         openTextEditor(prompter: true)
         let clear = cod.buttons["clear-text"]
         reveal(clear); if clear.isEnabled { clear.tap() }
@@ -921,6 +961,7 @@ final class FloatingToolsUITests: XCTestCase {
         delay.buttons["prompter-delay-Decrement"].tap()
         capture("Teleprompter - three-second countdown and finite duration")
         cod.buttons["float-tool"].tap()
+        try requireNativePiP()
         reveal(cod.buttons["prompter-rewind"])
         XCTAssertTrue(cod.buttons["prompter-rewind"].waitForExistence(timeout: 5))
         let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
