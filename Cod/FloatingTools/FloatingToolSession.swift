@@ -3,6 +3,7 @@ import UIKit
 
 enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
   case countdown, stopwatch, clock, pomodoro, teleprompter, document
+  case event, worldClock, system, slideshow
   var id: String { rawValue }
   var title: String {
     switch self {
@@ -12,6 +13,22 @@ enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
     case .pomodoro: return "Pomodoro"
     case .teleprompter: return "Teleprompter"
     case .document: return "Scrolling Reference"
+    case .event: return "Countdown To"
+    case .worldClock: return "World Clock"
+    case .system: return "System Monitor"
+    case .slideshow: return "Image Set"
+    }
+  }
+  /// Short label for the category switcher in tool editors.
+  var shortTitle: String {
+    switch self {
+    case .countdown: return "Timer"
+    case .stopwatch: return "Stopwatch"
+    case .clock: return "Clock"
+    case .pomodoro: return "Focus"
+    case .event: return "Countdown"
+    case .worldClock: return "World"
+    default: return title
     }
   }
   var icon: String {
@@ -22,14 +39,26 @@ enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
     case .pomodoro: return "leaf"
     case .teleprompter: return "text.alignleft"
     case .document: return "doc.text"
+    case .event: return "calendar.badge.clock"
+    case .worldClock: return "globe"
+    case .system: return "gauge.with.dots.needle.33percent"
+    case .slideshow: return "photo.stack"
     }
   }
+  /// Kinds that show the current date or live readings rather than elapsed time.
+  var showsLiveDate: Bool { [.clock, .event, .worldClock, .system].contains(self) }
 }
 
 enum TeleprompterMode: String, CaseIterable, Identifiable, Codable {
-  case scroll, words
+  case scroll, words, lines
   var id: String { rawValue }
-  var title: String { self == .scroll ? "Scrolling" : "Words" }
+  var title: String {
+    switch self {
+    case .scroll: return "Scrolling"
+    case .words: return "Words"
+    case .lines: return "Lines"
+    }
+  }
 }
 
 struct WordPresentation {
@@ -97,6 +126,56 @@ struct FloatingToolConfiguration: Codable, Equatable {
   var clockTimeSize = defaultClockTimeSize
   var clockDateSize = defaultClockDateSize
 
+  // Settings added in build 29 are stored as optionals so presets saved by
+  // earlier builds still decode; the computed properties supply defaults.
+  var storedEventDate: Date?
+  var storedEventTitle: String?
+  var storedWorldClockZones: [String]?
+  var storedShowsSpeed: Bool?
+  var storedUsesMetricSpeed: Bool?
+  var storedSlideNames: [String]?
+  var storedSlideInterval: Double?
+
+  static var defaultEventDate: Date {
+    // Tomorrow at 9:00, which stays put while someone edits it today.
+    let calendar = Calendar.autoupdatingCurrent
+    let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date())) ?? Date()
+    return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow) ?? tomorrow
+  }
+  var eventDate: Date {
+    get { storedEventDate ?? Self.defaultEventDate }
+    set { storedEventDate = newValue }
+  }
+  var eventTitle: String {
+    get { storedEventTitle ?? "" }
+    set { storedEventTitle = newValue }
+  }
+  static let defaultWorldClockZones = Array(
+    ([TimeZone.autoupdatingCurrent.identifier] + ["Europe/London", "Asia/Tokyo"])
+      .reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+      .prefix(WorldClockFormatting.maximumZones))
+  var worldClockZones: [String] {
+    get { storedWorldClockZones ?? Self.defaultWorldClockZones }
+    set { storedWorldClockZones = newValue }
+  }
+  var showsSpeed: Bool {
+    get { storedShowsSpeed ?? false }
+    set { storedShowsSpeed = newValue }
+  }
+  var usesMetricSpeed: Bool {
+    get { storedUsesMetricSpeed ?? (Locale.autoupdatingCurrent.measurementSystem != .us) }
+    set { storedUsesMetricSpeed = newValue }
+  }
+  var slideNames: [String] {
+    get { storedSlideNames ?? [] }
+    set { storedSlideNames = newValue }
+  }
+  var slideInterval: Double {
+    get { storedSlideInterval ?? 5 }
+    set { storedSlideInterval = newValue }
+  }
+  var slideshowDuration: TimeInterval { slideInterval * Double(max(1, slideNames.count)) }
+
   var hasCustomClockSizes: Bool {
     clockLocationSize != Self.defaultClockLocationSize
       || clockTimeSize != Self.defaultClockTimeSize
@@ -113,7 +192,7 @@ struct FloatingToolConfiguration: Codable, Equatable {
     prompterCountdownEnabled ? Double(prompterCountdownSeconds) : 0
   }
 
-  var supportsSeeking: Bool { kind == .teleprompter || kind == .document }
+  var supportsSeeking: Bool { kind == .teleprompter || kind == .document || kind == .slideshow }
 
   var hasTimerAlarm: Bool { kind == .countdown && alarmWhenFinished }
 
@@ -124,12 +203,13 @@ struct FloatingToolConfiguration: Codable, Equatable {
     case .teleprompter: return prompterMode == .scroll ? 60 : 15
     case .document: return 30
     case .stopwatch: return showsHundredths ? 30 : 1
-    case .clock: return 1
+    case .clock, .event, .worldClock, .system: return 1
+    case .slideshow: return 4
     }
   }
 
   func frameKey(elapsed: TimeInterval, date: Date) -> Int {
-    let value = kind == .clock ? date.timeIntervalSince1970 : elapsed * framesPerSecond
+    let value = kind.showsLiveDate ? date.timeIntervalSince1970 : elapsed * framesPerSecond
     return Int(min(Double(Int.max / 2), max(Double(Int.min / 2), value.isFinite ? value : 0)))
   }
 
@@ -193,13 +273,56 @@ struct FloatingToolConfiguration: Codable, Equatable {
         lineSpacing.isFinite, (0...40).contains(lineSpacing),
         targetReadingDuration.map({ $0.isFinite && (15...3_600).contains($0) }) ?? true
       else { throw FloatingToolError.invalidStyle }
-    case .stopwatch: break
+    case .stopwatch, .system: break
+    case .event:
+      guard eventDate.timeIntervalSince1970.isFinite, eventTitle.count <= 60 else {
+        throw FloatingToolError.invalidDuration
+      }
+    case .worldClock:
+      guard (1...WorldClockFormatting.maximumZones).contains(worldClockZones.count),
+        worldClockZones.allSatisfy({ TimeZone(identifier: $0) != nil })
+      else { throw FloatingToolError.invalidTimeZone }
+    case .slideshow:
+      guard (2...Slideshow.maximumImages).contains(slideNames.count) else { throw Slideshow.SlideshowError.empty }
+      guard slideInterval.isFinite, Slideshow.intervalRange.contains(slideInterval) else {
+        throw FloatingToolError.invalidDuration
+      }
     }
   }
 
-  func snapshot(elapsed: TimeInterval, date: Date) -> FloatingToolSnapshot {
+  func snapshot(elapsed: TimeInterval, date: Date, metrics: SystemMetrics? = nil) -> FloatingToolSnapshot {
     let elapsed = max(0, elapsed)
     switch kind {
+    case .event:
+      let title = eventTitle.isEmpty ? "Countdown" : eventTitle
+      let formatter = DateFormatter()
+      formatter.locale = .autoupdatingCurrent
+      formatter.dateStyle = .medium
+      formatter.timeStyle = .short
+      if let remaining = EventCountdownFormatting.remaining(until: eventDate, from: date) {
+        return .init(title: title, value: remaining, detail: formatter.string(from: eventDate))
+      }
+      return .init(title: title, value: "It's time", detail: formatter.string(from: eventDate), isFinished: true)
+    case .worldClock:
+      let rows = WorldClockFormatting.rows(zones: worldClockZones, date: date, uses24Hour: uses24HourClock)
+      return .init(title: "World Clock", value: rows.first?.value ?? "", detail: "", rows: rows)
+    case .system:
+      let reading = metrics ?? SystemMetricsSampler.shared.latest
+      var rows = [
+        FloatingToolRow(label: "Battery", value: reading.batteryText),
+        FloatingToolRow(label: "Temperature", value: reading.thermalText),
+        FloatingToolRow(label: "Download", value: SystemMetrics.rateText(reading.downloadRate)),
+        FloatingToolRow(label: "Upload", value: SystemMetrics.rateText(reading.uploadRate)),
+      ]
+      if showsSpeed {
+        rows.append(FloatingToolRow(label: "Speed", value: reading.speedText(metric: usesMetricSpeed)))
+      }
+      return .init(title: "System", value: reading.batteryText, detail: "", rows: rows)
+    case .slideshow:
+      let index = Slideshow.index(elapsed: elapsed, interval: slideInterval, count: slideNames.count)
+      return .init(
+        title: "Image Set", value: "\(index + 1) of \(slideNames.count)", detail: "",
+        progress: slideNames.isEmpty ? nil : Double(index + 1) / Double(slideNames.count))
     case .countdown:
       let remaining = max(0, duration - elapsed)
       return .init(
@@ -249,9 +372,7 @@ struct FloatingToolConfiguration: Codable, Equatable {
     case .document:
       return .init(title: "Scrolling Reference", value: text, detail: "Auto-scroll")
     case .teleprompter:
-      return .init(
-        title: "Teleprompter", value: text,
-        detail: prompterMode == .scroll ? "Auto-scroll" : "Words")
+      return .init(title: "Teleprompter", value: text, detail: prompterMode.title)
     }
   }
 
@@ -276,6 +397,8 @@ struct FloatingToolSnapshot: Equatable {
   var detail: String
   var progress: Double? = nil
   var isFinished = false
+  /// Multi-row tools (World Clock, System Monitor) draw these as a table.
+  var rows: [FloatingToolRow] = []
 }
 
 enum FloatingToolError: LocalizedError {
@@ -343,6 +466,7 @@ final class FloatingToolSession: ObservableObject, Identifiable {
     configuration.kind == .teleprompter ? .init(configuration) : nil
   var playbackDuration: TimeInterval? {
     if let document { return document.duration(speed: configuration.scrollSpeed) }
+    if configuration.kind == .slideshow { return configuration.slideshowDuration }
     guard configuration.supportsSeeking, let scriptLayout else { return nil }
     return configuration.prompterStartDelay + scriptLayout.duration(configuration)
   }
@@ -379,7 +503,7 @@ final class FloatingToolSession: ObservableObject, Identifiable {
   }
   var isPlaying: Bool { timeline.isPlaying }
   var elapsed: TimeInterval { timeline.elapsed(at: uptime()) }
-  var displayDate: Date { configuration.kind == .clock || isPlaying ? now() : pausedDate }
+  var displayDate: Date { configuration.kind.showsLiveDate || isPlaying ? now() : pausedDate }
   var snapshot: FloatingToolSnapshot {
     var value = configuration.snapshot(elapsed: elapsed, date: displayDate)
     if let playbackDuration { value.isFinished = elapsed >= playbackDuration }
@@ -444,6 +568,14 @@ final class FloatingToolSession: ObservableObject, Identifiable {
 
   func skip(by interval: TimeInterval) {
     guard interval.isFinite else { return }
+    if configuration.kind == .slideshow {
+      // PiP's skip buttons step one image, whatever interval iOS asks for.
+      let step = configuration.slideInterval
+      let current = Slideshow.index(elapsed: elapsed, interval: step, count: configuration.slideNames.count)
+      let target = min(configuration.slideNames.count - 1, max(0, current + (interval < 0 ? -1 : 1)))
+      seek(to: Double(target) * step + 0.01)
+      return
+    }
     seek(to: elapsed + interval)
   }
 

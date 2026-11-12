@@ -17,6 +17,7 @@ final class LiveFloatSource: NSObject, AVPictureInPictureSampleBufferPlaybackDel
   private var timebase: CMTimebase?
   private var didStop = false
   private var lastFrameKey: Int?
+  private var samplesSystem = false
   nonisolated private let playbackState: ToolPlaybackFlag
 
   init(session: FloatingToolSession) {
@@ -50,6 +51,10 @@ final class LiveFloatSource: NSObject, AVPictureInPictureSampleBufferPlaybackDel
 
   func start() throws {
     try session.configuration.validate()
+    if session.configuration.kind == .system, !samplesSystem {
+      samplesSystem = true
+      SystemMetricsSampler.shared.start(includeSpeed: session.configuration.showsSpeed)
+    }
     try enqueueFrame()
     playbackState.setPaused(!session.isPlaying)
     renderTask = Task { @MainActor [weak self] in
@@ -80,6 +85,10 @@ final class LiveFloatSource: NSObject, AVPictureInPictureSampleBufferPlaybackDel
 
   func stop(preservingTimer: Bool = false) {
     didStop = true
+    if samplesSystem {
+      samplesSystem = false
+      SystemMetricsSampler.shared.stop()
+    }
     nativePlaybackIsActive = false
     renderTask?.cancel()
     renderTask = nil

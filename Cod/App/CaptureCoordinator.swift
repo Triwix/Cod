@@ -26,6 +26,8 @@ final class CaptureCoordinator: ObservableObject {
             case video(VideoReference, autoFloat: Bool = false)
             case readable(UIImage)
             case saved(SavedReference)
+            /// A tool editor opened with prepared settings, such as a new image set.
+            case editor(FloatingToolConfiguration)
         }
 
         let id = UUID()
@@ -626,6 +628,30 @@ final class CaptureCoordinator: ObservableObject {
         dismissSelectionOnFloatSuccess = false
         isWorking = true
         pip.float(tool: session)
+        if session.document == nil { RecentFloats.shared.record(session.configuration) }
+    }
+
+    /// Recents float straight away. Alarm timers still ask for permission first.
+    func floatRecent(_ configuration: FloatingToolConfiguration) {
+        var config = configuration
+        config.interfaceStyle = currentInterfaceStyle
+        if config.hasTimerAlarm {
+            Task {
+                do { try await FloatingTimerAlarms.shared.authorize(); floatTool(.init(configuration: config)) }
+                catch { toast = .failure("Couldn't start alarm timer", error.localizedDescription) }
+            }
+        } else { floatTool(.init(configuration: config)) }
+    }
+
+    /// Stores picked images and opens the Image Set editor.
+    func openImageSet(_ images: [UIImage]) {
+        do {
+            var config = FloatingToolConfiguration(kind: .slideshow)
+            config.slideNames = try Slideshow.store(images)
+            prioritizeExplicitInput()
+            floatOnlyLaunch = false
+            route = .init(kind: .editor(config))
+        } catch { toast = .failure("Couldn't create image set", error.localizedDescription) }
     }
 
     private func observePiPStatus() {

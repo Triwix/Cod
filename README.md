@@ -7,6 +7,14 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Floathing parity candidate · 1.0 (29)
+
+Adds Countdown To, World Clock, System Monitor (with optional speedometer),
+teleprompter Lines mode, Image Sets, timer preset chips and a Float Video Safari
+extension. The Float tab is reorganized into Crop & float, Now floating, Recents
+and tool cards, with a tool switcher inside Time tools. 268 unit tests pass. See
+[build-29 notes](docs/floathing-parity-29.md).
+
 ## Crop Shortcut candidate · 1.0 (28)
 
 Adds a signed **Screenshot and Crop with Cod** Shortcut for one-tap Back Tap

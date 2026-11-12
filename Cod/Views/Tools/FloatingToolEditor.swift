@@ -39,7 +39,12 @@ struct FloatingToolEditor: View {
 
   var body: some View {
     FloatingEditorLayout {
-      if configuration.kind == .clock {
+      if !restoresConfiguration, let category = FloatCategory.category(for: configuration.kind),
+        category.kinds.count > 1
+      {
+        ToolCategorySwitcher(kinds: category.kinds, selection: kindSelection)
+      }
+      if configuration.kind.showsLiveDate {
         TimelineView(.periodic(from: .now, by: 1)) { tick in preview(at: tick.date) }
       } else { preview(at: Date()) }
       Button {
@@ -56,18 +61,15 @@ struct FloatingToolEditor: View {
           || (try? preparedConfiguration.validate()) == nil
           || (configuration.kind == .countdown && duration.totalSeconds == 0)
           || (configuration.kind == .pomodoro && pomodoroValues == nil)
+          || (configuration.kind == .event && configuration.eventDate <= Date())
       )
       if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
     } settings: {
       if configuration.kind == .countdown {
         Section("Duration") {
-          Menu("Quick duration") {
-            ForEach([1, 5, 10, 15, 25, 30, 60], id: \.self) { minutes in
-              Button("\(minutes) min") {
-                savedDuration = minutes * 60
-              }
-            }
-          }
+          QuickPresetChips(
+            values: [5, 10, 15, 25, 45, 60].map { $0 * 60 }, selection: $savedDuration,
+            label: { "\($0 / 60) min" }, identifier: { "timer-preset-\($0 / 60)" })
           TimerDurationWheels(seconds: $savedDuration)
           if duration.totalSeconds == 0 {
             Text("Choose at least one second.").foregroundStyle(.secondary)
@@ -170,6 +172,84 @@ struct FloatingToolEditor: View {
           }
         }
       }
+      if configuration.kind == .event {
+        Section {
+          TextField("Name, for example Flight or Launch", text: $configuration.eventTitle)
+            .accessibilityIdentifier("event-title")
+          DatePicker(
+            "Date and time", selection: $configuration.eventDate, in: Date()...,
+            displayedComponents: [.date, .hourAndMinute]
+          )
+          .accessibilityIdentifier("event-date")
+          if configuration.eventDate <= Date() {
+            Text("Choose a time in the future.").foregroundStyle(.red)
+          }
+        } header: {
+          Text("Count down to")
+        } footer: {
+          Text("Shows days, hours, minutes and seconds left, then \u{201C}It's time\u{201D} when it arrives. This is visual only; it doesn't sound an alarm.")
+        }
+      }
+      if configuration.kind == .worldClock {
+        Section {
+          ForEach(configuration.worldClockZones, id: \.self) { zone in
+            LabeledContent(WorldClockFormatting.city(zone), value: zone.replacingOccurrences(of: "_", with: " "))
+          }
+          .onDelete { configuration.worldClockZones.remove(atOffsets: $0) }
+          .onMove { configuration.worldClockZones.move(fromOffsets: $0, toOffset: $1) }
+          if configuration.worldClockZones.count < WorldClockFormatting.maximumZones {
+            NavigationLink {
+              FloatingTimeZonePicker(selection: Binding(
+                get: { "" },
+                set: { zone in
+                  if !configuration.worldClockZones.contains(zone) { configuration.worldClockZones.append(zone) }
+                }))
+            } label: {
+              Label("Add city", systemImage: "plus.circle")
+            }
+            .accessibilityIdentifier("world-clock-add")
+          }
+          Toggle("24-hour time", isOn: $configuration.uses24HourClock)
+        } header: {
+          Text("Cities")
+        } footer: {
+          Text("Up to \(WorldClockFormatting.maximumZones) cities. Swipe to remove one. Each shows whether it's already tomorrow or still yesterday there.")
+        }
+      }
+      if configuration.kind == .system {
+        Section {
+          Toggle("Speedometer", isOn: $configuration.showsSpeed)
+            .accessibilityIdentifier("system-speed")
+          if configuration.showsSpeed {
+            Picker("Units", selection: $configuration.usesMetricSpeed) {
+              Text("km/h").tag(true)
+              Text("mph").tag(false)
+            }
+            .pickerStyle(.segmented)
+          }
+        } header: {
+          Text("Readings")
+        } footer: {
+          Text(
+            configuration.showsSpeed
+              ? "Battery, temperature and network speed, plus your current speed. Speed needs location access; iOS shows the location indicator while it floats. Nothing is stored or sent."
+              : "Battery level, device temperature, and download and upload speed across Wi-Fi and cellular. Read on this iPhone only."
+          )
+        }
+      }
+      if configuration.kind == .slideshow {
+        Section {
+          LabeledContent("Images", value: "\(configuration.slideNames.count)")
+          LabeledContent("Next image every", value: "\(Int(configuration.slideInterval)) s")
+          Slider(value: $configuration.slideInterval, in: Slideshow.intervalRange, step: 1)
+            .accessibilityLabel("Seconds per image")
+            .accessibilityIdentifier("slide-interval")
+        } header: {
+          Text("Image set")
+        } footer: {
+          Text("Plays through the set once and stays on the last image. Use the floating window's skip buttons to step one image back or forward, and pause to stay on one.")
+        }
+      }
       Section("Appearance") {
         FloatingAppearancePicker(
           palette: $configuration.palette, customColors: $configuration.customColors)
@@ -188,6 +268,13 @@ struct FloatingToolEditor: View {
       Section {
         Text(helpText)
       }
+    }
+    .task(id: systemSamplingKey) {
+      // Live readings for the preview while a System Monitor is being set up.
+      guard configuration.kind == .system else { return }
+      SystemMetricsSampler.shared.start(includeSpeed: configuration.showsSpeed)
+      defer { SystemMetricsSampler.shared.stop() }
+      try? await Task.sleep(for: .seconds(86_400))
     }
     .navigationTitle(configuration.kind.title)
     .navigationBarTitleDisplayMode(.inline)
@@ -261,8 +348,28 @@ struct FloatingToolEditor: View {
       value: config.kind == .clock ? config.snapshot(elapsed: 0, date: date).value : nil)
   }
 
+  private var systemSamplingKey: String {
+    "\(configuration.kind == .system)-\(configuration.showsSpeed)"
+  }
+
+  /// Switching tools keeps colors but starts a fresh, unfloated setup.
+  private var kindSelection: Binding<FloatingToolKind> {
+    Binding(
+      get: { configuration.kind },
+      set: { kind in
+        guard kind != configuration.kind else { return }
+        configuration.kind = kind
+        session = nil
+        errorMessage = nil
+      })
+  }
+
   private var helpText: String {
     switch configuration.kind {
+    case .event, .worldClock, .system:
+      return "Reads the current time and readings each second, so it's always up to date when you look."
+    case .slideshow:
+      return "Images are kept in Cod while the set is in use. Your originals in Photos aren't changed."
     case .clock:
       return
         "Shows the current time in your selected time zone. When you return, it reads the current system time rather than counting missed updates."
@@ -452,6 +559,67 @@ struct FloatingToolPlaybackControls: View {
           Text("Alarm: \(date.formatted(date: .omitted, time: .standard))").font(.footnote)
         } else {
           Text("Alarm paused").font(.footnote).foregroundStyle(.secondary)
+        }
+      }
+    }
+  }
+}
+
+/// Floathing-style row of sibling tools at the top of an editor.
+struct ToolCategorySwitcher: View {
+  let kinds: [FloatingToolKind]
+  @Binding var selection: FloatingToolKind
+
+  var body: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 8) {
+        ForEach(kinds) { kind in
+          let selected = kind == selection
+          Button {
+            selection = kind
+          } label: {
+            VStack(spacing: 4) {
+              Image(systemName: kind.icon).font(.body.weight(.medium))
+              Text(kind.shortTitle).font(.caption2.weight(.semibold))
+            }
+            .frame(minWidth: 64, minHeight: 50)
+            .padding(.horizontal, 4)
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .background(
+              selected ? Color.codActionBackground : Color(.secondarySystemGroupedBackground),
+              in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(kind.title)
+          .accessibilityAddTraits(selected ? .isSelected : [])
+          .accessibilityIdentifier("switch-\(kind.rawValue)")
+        }
+      }
+    }
+  }
+}
+
+/// Tappable preset values with the current choice highlighted.
+struct QuickPresetChips: View {
+  let values: [Int]
+  @Binding var selection: Int
+  let label: (Int) -> String
+  let identifier: (Int) -> String
+
+  var body: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 8) {
+        ForEach(values, id: \.self) { value in
+          let selected = value == selection
+          Button(label(value)) { selection = value }
+            .font(.subheadline.weight(.semibold).monospacedDigit())
+            .padding(.horizontal, 14).frame(minHeight: 36)
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .background(
+              selected ? Color.codActionBackground : Color(.tertiarySystemFill), in: Capsule())
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier(identifier(value))
         }
       }
     }

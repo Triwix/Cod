@@ -39,6 +39,11 @@ struct RouteView: View {
             NavigationStack { FloatingVideoView(reference: reference, autoFloat: autoFloat) }
         case let .readable(image):
             NavigationStack { ReadableImageView(image: image) }
+        case let .editor(configuration):
+            NavigationStack {
+                FloatingToolEditor(configuration: configuration)
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+            }
         case let .saved(reference):
             NavigationStack { SavedReferenceEditor(reference: reference) }
 

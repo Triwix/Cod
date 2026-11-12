@@ -1,0 +1,8 @@
+:root { color-scheme: light dark; --accent: #1f6feb; }
+body { font: 15px -apple-system, system-ui, sans-serif; margin: 0; padding: 16px; min-width: 260px; }
+h1 { font-size: 17px; margin: 0 0 12px; }
+button { width: 100%; font: 600 15px -apple-system, system-ui; color: #fff; background: var(--accent);
+  border: 0; border-radius: 12px; padding: 12px; min-height: 44px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.note, #status { font-size: 13px; opacity: .7; margin: 8px 0; }
+#status:empty { display: none; }

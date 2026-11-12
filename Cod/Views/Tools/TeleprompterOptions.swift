@@ -18,6 +18,14 @@ struct TeleprompterOptions: View {
           Slider(value: $configuration.wordsPerMinute, in: 60...500, step: 10).accessibilityLabel(
             "Words per minute")
         }
+      } else if configuration.prompterMode == .lines {
+        Text("Shows one line at a time with the next lines dimmed below. Line breaks and sentence ends start a new line.")
+          .font(.footnote).foregroundStyle(.secondary)
+        if configuration.targetReadingDuration == nil {
+          LabeledContent("Reading speed", value: "\(Int(configuration.wordsPerMinute)) words/min")
+          Slider(value: $configuration.wordsPerMinute, in: 60...500, step: 10).accessibilityLabel(
+            "Words per minute")
+        }
       } else if configuration.targetReadingDuration == nil {
         LabeledContent("Scroll speed", value: "\(Int(configuration.scrollSpeed))")
         Slider(value: $configuration.scrollSpeed, in: 10...120, step: 2).accessibilityLabel(

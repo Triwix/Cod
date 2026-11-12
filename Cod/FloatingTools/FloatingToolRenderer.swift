@@ -9,6 +9,7 @@ enum FloatingToolRenderer {
     let text: NSAttributedString
     let travel: CGFloat
     let words: WordPresentation
+    let lines: LinePresentation
     let margin: CGFloat
     private let storage: NSTextStorage
     private let manager: NSLayoutManager
@@ -16,9 +17,10 @@ enum FloatingToolRenderer {
     init(_ configuration: FloatingToolConfiguration) {
       margin = configuration.sideMargin
       let wordCount = configuration.text.split(whereSeparator: \.isWhitespace).count
+      let pace = configuration.safeTargetReadingDuration.map { Double(max(1, wordCount)) * 60 / $0 } ?? configuration.wordsPerMinute
       words = WordPresentation(
-        text: configuration.text, groupSize: configuration.wordsAtATime,
-        wordsPerMinute: configuration.safeTargetReadingDuration.map { Double(wordCount) * 60 / $0 } ?? configuration.wordsPerMinute)
+        text: configuration.text, groupSize: configuration.wordsAtATime, wordsPerMinute: pace)
+      lines = LinePresentation(text: configuration.text, wordsPerMinute: pace)
       text = FloatingToolRenderer.script(configuration)
       storage = NSTextStorage(attributedString: text)
       manager = NSLayoutManager()
@@ -45,9 +47,11 @@ enum FloatingToolRenderer {
 
     func duration(_ configuration: FloatingToolConfiguration) -> TimeInterval {
       if let target = configuration.safeTargetReadingDuration { return target }
-      return configuration.prompterMode == .words
-        ? max(1, words.duration)
-        : max(1, Double(travel) / configuration.scrollSpeed)
+      switch configuration.prompterMode {
+      case .words: return max(1, words.duration)
+      case .lines: return max(1, lines.duration)
+      case .scroll: return max(1, Double(travel) / configuration.scrollSpeed)
+      }
     }
   }
 
@@ -92,6 +96,10 @@ enum FloatingToolRenderer {
           return
         }
         let scriptElapsed = max(0, elapsed - delay)
+        if configuration.prompterMode == .lines {
+          drawLines(layout.lines.frame(at: scriptElapsed), configuration: configuration)
+          return
+        }
         if configuration.prompterMode == .words {
           context.cgContext.saveGState()
           context.cgContext.clip(
@@ -118,6 +126,14 @@ enum FloatingToolRenderer {
       } else {
         if configuration.kind == .clock {
           drawClock(snapshot, configuration: configuration)
+          return
+        }
+        if configuration.kind == .slideshow {
+          drawSlide(configuration: configuration, elapsed: elapsed, snapshot: snapshot)
+          return
+        }
+        if !snapshot.rows.isEmpty {
+          drawRows(snapshot, configuration: configuration)
           return
         }
         if let progress = snapshot.progress {
@@ -187,6 +203,112 @@ enum FloatingToolRenderer {
         monospaced: monospaced)
       y += height + gap * scale
     }
+  }
+
+  /// Current line large and centered, the next lines dimmer below, and a
+  /// position counter at the bottom.
+  private static func drawLines(_ frame: LinePresentation.Frame, configuration: FloatingToolConfiguration) {
+    let color = configuration.colors.foreground
+    let margin = CGFloat(configuration.sideMargin)
+    let width = size.width - margin * 2
+    func paragraph() -> NSMutableParagraphStyle {
+      let style = NSMutableParagraphStyle()
+      style.alignment = .center
+      style.lineBreakMode = .byWordWrapping
+      return style
+    }
+    func fitted(_ text: String, size start: CGFloat, weight: UIFont.Weight, alpha: CGFloat, maxHeight: CGFloat)
+      -> (NSAttributedString, CGFloat)
+    {
+      var fontSize = start
+      while true {
+        let attributed = NSAttributedString(
+          string: text,
+          attributes: [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: weight),
+            .foregroundColor: color.withAlphaComponent(alpha), .paragraphStyle: paragraph(),
+          ])
+        let height = ceil(attributed.boundingRect(
+          with: CGSize(width: width, height: .greatestFiniteMagnitude),
+          options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil).height)
+        if height <= maxHeight || fontSize <= 18 { return (attributed, min(height, maxHeight)) }
+        fontSize -= 2
+      }
+    }
+    let base = CGFloat(configuration.fontSize) * 1.5
+    let current = fitted(frame.current, size: base, weight: .semibold, alpha: 1, maxHeight: 250)
+    let upcoming = frame.upcoming.enumerated().map { offset, line in
+      fitted(line, size: base * 0.62, weight: .medium, alpha: offset == 0 ? 0.55 : 0.32, maxHeight: 80)
+    }
+    let gap: CGFloat = 18
+    let total = current.1 + upcoming.reduce(0) { $0 + $1.1 + gap }
+    var y = max(40, (size.height - 60 - total) / 2)
+    current.0.draw(with: CGRect(x: margin, y: y, width: width, height: current.1),
+      options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+    y += current.1 + gap
+    for (text, height) in upcoming {
+      text.draw(with: CGRect(x: margin, y: y, width: width, height: height),
+        options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+      y += height + gap
+    }
+    if frame.count > 0 {
+      draw("\(frame.index + 1)/\(frame.count)", in: CGRect(x: 40, y: size.height - 62, width: size.width - 80, height: 40),
+        size: 26, weight: .medium, color: color.withAlphaComponent(0.5), monospaced: true)
+    }
+  }
+
+  /// A label/value table for World Clock and System Monitor.
+  private static func drawRows(_ snapshot: FloatingToolSnapshot, configuration: FloatingToolConfiguration) {
+    let color = configuration.colors.foreground
+    let rows = snapshot.rows
+    let rowHeight = min(130, (size.height - 80) / CGFloat(max(1, rows.count)))
+    let fontSize = min(64, rowHeight * 0.5)
+    var y = (size.height - rowHeight * CGFloat(rows.count)) / 2
+    for (index, row) in rows.enumerated() {
+      if index > 0 {
+        color.withAlphaComponent(0.14).setFill()
+        UIRectFillUsingBlendMode(CGRect(x: 56, y: y, width: size.width - 112, height: 2), .normal)
+      }
+      let labelFont = UIFont.systemFont(ofSize: fontSize * 0.72, weight: .medium)
+      let noteFont = UIFont.systemFont(ofSize: fontSize * 0.42, weight: .regular)
+      let valueFont = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .semibold)
+      let hasNote = !row.note.isEmpty
+      let labelY = y + (rowHeight - labelFont.lineHeight - (hasNote ? noteFont.lineHeight : 0)) / 2
+      (row.label as NSString).draw(
+        in: CGRect(x: 64, y: labelY, width: size.width * 0.5, height: labelFont.lineHeight + 4),
+        withAttributes: [.font: labelFont, .foregroundColor: color.withAlphaComponent(0.8)])
+      if hasNote {
+        (row.note as NSString).draw(
+          in: CGRect(x: 64, y: labelY + labelFont.lineHeight, width: size.width * 0.5, height: noteFont.lineHeight + 4),
+          withAttributes: [.font: noteFont, .foregroundColor: color.withAlphaComponent(0.55)])
+      }
+      let right = NSMutableParagraphStyle()
+      right.alignment = .right
+      (row.value as NSString).draw(
+        in: CGRect(x: size.width * 0.4, y: y + (rowHeight - valueFont.lineHeight) / 2, width: size.width * 0.6 - 64, height: valueFont.lineHeight + 4),
+        withAttributes: [.font: valueFont, .foregroundColor: color, .paragraphStyle: right])
+      y += rowHeight
+    }
+  }
+
+  /// One image of a set, fitted inside the frame, with a small position badge.
+  private static func drawSlide(configuration: FloatingToolConfiguration, elapsed: TimeInterval, snapshot: FloatingToolSnapshot) {
+    let names = configuration.slideNames
+    guard !names.isEmpty else { return }
+    let index = Slideshow.index(elapsed: elapsed, interval: configuration.slideInterval, count: names.count)
+    if let image = Slideshow.image(named: names[index]) {
+      let pixels = image.pixelSize
+      let scale = min(size.width / max(1, pixels.width), size.height / max(1, pixels.height))
+      let fitted = CGSize(width: pixels.width * scale, height: pixels.height * scale)
+      image.draw(in: CGRect(
+        x: (size.width - fitted.width) / 2, y: (size.height - fitted.height) / 2,
+        width: fitted.width, height: fitted.height))
+    }
+    let badge = CGRect(x: size.width - 150, y: size.height - 62, width: 126, height: 42)
+    UIColor.black.withAlphaComponent(0.45).setFill()
+    UIBezierPath(roundedRect: badge, cornerRadius: 21).fill()
+    draw("\(index + 1)/\(names.count)", in: badge.insetBy(dx: 4, dy: 5), size: 26, weight: .semibold,
+      color: .white, monospaced: true)
   }
 
   private static func drawWords(_ text: String, configuration: FloatingToolConfiguration) {

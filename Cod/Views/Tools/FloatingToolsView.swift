@@ -1,34 +1,5 @@
 import SwiftUI
 
-struct FloatingToolRows: View {
-  var body: some View {
-    Section {
-      NavigationLink {
-        FloatingTextView()
-      } label: {
-        CodRowLabel("Text", systemImage: "text.alignleft", detail: "Type, paste or read a photo")
-      }.accessibilityIdentifier("tool-text")
-    } header: {
-      Text("Text & reading")
-    } footer: {
-      Text(
-        "Turn on Teleprompter to scroll or show word groups"
-      )
-    }
-    Section {
-      ForEach(FloatingToolKind.allCases.filter { $0 != .teleprompter && $0 != .document }) { kind in
-        NavigationLink {
-          FloatingToolEditor(kind: kind)
-        } label: {
-          CodRowLabel(kind.title, systemImage: kind.icon)
-        }.accessibilityIdentifier("tool-\(kind.rawValue)")
-      }
-    } header: {
-      Text("Time & focus")
-    }
-  }
-}
-
 struct PDFReferenceView: View {
   private enum PageField: Hashable { case page, first, last }
   let reference: PDFReference

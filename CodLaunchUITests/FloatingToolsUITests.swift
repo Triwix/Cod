@@ -456,7 +456,11 @@ final class FloatingToolsUITests: XCTestCase {
         reveal(file)
         XCTAssertFalse(cod.buttons["choose-video"].exists)
         XCTAssertFalse(cod.buttons["tool-pdf"].exists)
-        XCTAssertTrue(cod.buttons["tool-text"].exists)
+        // Tool cards sit below Crop & float; scroll to the Text tile, then back.
+        let text = cod.buttons["tool-text"]
+        reveal(text)
+        XCTAssertTrue(text.exists)
+        reveal(file, towardTop: true)
         XCTAssertFalse(cod.buttons["tool-teleprompter"].exists)
         XCTAssertFalse(cod.buttons["scroll-photo"].exists)
         XCTAssertFalse(cod.buttons["read-photo-text"].exists)

@@ -1,6 +1,10 @@
 import PhotosUI
 import SwiftUI
 
+enum HomeDestination: Hashable {
+    case text, tool(FloatingToolKind), safari
+}
+
 struct HomeView: View {
     @EnvironmentObject private var coordinator: CaptureCoordinator
     @EnvironmentObject private var pip: PiPPinController
@@ -8,6 +12,9 @@ struct HomeView: View {
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var cropPickerItem: PhotosPickerItem?
+    @State private var setItems: [PhotosPickerItem] = []
+    @State private var destination: HomeDestination?
+    @StateObject private var recents = RecentFloats.shared
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var imports = MediaImportState()
     @State private var selectedFile: URL?
@@ -31,8 +38,8 @@ struct HomeView: View {
                 #endif
                 if coordinator.quickSharePreview != nil { Section { quickShare } }
                 if pip.isActive || pip.status.isBusy {
-                    Section("Currently floating") {
-                        floatingStatus
+                    Section("Now floating") {
+                        ActiveSessionCard()
                         if let session = pip.toolSession {
                             NavigationLink("Playback controls") { FloatingToolSessionView(session: session) }
                         }
@@ -73,18 +80,26 @@ struct HomeView: View {
                 Section {
                     choosePhoto
                     screenshotActions
+                    PhotosPicker(selection: $setItems, maxSelectionCount: Slideshow.maximumImages, matching: .images, photoLibrary: .shared()) {
+                        CodRowLabel("Image Set", systemImage: "photo.stack", detail: "Float several photos and step through them")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.plain)
+                        .accessibilityIdentifier("choose-image-set")
                     Button { importingFile = true } label: {
                         CodRowLabel("Choose File", systemImage: "folder")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.buttonStyle(.plain)
                         .accessibilityIdentifier("choose-file")
                 } header: {
-                    Text("Media & documents")
+                    Text("Crop & float")
                 } footer: {
                     Text("Files can be images, videos, animated GIFs or PDFs")
                 }
                 .disabled(coordinator.isWorking || isLoadingPhoto)
-                FloatingToolRows()
+                if !recents.items.isEmpty {
+                    Section("Recents") { RecentFloatsStrip(recents: recents) }
+                }
+                toolCards
                 if settings.hasCompletedIntroduction, !settings.hasDismissedFloatSetupTip {
                     Section("Quick setup") { setupCard }
                 }
@@ -100,6 +115,13 @@ struct HomeView: View {
             .codFormStyle()
             .onAppear { coordinator.isFloatListVisible = true }
             .onDisappear { coordinator.isFloatListVisible = false }
+            .navigationDestination(item: $destination) { destination in
+                switch destination {
+                case .text: FloatingTextView()
+                case .tool(let kind): FloatingToolEditor(kind: kind)
+                case .safari: SafariVideoGuide()
+                }
+            }
             .navigationTitle("Cod")
             .background(Color(.systemGroupedBackground))
             .task { timerAlarms.monitor() }
@@ -114,6 +136,7 @@ struct HomeView: View {
         }
         .task(id: pickerItem) { await loadPhoto(pickerItem, crop: false) }
         .task(id: cropPickerItem) { await loadPhoto(cropPickerItem, crop: true) }
+        .task(id: setItems) { await loadImageSet(setItems) }
         .task(id: selectedFile) { if let selectedFile { await openFile(selectedFile) } }
     }
 
@@ -154,6 +177,55 @@ struct HomeView: View {
             else { coordinator.floatImmediately(image: image, origin: .imported) }
         } catch {
             if !Task.isCancelled { imports.fail(error, for: request) }
+        }
+    }
+
+    /// Image sets need at least two pictures; one picture floats normally.
+    private func loadImageSet(_ items: [PhotosPickerItem]) async {
+        guard !items.isEmpty else { return }
+        let request = imports.begin()
+        defer {
+            if imports.accepts(request) { imports.finish(request); setItems = [] }
+        }
+        do {
+            var images: [UIImage] = []
+            for item in items {
+                guard let data = try await item.loadTransferable(type: Data.self) else {
+                    throw VisualFileImport.ImportError.unavailable
+                }
+                try Task.checkCancellation()
+                images.append(try VisualFileImport.image(from: data))
+            }
+            guard imports.accepts(request) else { return }
+            if images.count == 1 { coordinator.floatImmediately(image: images[0], origin: .imported) }
+            else { coordinator.openImageSet(images) }
+        } catch { if !Task.isCancelled { imports.fail(error, for: request) } }
+    }
+
+    @ViewBuilder private var toolCards: some View {
+        Section {
+            ToolCategoryCard(title: FloatCategory.time.title, icon: FloatCategory.time.icon, tint: FloatCategory.time.tint) {
+                ForEach(FloatCategory.time.kinds) { kind in
+                    ToolTile(title: kind.title, icon: kind.icon, tint: FloatCategory.time.tint, identifier: "tool-\(kind.rawValue)") {
+                        destination = .tool(kind)
+                    }
+                }
+            }
+        }
+        Section {
+            ToolCategoryCard(title: "Text, system & web", icon: "square.grid.2x2", tint: .orange) {
+                ToolTile(title: "Text & Teleprompter", icon: "text.alignleft", tint: .orange, identifier: "tool-text") {
+                    destination = .text
+                }
+                ToolTile(title: FloatingToolKind.system.title, icon: FloatingToolKind.system.icon, tint: .green, identifier: "tool-system") {
+                    destination = .tool(.system)
+                }
+                ToolTile(title: "Safari Video", icon: "play.rectangle.on.rectangle", tint: .purple, identifier: "tool-safari-video") {
+                    destination = .safari
+                }
+            }
+        } footer: {
+            Text("Text holds notes, scripts and text read from a photo, with an optional teleprompter. System Monitor shows battery, temperature and network speed. Safari Video floats videos from web pages.")
         }
     }
 
@@ -369,27 +441,6 @@ struct HomeView: View {
             .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
-    }
-
-    private var floatingStatus: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if pip.isActive || pip.status.isBusy {
-                Label(
-                    pip.isActive ? "Floating over other apps" : "Opening floating window…",
-                    systemImage: "pip.fill"
-                )
-                .font(.headline.weight(.medium))
-                Text(
-                    pip.isActive
-                        ? "Open another app yourself; Cod doesn't switch apps for you. iOS controls the floating window's size and position."
-                        : "Keep Cod open while iOS prepares Picture in Picture."
-                )
-                .font(.footnote).foregroundStyle(.secondary)
-                Button("Stop Floating", role: .destructive) { pip.stop() }
-                    .buttonStyle(CodActionStyle(emphasis: .secondary, compact: true))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
     }
 }
 

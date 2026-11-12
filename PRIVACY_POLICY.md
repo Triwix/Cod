@@ -92,6 +92,15 @@ access to the whole photo library. Reading the latest screenshot requires Photos
 permission. Saving an image to Photos requests the relevant permission when
 needed. Permission can be changed in iOS Settings.
 
+The System Monitor's optional Speedometer uses your location only while a
+monitor with Speedometer turned on is floating or being set up, after you allow
+location access. Cod reads your current speed, shows it in the floating window
+and immediately discards it. Locations are never stored, logged or sent. Turning
+off the Speedometer or closing the monitor stops location updates; iOS shows its
+location indicator while they run. Battery level, device temperature and
+network throughput are read on the iPhone for display only; Cod reads byte
+counts, never the content or destination of your traffic.
+
 Cod reads the clipboard when you tap Paste. It writes to the clipboard when
 you choose a copy action. An explicit image Paste can also read GIF data to
 preserve animation. Shared
@@ -110,6 +119,17 @@ Additional text and PDF-page actions in Shortcuts use only the input explicitly
 supplied to them. Selecting Cod in a text share sheet renders that text locally
 and follows the same manual-open or tapped-notification flow as shared images.
 The app does not open itself from its Share extension.
+
+The optional Float Video with Cod Safari extension runs in Safari after you
+turn it on in iPhone Settings and allow it on websites. It looks for video
+elements on the pages you visit so it can show a Float button; tapping it asks
+Safari to play that video in Picture in Picture. The extension does not read,
+store or send page content, browsing history or form data, and it doesn't
+communicate with the Cod app or the developer. It saves only your Show Float
+button preference in Safari's extension storage.
+
+Image sets copy the photos you pick into Cod's private storage on this iPhone.
+Sets that no saved reference uses are deleted the next time Cod opens.
 
 Float Saved Reference actions, widgets and configurable controls use the saved
 item or Library favorite you select. They ask iOS to open Cod to start playback;

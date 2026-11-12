@@ -17,7 +17,7 @@ struct FloatingIntroductionView: View {
       }
       Section("1 · Try a float") {
         Text(
-          "On Float, choose a photo or video, paste an image, or choose a file. Text includes an optional Teleprompter. Time & focus contains the timer and other tools."
+          "On Float, choose a photo or video, paste an image, or choose a file. Text includes an optional Teleprompter. Time, System and Web hold the timers, clocks, monitor and Safari video."
         )
         Text(
           "Keep Cod open until the floating window appears. Then open another app yourself. Pinch the window to resize it; iOS controls its available sizes and buttons."

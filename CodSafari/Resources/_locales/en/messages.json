@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "Float Video with Cod",
+    "description": "Name of the Safari extension."
+  },
+  "extension_description": {
+    "message": "Adds a Float button to web videos so they play in Picture in Picture over other apps.",
+    "description": "Description of the Safari extension."
+  }
+}

@@ -2,50 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Only Apple's OS-provided encryption (Keychain and file protection). -->
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <false/>
-    <key>CodAppGroup</key>
-    <string>$(COD_APP_GROUP)</string>
-    <key>CodShortcutTeamIdentifier</key>
-    <string>$(DEVELOPMENT_TEAM)</string>
-    <key>CodFloatURLScheme</key>
-    <string>$(COD_URL_SCHEME)</string>
-    <key>CodShareLaunchPolicy</key>
-    <string>$(COD_SHARE_LAUNCH_POLICY)</string>
-    <key>CodPrivacyPolicyURL</key>
-    <string>$(COD_PRIVACY_POLICY_URL)</string>
-    <key>CodShareSettingsAccessGroup</key>
-    <string>$(AppIdentifierPrefix)com.josh.cod.share-settings</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>$(COD_DISPLAY_NAME)</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.josh.cod</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>$(COD_URL_SCHEME)</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -68,43 +28,88 @@
 			<key>LSHandlerRank</key>
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
-			<array><string>com.adobe.pdf</string></array>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
 		</dict>
 		<dict>
-			<key>CFBundleTypeName</key><string>Video</string>
-			<key>CFBundleTypeRole</key><string>Viewer</string>
-			<key>LSHandlerRank</key><string>Alternate</string>
-			<key>LSItemContentTypes</key><array><string>public.movie</string></array>
+			<key>CFBundleTypeName</key>
+			<string>Video</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.movie</string>
+			</array>
 		</dict>
 	</array>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.josh.cod</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(COD_URL_SCHEME)</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CodAppGroup</key>
+	<string>$(COD_APP_GROUP)</string>
+	<key>CodFloatURLScheme</key>
+	<string>$(COD_URL_SCHEME)</string>
+	<key>CodPrivacyPolicyURL</key>
+	<string>$(COD_PRIVACY_POLICY_URL)</string>
+	<key>CodShareLaunchPolicy</key>
+	<string>$(COD_SHARE_LAUNCH_POLICY)</string>
+	<key>CodShareSettingsAccessGroup</key>
+	<string>$(AppIdentifierPrefix)com.josh.cod.share-settings</string>
+	<key>CodShortcutTeamIdentifier</key>
+	<string>$(DEVELOPMENT_TEAM)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-
-	<!-- Required for AVPictureInPictureController to keep the pinned snippet
-	     alive while the user is in another app. -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>Cod sounds an alarm when a timer you enable finishes, even while your phone is locked.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cod uses your location only for the System Monitor speedometer you turn on. Your speed is shown on this iPhone and is never stored or sent anywhere.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cod reads screenshots you allow so the latest-screenshot control and actions can float or crop them.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>location</string>
 	</array>
-
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Cod reads screenshots you allow so the latest-screenshot control and actions can float or crop them.</string>
-	<key>NSAlarmKitUsageDescription</key>
-	<string>Cod sounds an alarm when a timer you enable finishes, even while your phone is locked.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
-
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
