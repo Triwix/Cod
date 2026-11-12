@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (27)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (28)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,10 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 28 adds the signed crop Shortcut, iPhone-only packaging, Translate on
+  by default and the new icon. Eight tool UI tests that already failed on build
+  27 still need fixing. Test the crop Back Tap flow on the phone. See
+  [build-28 notes](docs/crop-shortcut-28.md).
 - Build 27 keeps native resolution for Shortcut and Share images, and shows an
   "open Cod" screen after sharing to the Cod icon. 250 unit tests, 13
   share/notification UI tests, the Release archive and both verifiers pass.

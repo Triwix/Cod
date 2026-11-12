@@ -4,6 +4,7 @@ import UIKit
 enum FloatShortcut: String, CaseIterable, Identifiable {
     case shareImage = "Float with Cod"
     case screenshot = "Screenshot and Float with Cod"
+    case screenshotCrop = "Screenshot and Crop with Cod"
 
     var id: String { rawValue }
     var fileURL: URL? {

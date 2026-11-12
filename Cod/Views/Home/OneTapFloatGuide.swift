@@ -65,9 +65,10 @@ struct OneTapFloatGuide: View {
             }
 
             Section {
-                step(1, "In **Shortcuts**, create a new shortcut with **Take Screenshot**.")
-                step(2, "Add Cod's **Crop With Cod** action. Press and hold its **Image** field → **Select Variable** → choose the **Screenshot** output from Take Screenshot.")
-                step(3, "Name it **Screenshot, Crop, then Float**. In iPhone Settings → **Accessibility → Touch → Back Tap**, assign it to Double Tap or Triple Tap.")
+                shortcutButton(.screenshotCrop)
+                step(1, "Choose **Shortcuts**, then confirm **Add Shortcut**.")
+                step(2, "iPhone Settings → **Accessibility → Touch → Back Tap**.")
+                step(3, "Assign **Screenshot and Crop with Cod** to Double Tap or Triple Tap.")
                 step(4, "Back Tap to open the fresh screenshot in Cod's crop editor. Draw a region, then **double-tap inside it** or tap **Float**.")
             } header: {
                 Label("Back Tap · crop first", systemImage: "crop")
@@ -145,20 +146,34 @@ struct OneTapFloatGuide: View {
             Button {
                 installingShortcut = shortcut
             } label: {
-                Label(
-                    shortcut == .shareImage ? "Add Share-Sheet Shortcut" : "Add Screenshot Shortcut",
-                    systemImage: "plus.circle.fill"
-                )
-                .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 44)
+                Label(Self.installTitle(shortcut), systemImage: "plus.circle.fill")
+                    .font(.body.weight(.medium)).frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(CodActionStyle())
-            .accessibilityIdentifier(
-                shortcut == .shareImage ? "install-share-shortcut" : "install-screenshot-shortcut")
+            .accessibilityIdentifier(Self.installIdentifier(shortcut))
         } else {
             Text(
-                "The installer isn't available in this build. Open Shortcuts and use Float With Cod with its Image field connected to Shortcut Input (sharing) or the Take Screenshot output (Back Tap)."
+                shortcut == .screenshotCrop
+                    ? "The installer isn't available in this build. In Shortcuts, add Take Screenshot, then Crop With Cod with its Image field set to the Screenshot output."
+                    : "The installer isn't available in this build. Open Shortcuts and use Float With Cod with its Image field connected to Shortcut Input (sharing) or the Take Screenshot output (Back Tap)."
             )
             .font(.footnote)
+        }
+    }
+
+    private static func installTitle(_ shortcut: FloatShortcut) -> String {
+        switch shortcut {
+        case .shareImage: return "Add Share-Sheet Shortcut"
+        case .screenshot: return "Add Screenshot Shortcut"
+        case .screenshotCrop: return "Add Crop Shortcut"
+        }
+    }
+
+    private static func installIdentifier(_ shortcut: FloatShortcut) -> String {
+        switch shortcut {
+        case .shareImage: return "install-share-shortcut"
+        case .screenshot: return "install-screenshot-shortcut"
+        case .screenshotCrop: return "install-crop-shortcut"
         }
     }
 

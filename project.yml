@@ -14,7 +14,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "27"
+    CURRENT_PROJECT_VERSION: "28"
     DEVELOPMENT_TEAM: UE492DNA6V
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -47,7 +47,7 @@ targets:
         COD_APP_GROUP: group.com.josh.cod.store
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        TARGETED_DEVICE_FAMILY: "1,2"
+        TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_STRICT_CONCURRENCY: targeted
@@ -78,7 +78,7 @@ targets:
         COD_APP_GROUP: group.com.josh.cod.store
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) COD_CONTROLS_EXTENSION"
         SWIFT_STRICT_CONCURRENCY: targeted
-        TARGETED_DEVICE_FAMILY: "1,2"
+        TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
 
   CodShare:
@@ -105,7 +105,7 @@ targets:
         COD_APP_GROUP: group.com.josh.cod.store
         COD_URL_SCHEME: cod-store
         APPLICATION_EXTENSION_API_ONLY: YES
-        TARGETED_DEVICE_FAMILY: "1,2"
+        TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: NO
         SWIFT_STRICT_CONCURRENCY: targeted
         SKIP_INSTALL: YES
@@ -135,7 +135,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Cod Launch Lab
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        TARGETED_DEVICE_FAMILY: "1,2"
+        TARGETED_DEVICE_FAMILY: "1"
     dependencies:
       - target: Cod
         embed: false

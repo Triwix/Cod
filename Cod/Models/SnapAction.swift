@@ -89,6 +89,6 @@ enum SnapAction: String, Codable, CaseIterable, Identifiable {
     ]
 
     static let defaultEnabled: Set<SnapAction> = [
-        .float, .copyImage, .copyText, .save, .share, .qr,
+        .float, .copyImage, .copyText, .save, .share, .qr, .translate,
     ]
 }

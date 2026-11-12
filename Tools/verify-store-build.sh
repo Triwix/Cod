@@ -40,7 +40,7 @@ app_team=$(/usr/libexec/PlistBuddy -c 'Print :CodShortcutTeamIdentifier' "$app_p
     print -u2 'Shortcut installers do not match this app/team. Regenerate and sign them before shipping.'
     exit 1
 }
-for workflow in 'Float with Cod' 'Screenshot and Float with Cod'; do
+for workflow in 'Float with Cod' 'Screenshot and Float with Cod' 'Screenshot and Crop with Cod'; do
     [[ -s "$app_path/Shortcuts/Store/$workflow.shortcut" ]] || { print -u2 "Missing Shortcut installer: $workflow"; exit 1; }
 done
 private_patterns='LSApplicationWorkspace|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle:|controlsStyle|ShareSourceContext|SourceAppReturn|BSProcessHandle|_FBSScene|SSEnvironmentDescription|com\.josh\.cod\.float-image|openThroughResponderChain|responder-chain|api\.imgur\.com'

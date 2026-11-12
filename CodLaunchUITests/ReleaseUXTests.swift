@@ -70,9 +70,13 @@ final class ReleaseUXTests: XCTestCase {
         let crop = cod.staticTexts["Back Tap · crop first"]
         for _ in 0..<16 where !crop.isHittable { cod.swipeUp() }
         XCTAssertTrue(crop.isHittable)
-        let binding = cod.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Crop With Cod action")).firstMatch
-        for _ in 0..<4 where !binding.isHittable { cod.swipeUp() }
-        XCTAssertTrue(binding.isHittable)
+        // The crop-first flow now ships as a signed installer with the binding built in.
+        let install = cod.buttons["install-crop-shortcut"]
+        for _ in 0..<4 where !install.isHittable { cod.swipeUp() }
+        XCTAssertTrue(install.isHittable)
+        let assign = cod.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Screenshot and Crop with Cod")).firstMatch
+        for _ in 0..<4 where !assign.isHittable { cod.swipeUp() }
+        XCTAssertTrue(assign.exists)
         let explanation = cod.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Crop With Cod always opens the editor")).firstMatch
         for _ in 0..<4 where !explanation.isHittable { cod.swipeUp() }
         XCTAssertTrue(explanation.exists)

@@ -7,6 +7,13 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Crop Shortcut candidate · 1.0 (28)
+
+Adds a signed **Screenshot and Crop with Cod** Shortcut for one-tap Back Tap
+cropping, makes 1.0 iPhone-only, turns Translate on by default and uses the new
+app icon. 254 unit tests pass. Eight older tool UI tests fail the same way on
+build 27 and still need investigating. See [build-28 notes](docs/crop-shortcut-28.md).
+
 ## Share resolution candidate · 1.0 (27)
 
 Crop With Cod, Float With Cod and the Share extension now keep native screenshot

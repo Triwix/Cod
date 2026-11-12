@@ -107,6 +107,7 @@
 		9DE344399B0B7A915B81A34D /* SharedImageInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3205D012BEC1EB67CED854E /* SharedImageInbox.swift */; };
 		9E11AB1A78E3385ADEAEA578 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DECC961B6DD22C6A3E7E56 /* Haptics.swift */; };
 		A3F2DB6F54DDA773CB96AEC9 /* PiPStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDFAA2B0DE2C7082035270 /* PiPStateTests.swift */; };
+		A6056B251C087EC35EB57A06 /* Build28Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30E325BB522256A787ACE5E /* Build28Tests.swift */; };
 		A9417B15F700B3B5E679111D /* Redesign21UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA86CE9F40AB066F187AFCE /* Redesign21UITests.swift */; };
 		AAC1330F8B9577549618CAD0 /* Polish12Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F05EC1F3CE75ADC1BEB508 /* Polish12Tests.swift */; };
 		ABBCE0F20E1568CAC1557438 /* TextReferenceDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF6E5661747C199101C6AC6 /* TextReferenceDraft.swift */; };
@@ -326,6 +327,7 @@
 		D666E062B9335666724D4E37 /* ReleaseUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseUXTests.swift; sourceTree = "<group>"; };
 		DAB33ADB8430128051E65D6D /* CodIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodIntents.swift; sourceTree = "<group>"; };
 		DDF6A9E824A47E70519A7194 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
+		E30E325BB522256A787ACE5E /* Build28Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Build28Tests.swift; sourceTree = "<group>"; };
 		E3843502AD81C28E8D487EBB /* FloatingToolRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingToolRenderer.swift; sourceTree = "<group>"; };
 		E399C34FC9F91FC95CB97103 /* TemporaryMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryMedia.swift; sourceTree = "<group>"; };
 		E43709D172A41C7A175C3966 /* Release18Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Release18Tests.swift; sourceTree = "<group>"; };
@@ -480,6 +482,7 @@
 		7F4C631D063AD71495BF2E0C /* CodTests */ = {
 			isa = PBXGroup;
 			children = (
+				E30E325BB522256A787ACE5E /* Build28Tests.swift */,
 				BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */,
 				9E9E5FBBDF8B3ECD746A987D /* Features16Tests.swift */,
 				54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */,
@@ -1034,6 +1037,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6056B251C087EC35EB57A06 /* Build28Tests.swift in Sources */,
 				0C1EBE269B6DA4FACFE92531 /* CropInteractionTests.swift in Sources */,
 				C8C68E3C5233B72BBB8793F4 /* Features16Tests.swift in Sources */,
 				B334299C114CD8E46DFD7DE8 /* FloatEntryPointTests.swift in Sources */,
@@ -1123,7 +1127,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1164,7 +1168,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1206,7 +1210,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1260,7 +1264,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) COD_CONTROLS_EXTENSION";
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1302,7 +1306,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1360,7 +1364,7 @@
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1402,7 +1406,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1448,7 +1452,7 @@
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1472,7 +1476,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_STRICT_CONCURRENCY = targeted;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1491,7 +1495,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.josh.cod.launch-harness";
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

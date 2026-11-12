@@ -39,6 +39,24 @@ final class ShortcutFlowTests: XCTestCase {
         print("SCREENSHOT SHORTCUT RECEIPT: \(cod.staticTexts["received-image-size"].label)")
     }
 
+    func testSignedCropShortcutImportsAndOpensTheCropEditor() {
+        continueAfterFailure = false
+        install("Add Crop Shortcut")
+        cod.terminate()
+        let play = shortcuts.buttons.matching(NSPredicate(format: "label IN {'Run Shortcut', 'play', 'Run'}"))
+            .firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 8), shortcuts.debugDescription)
+        play.tap()
+        finishSystemHandoff()
+        // Crop With Cod always opens the editor; it must not float directly.
+        XCTAssertTrue(cod.buttons["cancel-selection"].waitForExistence(timeout: 8), cod.debugDescription)
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "Crop Shortcut opened the editor"
+        shot.lifetime = .keepAlways
+        add(shot)
+        cod.buttons["cancel-selection"].tap()
+    }
+
     private func install(_ button: String, fromHome: Bool = false) {
         cod.launchArguments = fromHome ? ["--show-float-setup"] : []
         cod.launch()

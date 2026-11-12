@@ -13,12 +13,12 @@ let teamID = CommandLine.arguments.count == 5 ? CommandLine.arguments[4] : "UE49
 let output = URL(fileURLWithPath: CommandLine.arguments[3], isDirectory: true)
 try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 
-func floatAction(input: [String: Any]) -> [String: Any] {
+func codAction(_ intent: String, input: [String: Any]) -> [String: Any] {
     [
-        "WFWorkflowActionIdentifier": "\(bundleID).FloatWithCodIntent",
+        "WFWorkflowActionIdentifier": "\(bundleID).\(intent)",
         "WFWorkflowActionParameters": [
             "AppIntentDescriptor": [
-                "AppIntentIdentifier": "FloatWithCodIntent",
+                "AppIntentIdentifier": intent,
                 "BundleIdentifier": bundleID,
                 "Name": appName,
                 "TeamIdentifier": teamID,
@@ -28,17 +28,26 @@ func floatAction(input: [String: Any]) -> [String: Any] {
         ],
     ]
 }
+// Float With Cod and Crop With Cod share the same required `image` parameter.
+func floatAction(input: [String: Any]) -> [String: Any] { codAction("FloatWithCodIntent", input: input) }
+func cropAction(input: [String: Any]) -> [String: Any] { codAction("CropWithCodIntent", input: input) }
 let identity = ["BundleIdentifier": bundleID, "TeamIdentifier": teamID]
 let identityData = try PropertyListSerialization.data(fromPropertyList: identity, format: .xml, options: 0)
 try identityData.write(to: output.appendingPathComponent("InstallerInfo.plist"), options: .atomic)
 
 let captureID = UUID().uuidString
+let cropCaptureID = UUID().uuidString
 let templates: [(String, [[String: Any]], Bool)] = [
     ("Float with Cod", [floatAction(input: ["Type": "ExtensionInput"])], true),
     ("Screenshot and Float with Cod", [
         ["WFWorkflowActionIdentifier": "is.workflow.actions.takescreenshot",
          "WFWorkflowActionParameters": ["UUID": captureID]],
         floatAction(input: ["Type": "ActionOutput", "OutputUUID": captureID, "OutputName": "Screenshot"]),
+    ], false),
+    ("Screenshot and Crop with Cod", [
+        ["WFWorkflowActionIdentifier": "is.workflow.actions.takescreenshot",
+         "WFWorkflowActionParameters": ["UUID": cropCaptureID]],
+        cropAction(input: ["Type": "ActionOutput", "OutputUUID": cropCaptureID, "OutputName": "Screenshot"]),
     ], false),
 ]
 for (name, actions, shareSheet) in templates {
