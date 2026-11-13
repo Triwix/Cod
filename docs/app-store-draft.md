@@ -1,216 +1,230 @@
 # Cod 1.0 — App Store submission draft
 
-Not published or submitted. The account owner must approve all answers and
-replace the marked fields. App-name availability has not been checked in
-App Store Connect. No enrollment, purchase, signing agreement or upload is
-authorized by this document.
+Draft for build 32. Nothing here has been published or entered in App Store
+Connect. The account owner must approve every answer and fill in the marked
+fields. Whether the name is available is only known once the App Store Connect
+record is created.
 
 ## Listing
 
-Name: Cod
+Character limits: name and subtitle 30 each, promotional text 170, keywords
+100 bytes, description 4,000.
 
-Subtitle: Floating references & tools
+**App Store name (29):** Cod: Crop & Float Screenshots
+(The Home Screen name stays "Cod".)
 
-Suggested category: Utilities
+**Subtitle (28):** Snip, OCR & pin over any app
 
-Description:
+**Promotional text (152):**
+Take a screenshot, crop the part you need and float it over any app. Copy or
+translate its text, run it from Back Tap or Shortcuts. No ads, no tracking.
 
-Keep a reference image in view while you use other apps. Cod turns a photo or
-screenshot into an iOS Picture in Picture window you can move and resize.
+**Keywords (97):**
+`pip,picture in picture,overlay,reference,copy text,scan,qr,barcode,shortcut,back tap,teleprompter`
+(The name and subtitle are already indexed, so their words aren't repeated.
+Don't use other apps' names.)
 
-Choose a photo inside Cod, float your latest saved screenshot, or add the
-ready-made Float with Cod Shortcut once to float an image from Photos' share
-sheet. The Shortcut comes preconfigured; adding it requires your confirmation
-in Apple's Shortcuts interface. iOS controls first-use permission prompts.
+**Category:** Utilities (primary), Productivity (secondary).
 
-Need just one part of an image? Zoom, move and crop a region before floating it.
-The sectioned Float list also offers typed/pasted text, PDF pages, a timer,
-stopwatch, Current Time and Pomodoro session. Text includes an optional
-teleprompter with scrolling or centered word groups, a starting countdown and
-adjustable reading pace. Read editable text from a photo with on-device
-recognition, compare it with the original, and save named cards or scripts to reuse.
-Auto-scroll an image or selected PDF page range with finite pause/seek playback.
-Import local videos and animated GIFs from Photos or Files. Choose sound,
-repeat or a cropped video region without changing the original. Favorite library
-items for repeated use, or choose a saved reference in a Shortcut, widget or control.
-Choose background and text colors in each text/live-tool editor. On iOS 26 or
-later, optionally enable a system alarm when a timer finishes; permission is
-required. With that switch off, the timer is visual-only.
-Cod also
-offers on-device text recognition, barcode scanning, copying, saving and image
-history. Processing stays on your device; there are no accounts, ads or analytics.
+**Description:**
 
-Optional screenshot controls for Control Center, the Lock Screen and supported
-Action Buttons require iOS 18 or later, a saved screenshot and Photos permission.
-Back Tap uses a separate screenshot Shortcut that you assign in iPhone Settings.
+> Take a screenshot, crop the part you need, and keep it floating over any app.
+>
+> Cod turns a slice of your screen into a floating window you can move and
+> resize while you work: a recipe step, a map, a few lines of code, a reference
+> photo, the list you're copying from.
+>
+> CROP AND FLOAT
+> • Draw a box around what matters, then double-tap it to float.
+> • Tap a detected block of content to select it instantly.
+> • Zoom in and fine-tune each edge for an exact crop.
+> • Move and resize the floating window like any Picture in Picture video.
+>
+> RUN IT FROM SHORTCUTS
+> • Back Tap: add "Screenshot and Crop with Cod", tap the back of your
+>   iPhone, draw a box, and it floats. Prefer the whole screen? "Screenshot
+>   and Float with Cod" skips the crop.
+> • Share Sheet: add "Float with Cod" once, then float any photo straight from
+>   Photos.
+> • Say "Crop my latest screenshot with Cod" to jump straight to cropping.
+> • Build your own: Crop With Cod, Float With Cod, Float Text With Cod and
+>   Float PDF Page With Cod work in any Shortcut.
+> • Control Center, Lock Screen and Action Button controls float your latest
+>   screenshot (iOS 18 or later).
+>
+> COPY THE TEXT, SCAN THE CODE
+> • Copy Text reads the words in your crop on your device and puts them on the
+>   clipboard.
+> • Translate turns the text in your crop into another language.
+> • Scan Code reads QR codes and barcodes inside the selection.
+> • Copy, save or share any crop. Everything you float lands in Recents; star
+>   what you use most.
+>
+> MORE THINGS TO FLOAT WITH COD PRO
+> Notes and teleprompter scripts, PDFs you can flip through page by page, image
+> sets, videos and GIFs. A timer, stopwatch, Pomodoro, a countdown to any date,
+> a clock and a world clock. A system monitor with the readings you pick:
+> battery, temperature, network speed, storage, memory and CPU. A speedometer.
+> Make the floating window wide, square or tall, and save setups for widgets
+> and Control Center.
+>
+> Try Cod Pro free for 7 days with a monthly or yearly subscription, or buy it
+> once with Lifetime. Cropping, floating images, Shortcuts, Copy Text,
+> Translate and Scan Code are always free. Float web videos from Safari with
+> the free Float Video extension.
+>
+> PRIVATE BY DESIGN
+> Everything happens on your device. No account, no ads, no analytics.
+>
+> Good to know: iOS shows one Picture in Picture window at a time. Cod opens
+> briefly to start floating; then switch to any app.
+>
+> Subscriptions renew automatically until canceled. Cancel anytime in
+> Settings at least 24 hours before the end of the current period.
+> Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+> Privacy Policy: [HOSTED POLICY URL]
 
-iOS allows one Picture in Picture window at a time and controls its buttons,
-size and movement. Cod opens to start floating; switch apps when the image is
-visible. The native Cod app icon in Share doesn't automatically launch Cod.
+**Support URL:** [OWNER MUST PROVIDE]
 
-Keywords draft: pip,photo,screenshot,reference,teleprompter,pdf,timer,stopwatch,clock,ocr,crop
+**Privacy policy URL:** [OWNER MUST HOST `PRIVACY_POLICY.md`]; also set
+`COD_PRIVACY_POLICY_URL` so the Pro screen links to it.
 
-Support URL: [OWNER MUST PROVIDE]
+**Copyright / publisher name:** [OWNER MUST PROVIDE]
 
-Privacy-policy URL: [OWNER MUST APPROVE AND HOST]
+**App price:** Free, with in-app purchases.
 
-Copyright/publishing identity: [OWNER MUST PROVIDE]
+## In-app purchases
 
-Price and storefront availability: [OWNER MUST CHOOSE]
+Create these with exactly these product IDs. Family Sharing is on for all three.
 
-## Reviewer notes — concise draft
+| Product ID | Type | Display name | Price | Offer |
+|---|---|---|---|---|
+| `cod.pro.yearly` | Auto-renewable, group "Cod Pro", level 1 | Cod Pro Yearly | $11.99 / year | 1-week free trial |
+| `cod.pro.monthly` | Auto-renewable, group "Cod Pro", level 2 | Cod Pro Monthly | $1.99 / month | 1-week free trial |
+| `cod.pro.lifetime` | Non-consumable | Cod Pro Lifetime | $19.99 | — |
 
-No login, subscription, server or purchase is needed. A supported physical iPhone
-or iPad is required to assess the actual PiP picture. Simulator controls alone
-do not establish successful visible playback.
+Each product needs:
+- a review screenshot of the Pro screen
+- a short description: "Unlock everything in Cod: live tools, text and teleprompter, videos, PDFs, image sets and saved cards."
 
-Quick test: open Cod → Photos & videos → Float, select a local photo and keep Cod
-foreground until PiP appears. Then switch to another app yourself. Cropping is
-available through the separate Crop action. First-run guidance is optional;
-Settings → Quick introduction reopens it.
+Submit the products together with the app version.
 
-Fast sharing: Float → Floating guide & setup → Add Share-Sheet Shortcut. Choose
-Shortcuts and confirm Add Shortcut; its shared-image input is already bound.
-In Photos, Share → Float with Cod in the action list below the app icons. Allow
-the system image-sharing prompt if shown. The Cod app icon is a different route:
-it prepares the image in an App Group, then the user opens Cod or taps an optional
-local notification. The Share extension does not launch the app directly.
+**Free:**
+- crop and float images and screenshots
+- the Share and Back Tap Shortcuts
+- Copy Text, Translate and Scan Code
+- Recents with stars
+- Safari Video
 
-Text opens a single card/script editor. Enable Teleprompter to see playback
-settings. Choose File supports images, local videos, animated GIFs and PDFs;
-PDF page selection is one row, and Auto-scroll pages exposes a bounded range.
-Named cards/presets are in Library. Time & focus contains the remaining tools.
+**Pro:**
+- live tools and window shapes
+- Teleprompter and text cards
+- videos and GIFs
+- PDFs
+- image sets
+- saved cards and presets, including their widgets, controls and Shortcut action
 
-Implementation disclosure: still-image PiP is a generated looping video through
-AVQueuePlayer/AVPlayerLayer and AVKit. Tools and finite reference/script playback
-use AVSampleBufferDisplayLayer and AVKit's documented playback delegate. Imported
-videos use normal finite playback, with optional repeat. Audio playback background
-mode supports active PiP, not unrelated background work. No private launch,
-automatic return to another app or hidden control settings are used.
+Setting up a Pro tool is free; only floating it asks for Pro.
 
-Optional timer alarms require iOS 26+ and a user-granted AlarmKit permission;
-the alarm switch defaults off. Screenshot controls require iOS 18+ and access to
-the saved screenshot. Permissions are requested only when needed. The photo picker
-does not require broad Photos access. Images, documents and recognition are
-processed locally. This disclosure is not a claim that the still-image/tool
-content use is preapproved; Apple decides App Review acceptance.
+## Reviewer notes (for the App Review field)
 
-## Internal verification detail — not the reviewer-note field
+No login is needed. Floating needs a physical iPhone: Picture in Picture doesn't
+show content in the Simulator.
 
-No login is required.
+**Free features:**
+1. Float tab → Choose Photo → pick a photo. Keep Cod open until the floating window appears, then switch apps yourself.
+2. Crop: take a screenshot, open Cod and choose Crop, draw a box, then double-tap it to float. The action bar also has Copy Text, Translate and Scan Code.
+3. Shortcuts: Float → Floating guide & setup offers three ready-made Shortcuts. "Float with Cod" appears in Photos' share sheet under the app icons. "Screenshot and Crop with Cod" can be assigned to Back Tap in Settings → Accessibility → Touch.
 
-1. Open Cod and tap Choose Photo. Select a locally available image. Keep Cod
-   foreground while Picture in Picture opens, then switch to another app.
-2. For sharing, use Add Float with Cod on the Float tab. Choose Shortcuts in the
-   file-sharing interface and confirm Add Shortcut. The workflow already accepts
-   Images, enables Share Sheet and binds Shortcut Input to the image parameter.
-3. Open a photo in Photos → Share → scroll to the action list → Float with Cod.
-   This is the Shortcut action, not the Cod app icon in the app-icon row.
-   Approve the system image-sharing permission if shown.
-4. Photo and screenshot rows have separate Float/Crop actions. One tap float
-   applies to pasted/shared images; explicit Float Shortcuts
-   still float their supplied image directly. They do not substitute the latest
-   photo or use clipboard transport.
-5. Inspect the real image, replace it with another, resize the native PiP window,
-   and restore it into Cod. PiP needs a supported physical device.
+**Cod Pro:**
+- Tap Float on any tool (for example Float → Timer) to open the Pro screen.
+- It also opens from Settings → Cod Pro.
+- Use the sandbox account to start the 7-day trial or buy Lifetime.
+- Restore Purchases is on the Pro screen and in Settings.
 
-Implementation disclosure: Cod encodes the selected still image into a short
-looping video and uses AVQueuePlayer/AVPlayerLayer with the public AVKit PiP
-controller. It uses native PiP controls and playback background mode; it has
-no private launch, origin-detection, app-suspension or control-hiding APIs.
-Idle prewarm playback is released when Cod backgrounds without an active float.
-This is a disclosure, not a claim of approval for the still-image PiP use case.
+**How floating works:**
+- **Still images:** Cod encodes them into a short looping video played with AVPlayerLayer and the public AVPictureInPictureController.
+- **Live tools, scrolling text and PDF pages:** Cod draws timestamped frames into AVSampleBufferDisplayLayer and uses AVKit's documented sample-buffer playback delegate. Play/pause and skip control the tool (for example, skip turns PDF pages).
+- **Imported videos:** ordinary AVPlayer playback.
+- **Controls:** Cod adds no custom buttons to the window and hides no system controls.
+- **No private APIs:** no private APIs, automatic app switching or app suspension.
 
-Build 21 reviewer checks: use the sectioned Float list, enter a short text reference
-and Float; choose a PDF and zoom/select/crop a page; start Timer, Stopwatch, Current Time,
-Pomodoro and Teleprompter with several paragraphs. Live tools render real,
-timestamped frames through AVSampleBufferDisplayLayer and the documented AVKit
-sample-buffer playback delegate. Check native play/pause, restore and close;
-these tools do not insert custom buttons into PiP. Timer alarms are off by
-default. On iOS 26+, explicitly enable Alarm when finished and authorize the
-system prompt to test an audible alarm, including while locked. This is a
-native duration-based AlarmKit timer with its required countdown widget/Live
-Activity. The chosen duration is remembered with hour/minute/second wheels.
-Keep alarm running when PiP closes defaults on; Off stops the timer and cancels its
-alarm when PiP closes. Restoring to Cod doesn't cancel it. Pause/resume/restart
-updates it; cancel from Float, including after relaunch. Other tools don't
-schedule alarms. Test a local MP4/MOV through the combined Photos & videos picker or Choose File;
-these use ordinary finite AVPlayer playback, not generated-image looping.
-Videos repeat by default with native seeking/play-pause controls; Repeat Video
-can be disabled during playback. Pomodoro numbers support direct keyboard entry
-as well as steppers, with input ranges validated before Float.
-System is the default generated-text/tool appearance, with fixed Dark/Light/Yellow
-and custom-color alternatives. Current Time's setup preview updates each second;
-search is visible on entry to Time Zone, and changed line sizes can be reset.
-Scrolling scripts use cached layout and a 60-fps target; check smoothness on a
-physical device rather than interpreting simulator callbacks as a visual pass.
-An empty text/script field uses a gray sample; focusing it edits an empty draft.
-In word mode, adjust word-group size and reading speed. Favorite a library item
-and verify it stays in the stable Favorites section above new history. Clear Recent
-History preserves it; Delete Everything, Including Favorites removes it after
-confirmation. Rounded previews and Float stay above scrolling settings. Timers
-use smooth circular progress; Stopwatch offers optional hundredths. Permission denial is shown rather than silently claiming
-an alarm was armed.
-Only Apple can determine whether these content uses satisfy review requirements.
+**Background modes:**
+- **Audio:** keeps an active floating window playing.
+- **Location:** used only by the Speedometer tool while it's open or floating. iOS shows the location indicator, and Speedometer asks for permission the first time it's opened.
 
-Additional reference checks: Text → Import Photo performs local recognition and
-keeps the original available for comparison. Save a named text card or script in
-Library → Saved cards & presets; reopen it to edit source/settings. In Shortcuts,
-add Float Saved Reference and choose that card. A configurable Home Screen widget
-and system control on iOS 18+ offer the same selection and open Cod after an
-authenticated tap. No Share-extension direct launch is used. Delete Everything
-also removes saved cards/presets; Clear Recent History preserves them.
+**Extensions:**
+- **Share extension:** it saves the image to an App Group. Then the user opens Cod or taps an optional local notification. It never launches Cod itself.
+- **Safari extension, Float Video with Cod:** it adds a Float button to web videos and starts Safari's own Picture in Picture. It doesn't read, store or send page content.
 
-Choose File accepts animated GIFs and prepares genuine local video playback.
-Photos/Files must supply original animation data; the app-icon Share extension
-still prepares a still image. Auto-scroll images or a bounded PDF page range
-uses finite, pausable/seekable reference playback. Crop Region prepares a separate
-local video without changing its source. Teleprompter guide, margins, spacing and
-Finish in… affect its finite playback; countdown is additional to reading time.
+**Optional system features:**
+- Timer alarms use AlarmKit (iOS 26 or later). They're off by default and ask for permission when turned on.
+- Screenshot controls need iOS 18 or later and Photos access.
+
+Apple decides whether these uses meet App Review requirements. This note
+describes the implementation; it isn't a claim of approval.
+
+## Internal pre-submission checks (not for the reviewer field)
+
+On the signed release build, on a physical iPhone:
+
+1. **Floating:**
+   - a photo, a crop, text, a PDF in Flip Pages, a timer, System Monitor, Speedometer and a video
+   - each window shape
+   - restoring into Cod
+   - closing the window
+2. **Shortcuts:**
+   - all three ready-made Shortcuts install
+   - Back Tap crop works
+   - Share Sheet float works
+3. **Pro, in the sandbox:**
+   - start the trial
+   - Pro badges disappear
+   - Manage Subscription works
+   - buying Lifetime while subscribed shows the cancel warning
+   - Restore works
+   - after a refund or expiry, Pro locks again
+4. **Free tier:** Pro tools preview, then show the Pro screen instead of floating.
+5. **Store checks:** run `Tools/verify-store-build.sh <Cod.app> --submission` and `Tools/verify-supported-source.sh` (with zsh).
+6. **Launch checks:** iOS 17 and 18 launch checks, and VoiceOver on the crop editor.
 
 ## Privacy, export and rating answers to review
 
-- No developer collection, tracking, advertising, analytics, login or upload
-  service is implemented. Images, OCR, editable cards and history remain local;
-  saved cards/history may be in device backups. Widget/control configuration uses
-  a local App Group catalog of reference identifiers/names, not a sync service.
-  Confirm the final App Privacy answers against the final
-  signed build and hosted policy.
-- Optional local notifications are UUID-only. No remote push service or image
-  attachment is used.
-- No third-party SDKs or custom encryption were found. The owner must answer
-  export-compliance questions; no legal determination or encryption exemption
-  has been filed on their behalf.
-- Complete Apple's current age-rating questionnaire. There is no public content
-  feed, chat, advertising or embedded unrestricted web browser; image content is
-  supplied by the user. Do not infer a final age rating from this draft.
-- Accessibility: large-text/layout checks cover the tested home/setup screens.
-  Do not claim full-app VoiceOver, Voice Control or accessibility certification
-  without completing those checks, particularly the gesture-based crop editor.
+- **App Privacy:**
+  - No developer collection, tracking, advertising, analytics or accounts.
+  - Images, recognized text, Recents and saved cards stay on the device (and in device backups).
+  - Apple processes purchases; Cod receives only StoreKit's signed transaction status.
+  - Location for the Speedometer is read on the device and never stored or sent.
+  - Confirm the final answers against the signed build and the hosted policy.
+- **Notifications:** optional, local only, carrying an ID and no image.
+- **Third-party code:** no third-party SDKs and no custom encryption. The owner answers the export-compliance questions (`ITSAppUsesNonExemptEncryption` is false).
+- **Age rating:** complete the questionnaire. There's no user-generated feed, chat, ads or unrestricted web browser; content comes from the user.
+- **Accessibility:** don't claim full VoiceOver or Voice Control support until the gesture-based crop editor has been checked.
 
-## Screenshots and evidence
+## Screenshots
 
-Four unmodified 13-inch iPad screenshot candidates are available in
-[release-22 captures](release-hardening-22.md#ipad-screenshot-drafts). They use
-authored sample content, meet the 2064 × 2752 dimensions and have been visually
-inspected. They are not uploaded or approved final marketing assets, and do not
-replace the physical-device floating example below.
+Required: the 6.9" iPhone set, 1320 × 2868 portrait. There's no iPad set
+because 1.0 is iPhone-only. Up to 10 screenshots; the first three carry the
+pitch. Use only content the owner has rights to.
 
-Prepare final marketing screenshots from the signed release candidate, showing
-only content the owner has rights to use. Include the Float tab, Shortcut setup,
-crop editor and an actual physical-device PiP example. Simulator QA attachments
-are useful layout evidence, not a substitute for a real PiP screenshot.
+| # | Caption | Shows | Capture on |
+|---|---------|-------|---------|
+| 1 | **Crop any screen. Float it on top.** | A cropped snippet floating over another app | Phone |
+| 2 | **Snip just the part you need.** | Crop editor with a selection and the action bar | Simulator |
+| 3 | **Copy text from any snip.** | Copy Text result | Simulator |
+| 4 | **Back Tap to snip. Share to float.** | Floating Guide with the ready-made Shortcuts | Simulator |
+| 5 | **Built for Shortcuts.** | Cod's actions in the Shortcuts editor | Phone |
+| 6 | **Scan QR codes and barcodes.** | Scan Code result | Phone |
+| 7 | **Timers, PDFs, teleprompter and more.** | A Pro tool floating over an app | Phone |
+| 8 | **Everything you float, one tap away.** | Recents with starred items | Simulator |
 
-The current [screenshot and owner-handoff plan](submission-package-18.md)
-separates draft work from actual submission. No account answers or uploads have
-been made on the owner's behalf.
+Optional: a 15–30 second preview video of Back Tap → crop → float. It also helps
+App Review see real floating.
 
-Apple references checked October 28, 2026:
+Apple references:
 
-- [Submission checklist](https://developer.apple.com/app-store/submitting/)
-- [Current SDK/deployment requirements](https://developer.apple.com/news/upcoming-requirements/)
-- [App Review requirements](https://developer.apple.com/app-store/review/guidelines/)
-- [Sharing prebuilt Shortcuts](https://support.apple.com/guide/shortcuts/share-shortcuts-apdf01f8c054/ios)
+- [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) (3.1.1 and 3.1.2 for in-app purchase and subscriptions)
+- [Offering a free trial](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-introductory-offers-for-auto-renewable-subscriptions/)
 - [Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
 - [Version information and keyword limits](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/)
-- [App Privacy definitions](https://developer.apple.com/app-store/app-privacy-details/)
+- [App Privacy details](https://developer.apple.com/app-store/app-privacy-details/)
