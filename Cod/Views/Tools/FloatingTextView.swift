@@ -148,6 +148,15 @@ struct FloatingTextView: View {
           TeleprompterOptions(configuration: $draft.configuration)
         }
       }
+      if !usesImageLayout, draft.teleprompterEnabled {
+        Section {
+          FloatWindowShapePicker(selection: $draft.configuration.windowShape)
+        } header: {
+          Text("Window")
+        } footer: {
+          Text("Tall shapes show more lines at once.")
+        }
+      }
       if !usesImageLayout {
         Section("Readability") {
           FloatingAppearancePicker(
@@ -188,7 +197,7 @@ struct FloatingTextView: View {
       }.disabled(usesImageLayout)
       if usesImageLayout {
         Text(
-          "Named cards save editable text and script settings. Use an image favorite in Library to reuse the original photo."
+          "Named cards save editable text and script settings. Star the image in Recents to reuse the original photo."
         )
         .font(.footnote).foregroundStyle(.secondary)
       }
@@ -347,12 +356,13 @@ struct FloatingTextView: View {
       config.duration = imageScroll.duration(speed: config.scrollSpeed)
       let created = FloatingToolSession(configuration: config, document: imageScroll)
       session = created
-      coordinator.floatTool(created)
+      coordinator.floatTool(created, feature: .textCards)
     } else if draft.teleprompterEnabled {
       let created = FloatingToolSession(configuration: draft.prepared(for: style))
       session = created
       coordinator.floatTool(created)
     } else {
+      guard coordinator.unlocks(.textCards) else { return }
       dismiss()
       coordinator.floatImmediately(image: preview, origin: .imported)
     }

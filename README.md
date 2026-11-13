@@ -7,6 +7,25 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Cod Pro · 1.0 (32)
+
+Cod Pro unlocks live tools, the teleprompter and text cards, videos and GIFs,
+PDFs, image sets and saved cards. Pick monthly or yearly (each with a 7-day free
+trial) or lifetime. Cropping and floating images, the Shortcuts, Copy Text,
+Translate and Scan Code stay free. Setting up a Pro tool is free; only floating
+it asks for Pro. StoreKit 2, local products in `StoreKit/CodPro.storekit`. See
+[build-32 notes](docs/pro-32.md).
+
+## Recents and window shapes · 1.0 (31)
+
+Floating tools can be wide, standard, square, tall or portrait. System Monitor
+has a switch for every reading and adds connection, free storage, memory, CPU
+and Low Power Mode; Speedometer is its own tool. Library is now **Recents**:
+everything floated, newest first, with stars to pin favorites to the top. Multi-page
+PDFs open in **Flip Pages**: paused, with the floating window's skip buttons turning
+one page at a time. See
+[build-31 notes](docs/recents-shapes-31.md).
+
 ## UI test repair · 1.0 (30)
 
 Fixes the eight tool UI tests that had failed since build 27. Xcode 27.2

@@ -206,26 +206,29 @@ struct HomeView: View {
         Section {
             ToolCategoryCard(title: FloatCategory.time.title, icon: FloatCategory.time.icon, tint: FloatCategory.time.tint) {
                 ForEach(FloatCategory.time.kinds) { kind in
-                    ToolTile(title: kind.title, icon: kind.icon, tint: FloatCategory.time.tint, identifier: "tool-\(kind.rawValue)") {
+                    ToolTile(title: kind.title, icon: kind.icon, tint: FloatCategory.time.tint, identifier: "tool-\(kind.rawValue)", isPro: true) {
                         destination = .tool(kind)
                     }
                 }
             }
         }
         Section {
-            ToolCategoryCard(title: "Text, system & web", icon: "square.grid.2x2", tint: .orange) {
-                ToolTile(title: "Text & Teleprompter", icon: "text.alignleft", tint: .orange, identifier: "tool-text") {
+            ToolCategoryCard(title: "Text, device & web", icon: "square.grid.2x2", tint: .orange, columns: 2) {
+                ToolTile(title: "Text & Teleprompter", icon: "text.alignleft", tint: .orange, identifier: "tool-text", isPro: true) {
                     destination = .text
                 }
-                ToolTile(title: FloatingToolKind.system.title, icon: FloatingToolKind.system.icon, tint: .green, identifier: "tool-system") {
+                ToolTile(title: FloatingToolKind.system.title, icon: FloatingToolKind.system.icon, tint: .green, identifier: "tool-system", isPro: true) {
                     destination = .tool(.system)
+                }
+                ToolTile(title: FloatingToolKind.speedometer.title, icon: FloatingToolKind.speedometer.icon, tint: .green, identifier: "tool-speedometer", isPro: true) {
+                    destination = .tool(.speedometer)
                 }
                 ToolTile(title: "Safari Video", icon: "play.rectangle.on.rectangle", tint: .purple, identifier: "tool-safari-video") {
                     destination = .safari
                 }
             }
         } footer: {
-            Text("Text holds notes, scripts and text read from a photo, with an optional teleprompter. System Monitor shows battery, temperature and network speed. Safari Video floats videos from web pages.")
+            Text("Text holds notes, scripts and text read from a photo, with an optional teleprompter. System Monitor shows the readings you pick, like battery, network, storage and CPU. Speedometer shows how fast you're moving. Safari Video floats videos from web pages.")
         }
     }
 

@@ -1,5 +1,6 @@
 import CoreLocation
 import Darwin
+import Network
 import UIKit
 
 /// One reading for the System Monitor tool. Everything comes from public,
@@ -14,8 +15,51 @@ struct SystemMetrics: Equatable {
   var uploadRate: Double?
   /// Meters per second from Core Location, nil when unavailable or off.
   var speed: Double?
+  var connection: String?
+  var freeStorage: Int64?
+  var memoryUsed: UInt64?
+  var memoryTotal: UInt64 = ProcessInfo.processInfo.physicalMemory
+  /// 0...1 across all cores, nil until two samples exist.
+  var cpuUsage: Double?
+  var lowPowerMode = false
 
   static let placeholder = SystemMetrics()
+
+  func text(for metric: SystemMetric) -> String {
+    switch metric {
+    case .battery: return batteryText
+    case .temperature: return thermalText
+    case .download: return Self.rateText(downloadRate)
+    case .upload: return Self.rateText(uploadRate)
+    case .connection: return connection ?? "—"
+    case .storage: return freeStorage.map { "\(Self.bytesText(Double($0))) free" } ?? "—"
+    case .memory:
+      guard let memoryUsed, memoryTotal > 0 else { return "—" }
+      return "\(Self.gigabytes(memoryUsed)) / \(Self.gigabytes(memoryTotal)) GB"
+    case .cpu:
+      guard let cpuUsage, cpuUsage.isFinite else { return "—" }
+      return "\(Int((min(1, max(0, cpuUsage)) * 100).rounded()))%"
+    case .lowPower: return lowPowerMode ? "On" : "Off"
+    }
+  }
+
+  static func bytesText(_ bytes: Double) -> String {
+    guard bytes.isFinite, bytes >= 0 else { return "—" }
+    let units = ["B", "KB", "MB", "GB", "TB"]
+    var scaled = bytes
+    var unit = 0
+    while scaled >= 1_000, unit < units.count - 1 {
+      scaled /= 1_000
+      unit += 1
+    }
+    let digits = unit < 2 || scaled >= 100 ? 0 : 1
+    return String(format: "%.\(digits)f %@", scaled, units[unit])
+  }
+
+  static func gigabytes(_ bytes: UInt64) -> String {
+    let value = Double(bytes) / 1_073_741_824
+    return value >= 10 ? String(format: "%.0f", value) : String(format: "%.1f", value)
+  }
 
   var batteryText: String {
     guard let batteryLevel else { return "—" }
@@ -97,9 +141,82 @@ struct NetworkCounters: Equatable {
   }
 }
 
+/// Busy and total CPU ticks summed over every core.
+struct CPUTicks: Equatable {
+  var busy: UInt64
+  var total: UInt64
+
+  /// Share of time the CPU was busy between two readings. Counters that went
+  /// backwards (a core went offline) count as "no data".
+  static func usage(from old: CPUTicks, to new: CPUTicks) -> Double? {
+    guard new.total > old.total, new.busy >= old.busy else { return nil }
+    return min(1, Double(new.busy - old.busy) / Double(new.total - old.total))
+  }
+
+  static func read() -> CPUTicks? {
+    var cores: natural_t = 0
+    var info: processor_info_array_t?
+    var count: mach_msg_type_number_t = 0
+    guard host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cores, &info, &count) == KERN_SUCCESS,
+      let info
+    else { return nil }
+    defer {
+      vm_deallocate(
+        mach_task_self_, vm_address_t(UInt(bitPattern: info)),
+        vm_size_t(Int(count) * MemoryLayout<integer_t>.stride))
+    }
+    var busy: UInt64 = 0
+    var total: UInt64 = 0
+    for core in 0..<Int(cores) {
+      let base = core * Int(CPU_STATE_MAX)
+      func ticks(_ state: Int32) -> UInt64 { UInt64(UInt32(bitPattern: info[base + Int(state)])) }
+      let working = ticks(CPU_STATE_USER) + ticks(CPU_STATE_SYSTEM) + ticks(CPU_STATE_NICE)
+      busy += working
+      total += working + ticks(CPU_STATE_IDLE)
+    }
+    return CPUTicks(busy: busy, total: total)
+  }
+}
+
+enum DeviceReadings {
+  /// Active, wired and compressed memory: what the system is holding on to.
+  static func memoryUsed() -> UInt64? {
+    var stats = vm_statistics64()
+    var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.stride / MemoryLayout<integer_t>.stride)
+    let result = withUnsafeMutablePointer(to: &stats) {
+      $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+        host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
+      }
+    }
+    guard result == KERN_SUCCESS else { return nil }
+    var pageSize: vm_size_t = 0
+    guard host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS else { return nil }
+    let pages = UInt64(stats.active_count) + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)
+    return pages * UInt64(pageSize)
+  }
+
+  /// Space available for things people choose to keep, as Settings reports
+  /// it. Declared in the privacy manifest (reason 85F4.1: shown to the user).
+  static func freeStorage() -> Int64? {
+    let home = URL(fileURLWithPath: NSHomeDirectory())
+    return try? home.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+      .volumeAvailableCapacityForImportantUsage
+  }
+
+  static func connectionText(_ path: NWPath) -> String {
+    guard path.status == .satisfied else { return "Offline" }
+    if path.usesInterfaceType(.wifi) { return "Wi-Fi" }
+    if path.usesInterfaceType(.cellular) { return "Cellular" }
+    if path.usesInterfaceType(.wiredEthernet) { return "Ethernet" }
+    return "Online"
+  }
+}
+
 /// Samples once a second while a System Monitor is floating. Rendering can
 /// happen off the main thread, so the latest reading is lock-protected.
-final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate {
+/// Off-main callbacks touch only the lock-protected reading via `update`;
+/// everything else runs on the main actor.
+final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
   static let shared = SystemMetricsSampler()
 
   private let lock = NSLock()
@@ -108,6 +225,10 @@ final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate {
   private var timer: Timer?
   private var users = 0
   private var location: CLLocationManager?
+  private var speedUsers = 0
+  private var lastTicks: CPUTicks?
+  private var tick = 0
+  private var pathMonitor: NWPathMonitor?
 
   var latest: SystemMetrics {
     lock.lock(); defer { lock.unlock() }
@@ -131,17 +252,43 @@ final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate {
       RunLoop.main.add(timer, forMode: .common)
       self.timer = timer
     }
-    if includeSpeed { startSpeed() }
+    if pathMonitor == nil {
+      let monitor = NWPathMonitor()
+      monitor.pathUpdateHandler = { [weak self] path in
+        let text = DeviceReadings.connectionText(path)
+        self?.update { $0.connection = text }
+      }
+      monitor.start(queue: DispatchQueue(label: "cod.system.connection", qos: .utility))
+      pathMonitor = monitor
+    }
+    if includeSpeed {
+      speedUsers += 1
+      startSpeed()
+    }
   }
 
-  @MainActor func stop() {
+  /// Pass the same `includeSpeed` given to the matching `start`.
+  @MainActor func stop(includeSpeed: Bool = false) {
+    if includeSpeed {
+      speedUsers = max(0, speedUsers - 1)
+      if speedUsers == 0 {
+        location?.stopUpdatingLocation()
+        location = nil
+        update { $0.speed = nil }
+      }
+    }
     users = max(0, users - 1)
     guard users == 0 else { return }
     timer?.invalidate()
     timer = nil
     lastCounters = nil
+    lastTicks = nil
+    tick = 0
+    pathMonitor?.cancel()
+    pathMonitor = nil
     location?.stopUpdatingLocation()
     location = nil
+    speedUsers = 0
     UIDevice.current.isBatteryMonitoringEnabled = false
     update { $0 = .placeholder }
   }
@@ -152,7 +299,19 @@ final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate {
     let counters = NetworkCounters.read()
     let rates = zip(lastCounters, counters).flatMap { NetworkCounters.rates(from: $0, to: $1) }
     if let counters { lastCounters = counters }
+    let ticks = CPUTicks.read()
+    let cpu = zip(lastTicks, ticks).flatMap { CPUTicks.usage(from: $0, to: $1) }
+    if let ticks { lastTicks = ticks }
+    // Storage changes slowly; asking every ten seconds is plenty.
+    let storage = tick % 10 == 0 ? DeviceReadings.freeStorage() : nil
+    tick += 1
+    let memory = DeviceReadings.memoryUsed()
+    let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
     update {
+      if let cpu { $0.cpuUsage = cpu }
+      if let storage { $0.freeStorage = storage }
+      $0.memoryUsed = memory
+      $0.lowPowerMode = lowPower
       $0.batteryLevel = level >= 0 ? Double(level) : nil
       $0.batteryState = device.batteryState
       $0.thermalState = ProcessInfo.processInfo.thermalState

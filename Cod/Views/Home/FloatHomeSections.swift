@@ -96,7 +96,7 @@ struct RecentFloatsStrip: View {
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 10) {
-        ForEach(recents.items) { item in
+        ForEach(recents.forHome) { item in
           Button {
             coordinator.floatRecent(item.configuration)
           } label: {
@@ -109,7 +109,8 @@ struct RecentFloatsStrip: View {
                   Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
               }
-              Image(systemName: "play.fill").font(.caption).foregroundStyle(.secondary)
+              Image(systemName: item.isStarred ? "star.fill" : "play.fill").font(.caption)
+                .foregroundStyle(item.isStarred ? Color.yellow : Color.secondary)
             }
             .padding(.horizontal, 12).frame(minHeight: 52)
             .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -121,6 +122,9 @@ struct RecentFloatsStrip: View {
           .contextMenu {
             Button("Edit Before Floating", systemImage: "slider.horizontal.3") {
               coordinator.route = .init(kind: .editor(item.configuration))
+            }
+            Button(item.isStarred ? "Unstar" : "Star", systemImage: item.isStarred ? "star.slash" : "star") {
+              recents.toggleStar(item.id)
             }
             Button("Remove from Recents", systemImage: "minus.circle", role: .destructive) {
               recents.remove(item)
@@ -139,6 +143,7 @@ struct ToolCategoryCard<Tiles: View>: View {
   let title: String
   let icon: String
   let tint: Color
+  var columns = 3
   @ViewBuilder var tiles: () -> Tiles
   @Environment(\.dynamicTypeSize) private var textSize
 
@@ -150,7 +155,7 @@ struct ToolCategoryCard<Tiles: View>: View {
         Image(systemName: icon).foregroundStyle(tint)
       }
       .accessibilityAddTraits(.isHeader)
-      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: textSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: textSize.isAccessibilitySize ? 1 : columns), spacing: 10) {
         tiles()
       }
     }
@@ -163,7 +168,12 @@ struct ToolTile: View {
   let icon: String
   let tint: Color
   let identifier: String
+  /// Shows a Pro badge until Pro is unlocked. Opening the tool stays free.
+  var isPro = false
   let action: () -> Void
+  @EnvironmentObject private var pro: ProStore
+
+  private var showsBadge: Bool { isPro && !pro.isPro }
 
   var body: some View {
     Button(action: action) {
@@ -178,9 +188,21 @@ struct ToolTile: View {
       }
       .frame(maxWidth: .infinity, minHeight: 96)
       .background(Color(.tertiarySystemFill).opacity(0.6), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+      .overlay(alignment: .topTrailing) {
+        if showsBadge {
+          Text("Pro")
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .foregroundStyle(Color.codActionBackground)
+            .background(Color.codActionBackground.opacity(0.14), in: Capsule())
+            .padding(6)
+            .accessibilityHidden(true)
+        }
+      }
     }
     .buttonStyle(.plain)
     .accessibilityLabel(title)
+    .accessibilityValue(showsBadge ? "Pro" : "")
     .accessibilityIdentifier(identifier)
   }
 }

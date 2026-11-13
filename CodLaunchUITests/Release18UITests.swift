@@ -90,6 +90,9 @@ final class Release18UITests: XCTestCase {
     lab.launch()
     lab.buttons["Open Test PDF In"].tap()
     selectCod(in: lab)
+    let mode = cod.segmentedControls["pdf-mode"]
+    XCTAssertTrue(mode.waitForExistence(timeout: 8))
+    mode.buttons["One Page"].tap()
     XCTAssertTrue(cod.textFields["pdf-page-number"].waitForExistence(timeout: 8))
     XCTAssertTrue(cod.buttons["float-pdf-page"].isEnabled)
     capture("Valid document recovery - no mandatory introduction")

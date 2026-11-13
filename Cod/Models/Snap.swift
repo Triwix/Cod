@@ -46,6 +46,10 @@ struct Snap: Identifiable, Codable, Hashable {
     var favorite: Bool? = nil
     var favoriteOrder: Int? = nil
     var videoExtension: String? = nil
+    /// Set when the item is floated again from Recents; nil means never reused.
+    var lastUsedAt: Date? = nil
+    /// When this item was last captured or floated, for Recents ordering.
+    var usedAt: Date { lastUsedAt ?? createdAt }
     var isVideo: Bool { videoExtension != nil }
     var videoFilename: String? {
         guard let ext = videoExtension, ["mp4", "mov", "m4v"].contains(ext) else { return nil }

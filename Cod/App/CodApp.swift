@@ -7,6 +7,7 @@ struct CodApp: App {
     @StateObject private var store = SnapStore.shared
     @StateObject private var pip = PiPPinController.shared
     @StateObject private var coordinator = CaptureCoordinator()
+    @StateObject private var pro = ProStore.shared
 
     var body: some Scene {
         WindowGroup {
@@ -18,6 +19,8 @@ struct CodApp: App {
                 .environmentObject(store)
                 .environmentObject(pip)
                 .environmentObject(coordinator)
+                .environmentObject(pro)
+                .task { pro.start() }
         }
     }
 }

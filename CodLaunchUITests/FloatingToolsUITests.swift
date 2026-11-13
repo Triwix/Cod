@@ -105,6 +105,7 @@ final class FloatingToolsUITests: XCTestCase {
         lab.buttons["Open Test PDF In"].tap()
         selectCod(in: lab)
         XCTAssertTrue(cod.wait(for: .runningForeground, timeout: 10))
+        choosePDFMode("One Page")
         let stepper = cod.steppers["pdf-page"]
         XCTAssertTrue(stepper.waitForExistence(timeout: 8), cod.debugDescription)
         XCTAssertTrue(cod.staticTexts["floating-preview-label"].isHittable)
@@ -609,8 +610,8 @@ final class FloatingToolsUITests: XCTestCase {
         openLibrary()
         if cod.buttons["enable-history"].exists { cod.buttons["enable-history"].tap() }
         if cod.buttons["library-options"].exists {
-            cod.buttons["library-options"].tap(); cod.buttons["Clear Library…"].tap()
-            cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete Everything, Including Favorites'")).firstMatch.tap()
+            cod.buttons["library-options"].tap(); cod.buttons["Clear Recents…"].tap()
+            cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete Everything, Including Starred'")).firstMatch.tap()
         }
         let lab = XCUIApplication()
         lab.launch(); lab.buttons["Open Test Video In"].tap(); selectCod(in: lab)
@@ -624,10 +625,8 @@ final class FloatingToolsUITests: XCTestCase {
         openLibrary()
         let cells = cod.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'library-capture-'"))
         XCTAssertTrue(cells.firstMatch.waitForExistence(timeout: 8))
-        cells.firstMatch.tap()
-        let star = cod.buttons["favorite-capture"]
-        if star.label == "Favorite" { star.tap() }
-        cod.buttons["Done"].tap()
+        let star = starButton(for: cells.firstMatch)
+        if star.label == "Star" { star.tap() }
         let favorite = cells.firstMatch
         let favoriteID = favorite.identifier
         lab.activate(); lab.buttons["Open Test Video In"].tap(); selectCod(in: lab)
@@ -643,21 +642,26 @@ final class FloatingToolsUITests: XCTestCase {
         XCTAssertTrue(cod.staticTexts["library-history-heading"].exists)
         capture("Library - favorites stay above new history")
         cod.buttons["library-options"].tap()
-        cod.buttons["Clear Library…"].tap()
-        let recent = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Clear Recent History ('")).firstMatch
+        cod.buttons["Clear Recents…"].tap()
+        let recent = cod.buttons["Clear Recents, Keep Starred"]
         XCTAssertTrue(recent.waitForExistence(timeout: 5)); recent.tap()
         XCTAssertTrue(saved.exists)
         XCTAssertFalse(cod.staticTexts["library-history-heading"].exists)
-        cod.buttons["library-options"].tap(); cod.buttons["Clear Library…"].tap()
-        let all = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete Everything, Including Favorites'")).firstMatch
+        cod.buttons["library-options"].tap(); cod.buttons["Clear Recents…"].tap()
+        let all = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete Everything, Including Starred'")).firstMatch
         XCTAssertTrue(all.waitForExistence(timeout: 5)); capture("Library - explicit delete everything confirmation"); all.tap()
         XCTAssertFalse(saved.exists)
         XCTAssertFalse(cod.staticTexts["library-favorites-heading"].exists)
     }
 
     private func openLibrary() {
-        tapMainTab("Library")
-        XCTAssertTrue(cod.navigationBars["Library"].waitForExistence(timeout: 5), cod.debugDescription)
+        tapMainTab("Recents")
+        XCTAssertTrue(cod.navigationBars["Recents"].waitForExistence(timeout: 5), cod.debugDescription)
+    }
+
+    /// The star beside a Recents image or video row.
+    private func starButton(for row: XCUIElement) -> XCUIElement {
+        cod.buttons[row.identifier.replacingOccurrences(of: "library-capture-", with: "star-")]
     }
 
     func testTwoSecondAlarmAlertsWhileCodStaysForeground() {
@@ -706,13 +710,13 @@ final class FloatingToolsUITests: XCTestCase {
         cod.buttons["Off"].tap()
         let remove = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Remove ' AND label ENDSWITH ' Images'")).firstMatch
         if remove.waitForExistence(timeout: 2) { remove.tap() }
-        let library = cod.tabBars.buttons["Library"]
+        let library = cod.tabBars.buttons["Recents"]
         for _ in 0..<3 where !library.isSelected {
             library.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.3)).tap()
             let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: library)
             _ = XCTWaiter.wait(for: [selected], timeout: 2)
         }
-        XCTAssertTrue(library.isSelected, "The system tab bar must switch to Library")
+        XCTAssertTrue(library.isSelected, "The system tab bar must switch to Recents")
         let enable = cod.buttons["enable-history"]
         XCTAssertTrue(enable.waitForExistence(timeout: 5), cod.debugDescription)
         enable.tap()
@@ -772,16 +776,14 @@ final class FloatingToolsUITests: XCTestCase {
             if close.exists && close.isHittable { close.tap() }
         }
         openLibrary()
-        let saved = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Saved imported'")).firstMatch
+        let saved = cod.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Float video again'")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 8), cod.debugDescription)
-        saved.tap()
-        let favorite = cod.buttons["favorite-capture"]
+        let favorite = starButton(for: saved)
         XCTAssertTrue(favorite.waitForExistence(timeout: 5))
-        if favorite.label == "Favorite" { favorite.tap() }
-        XCTAssertEqual(favorite.label, "Remove Favorite")
-        capture("Library - reusable favorite video")
-        cod.buttons["Done"].tap()
-        cod.segmentedControls["library-filter"].buttons["Favorites"].tap()
+        if favorite.label == "Star" { favorite.tap() }
+        XCTAssertEqual(favorite.label, "Unstar")
+        capture("Recents - starred video")
+        cod.segmentedControls["library-filter"].buttons["Starred"].tap()
         XCTAssertTrue(saved.exists)
     }
 
@@ -926,6 +928,7 @@ final class FloatingToolsUITests: XCTestCase {
     func testPDFPageCanBeTypedAndInvalidPagesCannotFloat() {
         let lab = XCUIApplication()
         lab.launch(); lab.buttons["Open Test PDF In"].tap(); selectCod(in: lab)
+        choosePDFMode("One Page")
         let page = cod.textFields["pdf-page-number"]
         XCTAssertTrue(page.waitForExistence(timeout: 10), cod.debugDescription)
         func replace(_ input: String) {
@@ -1068,9 +1071,9 @@ final class FloatingToolsUITests: XCTestCase {
         let name = "UI Card \(UUID().uuidString.prefix(8))"
         let nameField = cod.textFields["reference-name"]; reveal(nameField); nameField.tap(); nameField.typeText(name)
         let save = cod.buttons["save-reference"]; reveal(save); save.tap()
-        XCTAssertTrue(cod.staticTexts["Saved in Library → Saved cards & presets."].waitForExistence(timeout: 5))
+        XCTAssertTrue(cod.staticTexts["Saved in Recents → Saved cards & presets."].waitForExistence(timeout: 5))
         cod.navigationBars.buttons.element(boundBy: 0).tap()
-        tapMainTab("Library"); cod.buttons["saved-references"].tap()
+        tapMainTab("Recents"); cod.buttons["saved-references"].tap()
         let row = cod.staticTexts[name]
         XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
         XCTAssertTrue(cod.textViews["floating-text-editor"].waitForExistence(timeout: 5))
@@ -1082,7 +1085,7 @@ final class FloatingToolsUITests: XCTestCase {
         cod.toolbars.buttons["Done"].tap()
         reveal(save); XCTAssertEqual(save.label, "Update Saved Reference"); save.tap()
         capture("Saved editable text card")
-        cod.terminate(); cod.launch(); tapMainTab("Library"); cod.buttons["saved-references"].tap()
+        cod.terminate(); cod.launch(); tapMainTab("Recents"); cod.buttons["saved-references"].tap()
         XCTAssertTrue(cod.staticTexts[name].waitForExistence(timeout: 5))
         cod.staticTexts[name].tap()
         XCTAssertEqual(cod.textViews["floating-text-editor"].value as? String, "Updated reference: Gate 9")
@@ -1102,13 +1105,12 @@ final class FloatingToolsUITests: XCTestCase {
         capture("Prompter reading guide and target duration")
         let field = cod.textFields["reference-name"]; reveal(field); field.tap(); field.typeText("UI Timed Script \(UUID().uuidString.prefix(6))")
         let save = cod.buttons["save-reference"]; reveal(save); save.tap()
-        XCTAssertTrue(cod.staticTexts["Saved in Library → Saved cards & presets."].waitForExistence(timeout: 5))
+        XCTAssertTrue(cod.staticTexts["Saved in Recents → Saved cards & presets."].waitForExistence(timeout: 5))
     }
 
     func testPDFPageRangeCreatesScrollableFinitePlayback() {
         let lab = XCUIApplication(); lab.launch(); lab.buttons["Open Test PDF In"].tap(); selectCod(in: lab)
-        let scroll = cod.switches["auto-scroll-pdf"]; XCTAssertTrue(scroll.waitForExistence(timeout: 8)); reveal(scroll)
-        if scroll.value as? String != "1" { scroll.coordinate(withNormalizedOffset: .init(dx: 0.93, dy: 0.5)).tap() }
+        choosePDFMode("Auto-scroll")
         XCTAssertFalse(cod.buttons["crop-pdf-region"].exists)
         XCTAssertFalse(cod.textFields["pdf-page-number"].exists)
         let last = cod.textFields["scroll-last-page"]; XCTAssertTrue(last.waitForExistence(timeout: 5))
@@ -1181,7 +1183,7 @@ final class FloatingToolsUITests: XCTestCase {
         let name = "Control Card \(UUID().uuidString.prefix(6))"
         let field = cod.textFields["reference-name"]; reveal(field); field.tap(); field.typeText(name)
         let save = cod.buttons["save-reference"]; reveal(save); save.tap()
-        XCTAssertTrue(cod.staticTexts["Saved in Library → Saved cards & presets."].waitForExistence(timeout: 5))
+        XCTAssertTrue(cod.staticTexts["Saved in Recents → Saved cards & presets."].waitForExistence(timeout: 5))
         XCUIDevice.shared.press(.home)
         let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         func openCenter() {
@@ -1254,13 +1256,13 @@ final class FloatingToolsUITests: XCTestCase {
 
     func testPDFScrollingToggleReplacesSinglePageControlsWithoutNavigation() {
         let lab = XCUIApplication(); lab.launch(); lab.buttons["Open Test PDF In"].tap(); selectCod(in: lab)
+        choosePDFMode("One Page")
         let page = cod.textFields["pdf-page-number"]
         XCTAssertTrue(page.waitForExistence(timeout: 8))
         let stepper = cod.steppers["pdf-page"]
         XCTAssertLessThan(abs(page.frame.midY - stepper.frame.midY), 5, "Page entry and stepper must share one row")
         XCTAssertFalse(cod.staticTexts["Go to page"].exists)
-        let toggle = cod.switches["auto-scroll-pdf"]; reveal(toggle)
-        toggle.coordinate(withNormalizedOffset: .init(dx: 0.93, dy: 0.5)).tap()
+        choosePDFMode("Auto-scroll")
         XCTAssertTrue(cod.textFields["scroll-first-page"].waitForExistence(timeout: 5))
         XCTAssertFalse(page.exists)
         XCTAssertFalse(stepper.exists)
@@ -1270,7 +1272,7 @@ final class FloatingToolsUITests: XCTestCase {
         expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: float)
         waitForExpectations(timeout: 10)
         capture("Inline PDF auto-scroll settings")
-        reveal(toggle); toggle.coordinate(withNormalizedOffset: .init(dx: 0.93, dy: 0.5)).tap()
+        choosePDFMode("One Page")
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         XCTAssertEqual(page.value as? String, "1")
         XCTAssertTrue(cod.buttons["crop-pdf-region"].exists)
@@ -1303,6 +1305,14 @@ final class FloatingToolsUITests: XCTestCase {
         waitForExpectations(timeout: 15)
         XCTAssertFalse(cod.segmentedControls["prompter-mode"].exists)
         capture("Photo import and original-layout scrolling in Text")
+    }
+
+    /// Multi-page PDFs open in Flip Pages; pick another mode explicitly.
+    private func choosePDFMode(_ title: String) {
+        let picker = cod.segmentedControls["pdf-mode"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), cod.debugDescription)
+        reveal(picker, towardTop: true)
+        picker.buttons[title].tap()
     }
 
     private func selectCod(in lab: XCUIApplication) {

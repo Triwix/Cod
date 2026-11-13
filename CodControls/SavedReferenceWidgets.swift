@@ -20,7 +20,7 @@ struct SavedReferenceControl: ControlWidget {
     }
     .displayName("Float Saved Reference")
     .description(
-      "Choose a saved card, preset or Library favorite. Opens Cod; requires an unlocked iPhone.")
+      "Choose a saved card, preset or starred item. Opens Cod; requires an unlocked iPhone.")
   }
 }
 
@@ -61,7 +61,7 @@ struct SavedReferenceWidget: Widget {
         VStack(alignment: .leading, spacing: 8) {
           Label("Float with Cod", systemImage: "pip.enter").font(.headline)
           Text(entry.reference?.name ?? "Choose a saved reference").font(.body).lineLimit(3)
-          Text(entry.reference?.detail ?? "Edit this widget to choose a card or favorite.").font(
+          Text(entry.reference?.detail ?? "Edit this widget to choose a card or starred item.").font(
             .caption
           ).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -72,7 +72,7 @@ struct SavedReferenceWidget: Widget {
     }
     .configurationDisplayName("Float Saved Reference")
     .description(
-      "Open a saved card or favorite in Cod's floating window. Content isn't shown in the widget."
+      "Open a saved card or starred item in Cod's floating window. Content isn't shown in the widget."
     )
     .supportedFamilies([.systemSmall, .systemMedium])
   }

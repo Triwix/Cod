@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (30)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (32)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,18 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 32 adds Cod Pro (StoreKit 2): `cod.pro.yearly` and `cod.pro.monthly`
+  with a 7-day free trial, and `cod.pro.lifetime`. Create them in App Store
+  Connect with the same IDs and Family Sharing, and submit them with the app.
+  Add the Terms of Use link to the description. Test purchases on the phone
+  from Xcode (local StoreKit file), then in the sandbox. See
+  [build-32 notes](docs/pro-32.md).
+- Build 31 adds window shapes for floating tools, a System Monitor with a
+  switch per reading (plus connection, storage, memory, CPU, Low Power Mode),
+  Speedometer as its own tool, and a Recents tab with stars in place of
+  Library. The privacy manifest now declares disk space (85F4.1). Check the
+  shapes, CPU/memory readings and Speedometer on the phone. See
+  [build-31 notes](docs/recents-shapes-31.md).
 - Build 30 repairs the tool UI tests. The native PiP checks (Current Time
   controls, timer close, video repeat, teleprompter rewind) skip on Xcode 27.2
   simulators, which report PiP unsupported; run them on the phone. See

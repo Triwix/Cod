@@ -30,10 +30,11 @@ there until you explicitly remove them; new shares no longer use that inbox.
 
 History separately stores recent images, imported video copies, and recognized text or barcode
 results in Cod's private storage. You can set a history limit, turn history off,
-or clear it in Settings. Favorites are deliberate saves: they remain when history is
-Off, trimmed or cleared with Clear Recent History. Clear Library also offers
-Delete Everything, Including Favorites, after confirmation. Favorites have a locally
-stored ordering. History may be included in your normal device backup.
+or clear it in Settings. Starred items are deliberate saves: they remain when history is
+Off, trimmed or cleared with Clear Recents. Clear Recents also offers
+Delete Everything, Including Starred, after confirmation. Starred items have a locally
+stored ordering. Recents also lists the tool setups you float (for example a timer
+length or a teleprompter script), stored locally; up to 30 unstarred setups are kept. History may be included in your normal device backup.
 Preferences, including whether the optional introduction has been completed or
 skipped, are stored locally. Routine diagnostic logging is disabled in public
 Release builds. Development test builds keep bounded local logs of operational
@@ -43,7 +44,7 @@ and total size and are excluded from device backups. Older development logs
 may remain in a test installation; disabling logging does not upload them.
 
 Selected local videos are copied into Cod for playback and, when history is enabled,
-kept in Library with a thumbnail. Deleting a library video never deletes the original
+kept in Recents with a thumbnail. Removing a video from Recents never deletes the original
 in Photos or Files. Temporary playback copies are removed when released.
 On the next app launch, Cod also cleans up recognized temporary video copies
 left by an interrupted session in its own playback folders. It does not sweep
@@ -61,15 +62,15 @@ Drafts, like other preferences, may be included in normal device backups.
 
 Named text cards, scripts and tool presets are deliberate local saves, separate
 from History. They retain editable content and settings and may retain the chosen
-original image for comparison after text recognition. Delete them in Library →
-Saved cards & presets. Clear Recent History does not delete these saves;
-Delete Everything in Library does. Saved content and a catalog of Library
-favorites are stored in Cod's shared local container for its own widgets and
+original image for comparison after text recognition. Delete them in Recents →
+Saved cards & presets. Clear Recents does not delete these saves;
+Delete Everything in Recents does. Saved content and a catalog of starred
+images are stored in Cod's shared local container for its own widgets and
 controls. Widget labels display names, not the underlying text or images.
 These local saves may be included in normal device backups; this version does
 not offer iCloud synchronization.
 If a local index cannot be read, Cod preserves it rather than silently replacing
-it during a normal save. Library offers a non-destructive reload. Explicit
+it during a normal save. Recents offers a non-destructive reload. Explicit
 Delete Everything can reset damaged saved data and remove recognized media left
 by interrupted saves; it still does not clear separate drafts, pending shares or
 originals in Photos or Files.
@@ -92,14 +93,17 @@ access to the whole photo library. Reading the latest screenshot requires Photos
 permission. Saving an image to Photos requests the relevant permission when
 needed. Permission can be changed in iOS Settings.
 
-The System Monitor's optional Speedometer uses your location only while a
-monitor with Speedometer turned on is floating or being set up, after you allow
-location access. Cod reads your current speed, shows it in the floating window
-and immediately discards it. Locations are never stored, logged or sent. Turning
-off the Speedometer or closing the monitor stops location updates; iOS shows its
-location indicator while they run. Battery level, device temperature and
-network throughput are read on the iPhone for display only; Cod reads byte
-counts, never the content or destination of your traffic.
+The Speedometer tool uses your location only while it is floating or being set
+up, after you allow location access. Cod reads your current speed, shows it in
+the floating window and immediately discards it. Locations are never stored,
+logged or sent. Closing the Speedometer stops location updates; iOS shows its
+location indicator while they run.
+
+System Monitor shows only the readings you turn on: battery, device temperature,
+download and upload rate, connection type, free storage, memory in use, CPU use
+and Low Power Mode. They are read on the iPhone once a second for display only
+and are never stored or sent. For network rates Cod reads byte counts, never the
+content or destination of your traffic.
 
 Cod reads the clipboard when you tap Paste. It writes to the clipboard when
 you choose a copy action. An explicit image Paste can also read GIF data to
@@ -132,7 +136,7 @@ Image sets copy the photos you pick into Cod's private storage on this iPhone.
 Sets that no saved reference uses are deleted the next time Cod opens.
 
 Float Saved Reference actions, widgets and configurable controls use the saved
-item or Library favorite you select. They ask iOS to open Cod to start playback;
+item or starred image you select. They ask iOS to open Cod to start playback;
 they do not read another app's screen or silently capture clipboard content.
 Deleting a selected reference invalidates that selection instead of floating a
 different item. Apple controls authentication and permission prompts.

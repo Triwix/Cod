@@ -51,9 +51,9 @@ final class LiveFloatSource: NSObject, AVPictureInPictureSampleBufferPlaybackDel
 
   func start() throws {
     try session.configuration.validate()
-    if session.configuration.kind == .system, !samplesSystem {
+    if session.configuration.kind.samplesSystem, !samplesSystem {
       samplesSystem = true
-      SystemMetricsSampler.shared.start(includeSpeed: session.configuration.showsSpeed)
+      SystemMetricsSampler.shared.start(includeSpeed: session.configuration.kind == .speedometer)
     }
     try enqueueFrame()
     playbackState.setPaused(!session.isPlaying)
@@ -80,14 +80,19 @@ final class LiveFloatSource: NSObject, AVPictureInPictureSampleBufferPlaybackDel
 
   func activate() {
     nativePlaybackIsActive = true
-    session.resume()
+    // Paged content waits for the play button or a skip to turn the page.
+    if session.configuration.startsPaused {
+      controller?.invalidatePlaybackState()
+    } else {
+      session.resume()
+    }
   }
 
   func stop(preservingTimer: Bool = false) {
     didStop = true
     if samplesSystem {
       samplesSystem = false
-      SystemMetricsSampler.shared.stop()
+      SystemMetricsSampler.shared.stop(includeSpeed: session.configuration.kind == .speedometer)
     }
     nativePlaybackIsActive = false
     renderTask?.cancel()

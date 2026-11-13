@@ -24,8 +24,8 @@ struct RootView: View {
                     .tabItem { Label("Float", systemImage: "pip.enter") }
                     .tag(0)
 
-                LibraryView()
-                    .tabItem { Label("Library", systemImage: "square.grid.2x2") }
+                RecentsView()
+                    .tabItem { Label("Recents", systemImage: "clock.arrow.circlepath") }
                     .tag(1)
 
                 SettingsView()
@@ -112,7 +112,7 @@ struct RootView: View {
             scheduleQuickShare()
         }
         .onChange(of: store.storageIssue) { _, issue in
-            if let issue { coordinator.toast = .failure("Library needs attention", issue) }
+            if let issue { coordinator.toast = .failure("Recents needs attention", issue) }
         }
         .onChange(of: inbox.pendingQuickFloatRequestID) { _, id in
             guard let id else { return }
@@ -149,7 +149,10 @@ struct RootView: View {
             RouteView(route: route)
                 .environmentObject(coordinator)
                 .environmentObject(settings)
+                .environmentObject(ProStore.shared)
+                .proPrompts(inRoute: true)
         }
+        .proPrompts()
         // A Shortcut can hand us an image directly (Take Screenshot → Crop With
         // Cod), or just ask for the newest screenshot.
         .onChange(of: inbox.pendingImage) { _, image in
@@ -261,15 +264,18 @@ struct RootView: View {
         do {
             switch input.content {
             case .text(let text):
+                guard coordinator.unlocks(.textCards) else { return }
                 let image = try FloatingText.render(text)
                 coordinator.receiveFloatIntentImage(image)
             case .pdf(let data, let page):
+                guard coordinator.unlocks(.pdf) else { return }
                 let reference = try PDFReference(data: data)
                 let image = try reference.image(pageIndex: page - 1)
                 coordinator.receiveFloatIntentImage(image)
             case .saved(let id):
                 coordinator.floatSavedReference(id)
             case .animated(let data):
+                guard coordinator.unlocks(.video) else { return }
                 Task {
                     do {
                         let video = try await AnimatedImageImport.video(data)

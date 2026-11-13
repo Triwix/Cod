@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -9,10 +10,14 @@ struct SettingsView: View {
     @State private var confirmClearHistory = false
     @State private var pendingHistoryLimit: HistoryLimit?
     @State private var historyDiskUsage: Int64?
+    @ObservedObject private var pro = ProStore.shared
+    @State private var managingSubscription = false
+    @State private var isRestoring = false
 
     var body: some View {
         NavigationStack {
             Form {
+                proSection
                 shareSheetSection
                 playbackSection
                 activationSection
@@ -26,19 +31,19 @@ struct SettingsView: View {
             .codFormStyle()
             .navigationTitle("Settings")
             .confirmationDialog(
-                "Clear Library?", isPresented: $confirmClearHistory, titleVisibility: .visible
+                "Clear Recents?", isPresented: $confirmClearHistory, titleVisibility: .visible
             ) {
                 if store.historyCount > 0 {
                     Button("Clear Recent History (\(store.historyCount))", role: .destructive) { store.clearHistory() }
                 }
-                Button("Delete Everything, Including Favorites", role: .destructive) {
+                Button("Delete Everything, Including Starred", role: .destructive) {
                     do { try savedReferences.clear(); store.clear() }
                     catch { coordinator.toast = .failure("Couldn't clear saved cards", error.localizedDescription) }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(
-                    "Clear Recent History keeps favorites and saved cards. Delete Everything removes captures, favorites, saved cards and presets. Originals in Photos or Files and pending shares aren't deleted."
+                    "Clear Recent History keeps starred items and saved cards. Delete Everything removes captures, starred items, saved cards and presets. Originals in Photos or Files and pending shares aren't deleted."
                 )
             }
             .confirmationDialog(
@@ -60,7 +65,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { pendingHistoryLimit = nil }
             } message: {
                 Text(
-                    "Reducing the history limit removes older images saved in Cod. Choosing Off removes all saved history. Favorites, Photos and pending shares aren't removed."
+                    "Reducing the history limit removes older images saved in Cod. Choosing Off removes all saved history. Starred items, Photos and pending shares aren't removed."
                 )
             }
         }
@@ -278,14 +283,14 @@ struct SettingsView: View {
                 historyDiskUsage = bytes
             }
 
-            Button("Clear Library…", role: .destructive) { confirmClearHistory = true }
+            Button("Clear Recents…", role: .destructive) { confirmClearHistory = true }
                 .disabled(store.snaps.isEmpty && savedReferences.items.isEmpty)
                 .accessibilityIdentifier("clear-history")
         } header: {
             Text("History")
         } footer: {
             Text(
-                "Saved media stay on this device and may be included in backups. Favorites, named cards and presets stay saved when History is Off or its limit is reduced. Clear Library lets you clear recent history or delete everything, including those saves, after confirmation. Photos copies and pending shares aren't removed."
+                "Saved media stay on this device and may be included in backups. Starred items, named cards and presets stay saved when History is Off or its limit is reduced. Clear Recents lets you clear recent history or delete everything, including those saves, after confirmation. Photos copies and pending shares aren't removed."
             )
         }
     }
@@ -332,6 +337,46 @@ struct SettingsView: View {
                 "Block detection outlines paragraphs and cards so you can snap the selection onto one with a single tap."
             )
         }
+    }
+
+    // MARK: - Pro
+
+    private var proSection: some View {
+        Section {
+            if pro.isPro {
+                LabeledContent("Cod Pro", value: pro.access.summary)
+                    .accessibilityIdentifier("settings-pro-status")
+                if pro.hasActiveSubscription {
+                    Button("Manage Subscription") { managingSubscription = true }
+                    Button("Upgrade to Lifetime") { coordinator.proPrompt = .init(feature: nil) }
+                }
+            } else {
+                Button { coordinator.proPrompt = .init(feature: nil) } label: {
+                    CodRowLabel("Cod Pro", systemImage: "sparkles",
+                                detail: pro.isTrialEligible ? "Try it free for 7 days" : "Float tools, text, videos and PDFs")
+                }
+                .accessibilityIdentifier("settings-pro")
+                Button(isRestoring ? "Restoring…" : "Restore Purchases") {
+                    Task {
+                        isRestoring = true
+                        defer { isRestoring = false }
+                        do {
+                            try await pro.restore()
+                            coordinator.toast = pro.isPro
+                                ? .info("Cod Pro restored", pro.access.summary)
+                                : .info("Nothing to restore", "No Cod Pro purchase was found for this Apple Account.")
+                        } catch { coordinator.toast = .failure("Couldn't restore", error.localizedDescription) }
+                    }
+                }
+                .disabled(isRestoring)
+                .accessibilityIdentifier("settings-restore")
+            }
+        } footer: {
+            if !pro.isPro {
+                Text("Cropping and floating images, Shortcuts, Copy Text, Translate and Scan Code are always free.")
+            }
+        }
+        .manageSubscriptionsSheet(isPresented: $managingSubscription)
     }
 
     // MARK: - About

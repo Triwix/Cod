@@ -84,7 +84,7 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
             print -u2 "Simulator launch-probe code found in $bundle_id"
             exit 1
         fi
-        if has_pattern 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup|--show-introduction' "$binary_path"; then
+        if has_pattern 'SimulatorQATraits|--large-text-ui-test|--dark-ui-test|--landscape-ui-test|--show-float-setup|--show-introduction|--free-tier-ui-test|cod\.pro\.uiTestOverride' "$binary_path"; then
             print -u2 "Debug-only UI testing code found in $bundle_id. Audit a Release build."
             exit 1
         fi

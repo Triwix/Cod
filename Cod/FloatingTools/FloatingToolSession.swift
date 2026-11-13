@@ -3,7 +3,7 @@ import UIKit
 
 enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
   case countdown, stopwatch, clock, pomodoro, teleprompter, document
-  case event, worldClock, system, slideshow
+  case event, worldClock, system, slideshow, speedometer
   var id: String { rawValue }
   var title: String {
     switch self {
@@ -17,6 +17,7 @@ enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
     case .worldClock: return "World Clock"
     case .system: return "System Monitor"
     case .slideshow: return "Image Set"
+    case .speedometer: return "Speedometer"
     }
   }
   /// Short label for the category switcher in tool editors.
@@ -43,10 +44,13 @@ enum FloatingToolKind: String, CaseIterable, Identifiable, Codable {
     case .worldClock: return "globe"
     case .system: return "gauge.with.dots.needle.33percent"
     case .slideshow: return "photo.stack"
+    case .speedometer: return "speedometer"
     }
   }
   /// Kinds that show the current date or live readings rather than elapsed time.
-  var showsLiveDate: Bool { [.clock, .event, .worldClock, .system].contains(self) }
+  var showsLiveDate: Bool { [.clock, .event, .worldClock, .system, .speedometer].contains(self) }
+  /// Kinds that read device sensors while floating or being edited.
+  var samplesSystem: Bool { self == .system || self == .speedometer }
 }
 
 enum TeleprompterMode: String, CaseIterable, Identifiable, Codable {
@@ -135,6 +139,33 @@ struct FloatingToolConfiguration: Codable, Equatable {
   var storedUsesMetricSpeed: Bool?
   var storedSlideNames: [String]?
   var storedSlideInterval: Double?
+  // Added in build 31.
+  var storedWindowShape: FloatWindowShape?
+  var storedSystemMetrics: [SystemMetric]?
+  var storedStartsPaused: Bool?
+  var storedSetName: String?
+
+  /// Page-like content (PDF pages, image sets) can open paused, so the
+  /// floating window's skip buttons turn one page at a time.
+  var startsPaused: Bool {
+    get { storedStartsPaused ?? false }
+    set { storedStartsPaused = newValue }
+  }
+  /// A name for an image set, such as the PDF it came from.
+  var setName: String? {
+    get { storedSetName }
+    set { storedSetName = newValue }
+  }
+
+  var windowShape: FloatWindowShape {
+    get { storedWindowShape ?? .wide }
+    set { storedWindowShape = newValue }
+  }
+  /// Always in `SystemMetric.allCases` order, so toggling doesn't reshuffle rows.
+  var systemMetrics: [SystemMetric] {
+    get { storedSystemMetrics ?? SystemMetric.defaults }
+    set { storedSystemMetrics = SystemMetric.allCases.filter(newValue.contains) }
+  }
 
   static var defaultEventDate: Date {
     // Tomorrow at 9:00, which stays put while someone edits it today.
@@ -158,10 +189,9 @@ struct FloatingToolConfiguration: Codable, Equatable {
     get { storedWorldClockZones ?? Self.defaultWorldClockZones }
     set { storedWorldClockZones = newValue }
   }
-  var showsSpeed: Bool {
-    get { storedShowsSpeed ?? false }
-    set { storedShowsSpeed = newValue }
-  }
+  /// Build 29 put speed inside System Monitor. It's now the Speedometer tool;
+  /// the stored flag is kept only so older presets still decode.
+  var showsSpeed: Bool { storedShowsSpeed ?? false }
   var usesMetricSpeed: Bool {
     get { storedUsesMetricSpeed ?? (Locale.autoupdatingCurrent.measurementSystem != .us) }
     set { storedUsesMetricSpeed = newValue }
@@ -203,7 +233,7 @@ struct FloatingToolConfiguration: Codable, Equatable {
     case .teleprompter: return prompterMode == .scroll ? 60 : 15
     case .document: return 30
     case .stopwatch: return showsHundredths ? 30 : 1
-    case .clock, .event, .worldClock, .system: return 1
+    case .clock, .event, .worldClock, .system, .speedometer: return 1
     case .slideshow: return 4
     }
   }
@@ -273,7 +303,9 @@ struct FloatingToolConfiguration: Codable, Equatable {
         lineSpacing.isFinite, (0...40).contains(lineSpacing),
         targetReadingDuration.map({ $0.isFinite && (15...3_600).contains($0) }) ?? true
       else { throw FloatingToolError.invalidStyle }
-    case .stopwatch, .system: break
+    case .stopwatch, .speedometer: break
+    case .system:
+      guard !systemMetrics.isEmpty else { throw FloatingToolError.noMetrics }
     case .event:
       guard eventDate.timeIntervalSince1970.isFinite, eventTitle.count <= 60 else {
         throw FloatingToolError.invalidDuration
@@ -308,16 +340,13 @@ struct FloatingToolConfiguration: Codable, Equatable {
       return .init(title: "World Clock", value: rows.first?.value ?? "", detail: "", rows: rows)
     case .system:
       let reading = metrics ?? SystemMetricsSampler.shared.latest
-      var rows = [
-        FloatingToolRow(label: "Battery", value: reading.batteryText),
-        FloatingToolRow(label: "Temperature", value: reading.thermalText),
-        FloatingToolRow(label: "Download", value: SystemMetrics.rateText(reading.downloadRate)),
-        FloatingToolRow(label: "Upload", value: SystemMetrics.rateText(reading.uploadRate)),
-      ]
-      if showsSpeed {
-        rows.append(FloatingToolRow(label: "Speed", value: reading.speedText(metric: usesMetricSpeed)))
-      }
-      return .init(title: "System", value: reading.batteryText, detail: "", rows: rows)
+      let rows = systemMetrics.map { FloatingToolRow(label: $0.label, value: reading.text(for: $0)) }
+      return .init(title: "System", value: rows.first?.value ?? "", detail: "", rows: rows)
+    case .speedometer:
+      let reading = metrics ?? SystemMetricsSampler.shared.latest
+      let unit = usesMetricSpeed ? "km/h" : "mph"
+      let value = reading.speedText(metric: usesMetricSpeed).replacingOccurrences(of: " \(unit)", with: "")
+      return .init(title: "Speed", value: value, detail: reading.speed == nil ? "Waiting for location" : unit)
     case .slideshow:
       let index = Slideshow.index(elapsed: elapsed, interval: slideInterval, count: slideNames.count)
       return .init(
@@ -402,7 +431,7 @@ struct FloatingToolSnapshot: Equatable {
 }
 
 enum FloatingToolError: LocalizedError {
-  case invalidDuration, invalidTimeZone, invalidStyle, scriptTooLong, renderFailed
+  case invalidDuration, invalidTimeZone, invalidStyle, scriptTooLong, renderFailed, noMetrics
   var errorDescription: String? {
     switch self {
     case .invalidDuration: return "Choose a valid duration and number of sessions."
@@ -410,6 +439,7 @@ enum FloatingToolError: LocalizedError {
     case .invalidStyle: return "Choose a supported text size and scrolling speed."
     case .scriptTooLong: return "Use a script of 20,000 characters or fewer."
     case .renderFailed: return "Cod couldn't create a video frame for this tool."
+    case .noMetrics: return "Turn on at least one reading."
     }
   }
 }
@@ -460,7 +490,7 @@ enum FloatingElapsedClock {
 final class FloatingToolSession: ObservableObject, Identifiable {
   let id = UUID()
   let document: ScrollingReference?
-  var title: String { document?.name ?? configuration.kind.title }
+  var title: String { document?.name ?? configuration.setName ?? configuration.kind.title }
   @Published private(set) var configuration: FloatingToolConfiguration
   lazy var scriptLayout: FloatingToolRenderer.ScriptLayout? =
     configuration.kind == .teleprompter ? .init(configuration) : nil

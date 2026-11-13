@@ -23,10 +23,10 @@ final class Redesign21UITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(button.frame.width, 44)
         }
         capture("21 - Home - actions first")
-        selectTab("Library")
+        selectTab("Recents")
         XCTAssertTrue(cod.buttons["saved-references"].waitForExistence(timeout: 5))
         XCTAssertTrue(cod.segmentedControls["library-filter"].exists)
-        capture("21 - Library - grouped references and filters")
+        capture("21 - Recents - starred, recent and saved references")
 
         selectTab("Settings")
         let explanation = cod.buttons["share-route-explanation"]

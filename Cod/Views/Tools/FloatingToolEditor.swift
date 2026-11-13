@@ -222,28 +222,37 @@ struct FloatingToolEditor: View {
       }
       if configuration.kind == .system {
         Section {
-          Toggle("Speedometer", isOn: $configuration.showsSpeed)
-            .accessibilityIdentifier("system-speed")
-          if configuration.showsSpeed {
-            Picker("Units", selection: $configuration.usesMetricSpeed) {
-              Text("km/h").tag(true)
-              Text("mph").tag(false)
+          ForEach(SystemMetric.allCases) { metric in
+            Toggle(isOn: metricBinding(metric)) {
+              Label(metric.title, systemImage: metric.icon)
             }
-            .pickerStyle(.segmented)
+            .accessibilityIdentifier("metric-\(metric.rawValue)")
           }
         } header: {
           Text("Readings")
         } footer: {
-          Text(
-            configuration.showsSpeed
-              ? "Battery, temperature and network speed, plus your current speed. Speed needs location access; iOS shows the location indicator while it floats. Nothing is stored or sent."
-              : "Battery level, device temperature, and download and upload speed across Wi-Fi and cellular. Read on this iPhone only."
-          )
+          Text("Pick what the floating window shows. Readings come from this iPhone once a second and are never stored or sent. Network speed counts Wi-Fi and cellular.")
+        }
+      }
+      if configuration.kind == .speedometer {
+        Section {
+          Picker("Units", selection: $configuration.usesMetricSpeed) {
+            Text("km/h").tag(true)
+            Text("mph").tag(false)
+          }
+          .pickerStyle(.segmented)
+          .accessibilityIdentifier("speed-units")
+        } header: {
+          Text("Speed")
+        } footer: {
+          Text("Speed comes from your iPhone's location, so Cod asks for location access the first time. While it floats, iOS shows the location indicator. Your location is never stored or sent.")
         }
       }
       if configuration.kind == .slideshow {
         Section {
           LabeledContent("Images", value: "\(configuration.slideNames.count)")
+          Toggle("Start paused", isOn: $configuration.startsPaused)
+            .accessibilityIdentifier("slides-start-paused")
           LabeledContent("Next image every", value: "\(Int(configuration.slideInterval)) s")
           Slider(value: $configuration.slideInterval, in: Slideshow.intervalRange, step: 1)
             .accessibilityLabel("Seconds per image")
@@ -251,8 +260,13 @@ struct FloatingToolEditor: View {
         } header: {
           Text("Image set")
         } footer: {
-          Text("Plays through the set once and stays on the last image. Use the floating window's skip buttons to step one image back or forward, and pause to stay on one.")
+          Text(configuration.startsPaused
+            ? "Opens paused on the first image. Use the floating window's skip buttons to step one image back or forward, or press play to advance on the timer."
+            : "Plays through the set once and stays on the last image. Use the floating window's skip buttons to step one image back or forward, and pause to stay on one.")
         }
+      }
+      Section("Window") {
+        FloatWindowShapePicker(selection: $configuration.windowShape)
       }
       Section("Appearance") {
         FloatingAppearancePicker(
@@ -275,9 +289,10 @@ struct FloatingToolEditor: View {
     }
     .task(id: systemSamplingKey) {
       // Live readings for the preview while a System Monitor is being set up.
-      guard configuration.kind == .system else { return }
-      SystemMetricsSampler.shared.start(includeSpeed: configuration.showsSpeed)
-      defer { SystemMetricsSampler.shared.stop() }
+      guard configuration.kind.samplesSystem else { return }
+      let speed = configuration.kind == .speedometer
+      SystemMetricsSampler.shared.start(includeSpeed: speed)
+      defer { SystemMetricsSampler.shared.stop(includeSpeed: speed) }
       try? await Task.sleep(for: .seconds(86_400))
     }
     .navigationTitle(configuration.kind.title)
@@ -353,7 +368,17 @@ struct FloatingToolEditor: View {
   }
 
   private var systemSamplingKey: String {
-    "\(configuration.kind == .system)-\(configuration.showsSpeed)"
+    configuration.kind.samplesSystem ? configuration.kind.rawValue : "none"
+  }
+
+  private func metricBinding(_ metric: SystemMetric) -> Binding<Bool> {
+    Binding(
+      get: { configuration.systemMetrics.contains(metric) },
+      set: { on in
+        var metrics = configuration.systemMetrics.filter { $0 != metric }
+        if on { metrics.append(metric) }
+        configuration.systemMetrics = metrics
+      })
   }
 
   /// Switching tools keeps colors but starts a fresh, unfloated setup.
@@ -370,7 +395,7 @@ struct FloatingToolEditor: View {
 
   private var helpText: String {
     switch configuration.kind {
-    case .event, .worldClock, .system:
+    case .event, .worldClock, .system, .speedometer:
       return "Reads the current time and readings each second, so it's always up to date when you look."
     case .slideshow:
       return "Images are kept in Cod while the set is in use. Your originals in Photos aren't changed."

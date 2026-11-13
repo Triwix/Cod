@@ -91,7 +91,7 @@
 	<key>NSAlarmKitUsageDescription</key>
 	<string>Cod sounds an alarm when a timer you enable finishes, even while your phone is locked.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Cod uses your location only for the System Monitor speedometer you turn on. Your speed is shown on this iPhone and is never stored or sent anywhere.</string>
+	<string>Cod uses your location only for the Speedometer tool. Your speed is shown on this iPhone and is never stored or sent anywhere.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cod saves your cropped snippets back to Photos, optionally into its own album.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

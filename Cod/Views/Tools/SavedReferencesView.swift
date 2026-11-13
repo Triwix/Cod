@@ -29,7 +29,7 @@ struct SavedReferenceSaveSection: View {
       }.accessibilityIdentifier("save-reference")
         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       if saved {
-        Text("Saved in Library → Saved cards & presets.").font(.footnote).foregroundStyle(
+        Text("Saved in Recents → Saved cards & presets.").font(.footnote).foregroundStyle(
           .secondary)
       }
       if let error { Text(error).foregroundStyle(.red) }
@@ -37,7 +37,7 @@ struct SavedReferenceSaveSection: View {
       Text("Save for later")
     } footer: {
       Text(
-        "Keeps editable content and settings, even with History off. Saved references and Library favorites can be selected in Float Saved Reference Shortcuts, widgets and controls."
+        "Keeps editable content and settings, even with History off. Saved references and starred images can be selected in Float Saved Reference Shortcuts, widgets and controls."
       )
     }
   }
@@ -85,7 +85,7 @@ struct SavedReferencesView: View {
       }
       Section("Quick launch") {
         Text(
-          "In Shortcuts, add Float Saved Reference and choose a card, preset or Library favorite. You can assign that Shortcut to Back Tap or the Action Button."
+          "In Shortcuts, add Float Saved Reference and choose a card, preset or starred image. You can assign that Shortcut to Back Tap or the Action Button."
         )
         Text(
           "On iOS 18 or later, add Cod's Float Saved Reference widget to your Home Screen, or its configurable control in Control Center or while editing Lock Screen controls. Then choose your reference."

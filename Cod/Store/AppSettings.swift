@@ -41,7 +41,7 @@ enum ArrivalMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .selection: return "Select a region"
         case .instant: return "Instant action"
-        case .library: return "Open library"
+        case .library: return "Add to Recents"
         }
     }
 

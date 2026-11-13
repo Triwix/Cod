@@ -51,10 +51,19 @@ final class CaptureCoordinator: ObservableObject {
     /// True when Cod was opened purely to float something, so the UI can stay
     /// out of the way instead of flashing the whole app.
     @Published var floatOnlyLaunch = false
+    /// The Pro screen, shown when a free user tries to float a Pro feature.
+    @Published var proPrompt: ProPrompt?
+
+    struct ProPrompt: Identifiable {
+        let id = UUID()
+        /// What was tapped; nil when opened from Settings.
+        var feature: ProFeature?
+    }
 
     let store: SnapStore
     let settings: AppSettings
     let pip: PiPPinController
+    let pro: ProStore
 
     /// `CGRect` only gained `Hashable` conformance in iOS 18. The app targets
     /// iOS 17, and the actual crop is integral anyway, so key history entries
@@ -74,12 +83,14 @@ final class CaptureCoordinator: ObservableObject {
         store: SnapStore,
         settings: AppSettings,
         pip: PiPPinController,
+        pro: ProStore = .shared,
         sharedInbox: SharedImageInbox = .shared,
         quickHandoff: QuickFloatHandoff = .shared
     ) {
         self.store = store
         self.settings = settings
         self.pip = pip
+        self.pro = pro
         self.sharedInbox = sharedInbox
         self.quickHandoff = quickHandoff
         observePiPStatus()
@@ -91,6 +102,18 @@ final class CaptureCoordinator: ObservableObject {
             settings: .shared,
             pip: .shared
         )
+    }
+
+    // MARK: - Pro
+
+    /// True when Pro is active. Otherwise opens the Pro screen for this
+    /// feature and ends any one-tap launch so the app is visible.
+    func unlocks(_ feature: ProFeature) -> Bool {
+        if pro.isPro { return true }
+        floatOnlyLaunch = false
+        finishQuickRequest(success: false)
+        proPrompt = .init(feature: feature)
+        return false
     }
 
     // MARK: - Ingestion
@@ -105,6 +128,8 @@ final class CaptureCoordinator: ObservableObject {
         prioritizeExplicitInput()
         do {
             if let item = SavedReferenceStore.shared.items.first(where: { $0.id == id }) {
+                // Saved cards and tool presets are Pro; starred images stay free.
+                guard unlocks(.savedCards) else { return }
                 if let card = item.text {
                     let image = try FloatingText.render(card.text, fontSize: card.fontSize, palette: card.palette,
                         colors: card.colors ?? card.palette.colors(for: currentInterfaceStyle))
@@ -113,10 +138,10 @@ final class CaptureCoordinator: ObservableObject {
                     tool.interfaceStyle = currentInterfaceStyle
                     if tool.hasTimerAlarm {
                         Task {
-                            do { try await FloatingTimerAlarms.shared.authorize(); floatTool(.init(configuration: tool)) }
+                            do { try await FloatingTimerAlarms.shared.authorize(); floatTool(.init(configuration: tool), feature: .savedCards) }
                             catch { toast = .failure("Couldn't start alarm preset", error.localizedDescription) }
                         }
-                    } else { floatTool(.init(configuration: tool)) }
+                    } else { floatTool(.init(configuration: tool), feature: .savedCards) }
                 } else { throw SavedReferenceError.invalidContent }
                 return
             }
@@ -130,7 +155,7 @@ final class CaptureCoordinator: ObservableObject {
         } catch { toast = .failure("Couldn't open reference", error.localizedDescription) }
     }
 
-    private var currentInterfaceStyle: UIUserInterfaceStyle {
+    var currentInterfaceStyle: UIUserInterfaceStyle {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         // OpenIntent can arrive while Control Center is still dismissing and
         // our scene is inactive. Its own key window already has valid traits.
@@ -282,8 +307,8 @@ final class CaptureCoordinator: ObservableObject {
             } else {
                 let snap = store.add(image: normalized, origin: origin)
                 toast = store.snaps.contains(where: { $0.id == snap.id })
-                    ? .success("Added to library")
-                    : .failure("Couldn't add to Library", store.storageIssue)
+                    ? .success("Added to Recents")
+                    : .failure("Couldn't add to Recents", store.storageIssue)
             }
         }
     }
@@ -294,16 +319,19 @@ final class CaptureCoordinator: ObservableObject {
         image: UIImage,
         origin: Snap.Origin = .shared,
         minimalUI: Bool = false,
-        reusePreparedPlayback: Bool = true
+        reusePreparedPlayback: Bool = true,
+        recordsHistory: Bool = true
     ) {
         prepareImage(image) { [weak self] normalized in
             self?.floatPreparedImage(normalized, origin: origin, minimalUI: minimalUI,
-                                     reusePreparedPlayback: reusePreparedPlayback)
+                                     reusePreparedPlayback: reusePreparedPlayback,
+                                     recordsHistory: recordsHistory)
         }
     }
 
     private func floatPreparedImage(_ normalized: UIImage, origin: Snap.Origin,
-                                    minimalUI: Bool, reusePreparedPlayback: Bool) {
+                                    minimalUI: Bool, reusePreparedPlayback: Bool,
+                                    recordsHistory: Bool) {
         pending = nil
         archivedCrops.removeAll()
         if minimalUI { floatOnlyLaunch = true }
@@ -313,7 +341,7 @@ final class CaptureCoordinator: ObservableObject {
             reusePreparedPlayback: reusePreparedPlayback
         )
 
-        if pip.status != .unsupported {
+        if recordsHistory, pip.status != .unsupported {
             archive(normalized, rect: CGRect(origin: .zero, size: normalized.pixelSize), origin: origin)
         }
     }
@@ -583,6 +611,7 @@ final class CaptureCoordinator: ObservableObject {
 
     func floatVideo(_ reference: VideoReference, sound: Bool = false, repeats: Bool = FloatingVideoPlayback.defaultRepeats) {
         prioritizeExplicitInput()
+        guard unlocks(.video) else { return }
         pip.stop()
         pending = nil
         floatOnlyLaunch = false
@@ -596,7 +625,7 @@ final class CaptureCoordinator: ObservableObject {
                 do { _ = try await store.add(video: reference, limit: settings.historyLimit) }
                 catch {
                     archivedVideoIDs.remove(reference.id)
-                    toast = .failure("Video wasn't saved in Library", error.localizedDescription)
+                    toast = .failure("Video wasn't saved in Recents", error.localizedDescription)
                 }
             }
         }
@@ -615,9 +644,12 @@ final class CaptureCoordinator: ObservableObject {
         }
     }
 
-    func floatTool(_ session: FloatingToolSession) {
+    /// `feature` names what the Pro screen leads with when it differs from
+    /// the tool's own kind, such as PDF pages floated as an image set.
+    func floatTool(_ session: FloatingToolSession, feature: ProFeature? = nil) {
         do { try session.configuration.validate() }
         catch { toast = .failure("Couldn't start tool", error.localizedDescription); return }
+        guard unlocks(feature ?? .forTool(session.configuration.kind)) else { return }
         prioritizeExplicitInput()
         // Stop the previous source before registering the new attempt: its
         // idle notification must not finish this request by mistake.
@@ -629,6 +661,19 @@ final class CaptureCoordinator: ObservableObject {
         isWorking = true
         pip.float(tool: session)
         if session.document == nil { RecentFloats.shared.record(session.configuration) }
+    }
+
+    /// Floats an image or video from Recents again and moves it to the top,
+    /// without saving a second copy.
+    func floatSnap(_ snap: Snap) {
+        if snap.isVideo {
+            guard unlocks(.video) else { return }
+            reopenVideo(snap, float: true)
+        } else if let image = store.image(for: snap) {
+            floatImmediately(image: image, origin: snap.origin, minimalUI: true,
+                             reusePreparedPlayback: false, recordsHistory: false)
+        } else { return }
+        store.touch(snap.id)
     }
 
     /// Recents float straight away. Alarm timers still ask for permission first.

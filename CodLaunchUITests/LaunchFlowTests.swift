@@ -100,8 +100,8 @@ final class LaunchFlowTests: XCTestCase {
         XCTAssertTrue(clear.isHittable)
         XCTAssertTrue(clear.isEnabled)
         clear.tap()
-        XCTAssertTrue(cod.staticTexts["Clear Library?"].waitForExistence(timeout: 5))
-        dismissConfirmation(titled: "Clear Library?")
+        XCTAssertTrue(cod.staticTexts["Clear Recents?"].waitForExistence(timeout: 5))
+        dismissConfirmation(titled: "Clear Recents?")
 
         let limit = cod.buttons["history-limit"]
         for _ in 0..<3 where !limit.isHittable { cod.swipeDown() }
@@ -110,7 +110,7 @@ final class LaunchFlowTests: XCTestCase {
         XCTAssertTrue(cod.staticTexts["Remove older saved images?"].waitForExistence(timeout: 5))
         dismissConfirmation(titled: "Remove older saved images?")
 
-        let library = tab("Library")
+        let library = tab("Recents")
         if !library.isHittable {
             print("AFTER HISTORY CANCEL: \(cod.debugDescription)")
             let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -121,16 +121,16 @@ final class LaunchFlowTests: XCTestCase {
         expectation(for: NSPredicate(format: "hittable == true"), evaluatedWith: library)
         waitForExpectations(timeout: 5)
         library.tap()
-        let saved = cod.buttons["Saved shared, 300 × 200"].firstMatch
+        let saved = cod.buttons["Float shared again, 300 × 200"].firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 5), cod.debugDescription)
+        // Tapping a Recents row floats it again directly. Simulator PiP is
+        // unavailable, but the handoff must still settle.
         saved.tap()
-        let floatImage = cod.buttons["Float Image"]
-        XCTAssertTrue(floatImage.waitForExistence(timeout: 5))
-        floatImage.tap()
-        // Simulator PiP is unavailable, but the Library handoff and dismissal
-        // must still reach the launch UI without leaving its detail sheet up.
-        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: floatImage)
-        waitForExpectations(timeout: 5)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            self.cod.staticTexts["Not available here"].exists || self.cod.staticTexts["Floating"].exists
+                || self.cod.buttons["Back to Cod"].exists
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed, cod.debugDescription)
         if cod.buttons["Back to Cod"].exists { cod.buttons["Back to Cod"].tap() }
         cod.launch()
         setOneTapFloat(true)
@@ -139,7 +139,7 @@ final class LaunchFlowTests: XCTestCase {
     func testCropDoubleTapUsesTheAdjustedRegionAndIgnoresTheBackdrop() {
         XCUIDevice.shared.orientation = .portrait
         cod.launch()
-        tab("Library").tap()
+        tab("Recents").tap()
         if cod.buttons["enable-history"].exists { cod.buttons["enable-history"].tap() }
         setOneTapFloat(false)
         defer { cod.launch(); setOneTapFloat(true) }
@@ -186,9 +186,9 @@ final class LaunchFlowTests: XCTestCase {
         // The fallback toast can cover Cancel. Relaunch to verify that the
         // exact crop survives on disk and is available from Library.
         cod.launch()
-        tab("Library").tap()
-        XCTAssertTrue(cod.navigationBars["Library"].waitForExistence(timeout: 5), cod.debugDescription)
-        XCTAssertTrue(cod.buttons["Saved shared, 299 × 200"].waitForExistence(timeout: 8),
+        tab("Recents").tap()
+        XCTAssertTrue(cod.navigationBars["Recents"].waitForExistence(timeout: 5), cod.debugDescription)
+        XCTAssertTrue(cod.buttons["Float shared again, 299 × 200"].waitForExistence(timeout: 8),
                       "Double-tap must save the actual adjusted crop. UI: \(cod.debugDescription)")
     }
 

@@ -44,7 +44,7 @@ struct CodSavedReferenceQuery: EntityStringQuery {
 struct FloatSavedReferenceIntent: OpenIntent {
   static var title: LocalizedStringResource = "Float Saved Reference"
   static var description = IntentDescription(
-    "Open Cod and float a saved card, preset or Library favorite.")
+    "Open Cod and float a saved card, preset or starred image.")
   static var authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
   @Parameter(title: "Reference") var target: CodSavedReferenceEntity
   static var parameterSummary: some ParameterSummary { Summary("Float \(\.$target) with Cod") }

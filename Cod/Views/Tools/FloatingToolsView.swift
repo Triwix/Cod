@@ -1,12 +1,29 @@
 import SwiftUI
 
+/// How a PDF floats: one still page, pages you turn with the floating
+/// window's skip buttons, or a continuously scrolling range.
+enum PDFFloatMode: String, CaseIterable, Identifiable {
+  case page, flip, scroll
+  var id: String { rawValue }
+  var title: String {
+    switch self {
+    case .page: return "One Page"
+    case .flip: return "Flip Pages"
+    case .scroll: return "Auto-scroll"
+    }
+  }
+}
+
 struct PDFReferenceView: View {
   private enum PageField: Hashable { case page, first, last }
   let reference: PDFReference
   @EnvironmentObject private var coordinator: CaptureCoordinator
   @Environment(\.dismiss) private var dismiss
   @State private var pageInput = "1"
-  @State private var autoScroll = false
+  @State private var mode: PDFFloatMode
+  @State private var flipInterval = 10.0
+  @State private var flipShape: FloatWindowShape?
+  @State private var flipPreview: UIImage?
   @State private var firstInput = "1"
   @State private var lastInput = "1"
   @State private var speed = 32.0
@@ -20,6 +37,15 @@ struct PDFReferenceView: View {
   @State private var session: FloatingToolSession?
   @FocusState private var focusedPage: PageField?
 
+  init(reference: PDFReference) {
+    self.reference = reference
+    // A multi-page PDF opens ready to flip through, like a document.
+    _mode = State(initialValue: reference.pageCount > 1 ? .flip : .page)
+    _lastInput = State(initialValue: String(min(reference.pageCount, Slideshow.maximumImages)))
+  }
+
+  private var autoScroll: Bool { mode == .scroll }
+
   var body: some View {
     FloatingEditorLayout {
       if autoScroll {
@@ -30,6 +56,8 @@ struct PDFReferenceView: View {
             label: "Scrolling PDF preview")
         }
         if preparing { ProgressView("Preparing pages…") }
+      } else if mode == .flip {
+        if let flipPreview { FloatingPreviewImage(image: flipPreview, label: "First page preview") }
       } else if let image {
         FloatingPreviewImage(image: image, label: "PDF page preview")
       }
@@ -44,22 +72,36 @@ struct PDFReferenceView: View {
           let created = FloatingToolSession(configuration: config, document: scrolling)
           session = created
           coordinator.floatTool(created)
-        } else if !autoScroll, let image {
+        } else if mode == .flip, let range = scrollRange {
+          floatPages(range)
+        } else if mode == .page, let image {
+          guard coordinator.unlocks(.pdf) else { return }
           dismiss()
           coordinator.floatImmediately(image: image, origin: .imported)
         }
       } label: {
-        Label(autoScroll ? "Float Scrolling Pages" : "Float Page", systemImage: "pip.enter")
+        Label(floatTitle, systemImage: "pip.enter")
           .frame(maxWidth: .infinity, minHeight: 36)
       }
       .buttonStyle(CodActionStyle())
-      .accessibilityIdentifier(autoScroll ? "float-scrolling-reference" : "float-pdf-page")
+      .accessibilityIdentifier(floatIdentifier)
       .disabled(coordinator.isWorking || !canFloat)
       if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
     } settings: {
-      Section("Pages") {
-        Toggle("Auto-scroll pages", isOn: $autoScroll).accessibilityIdentifier("auto-scroll-pdf")
-        if autoScroll {
+      Section {
+        Picker("Show", selection: $mode) {
+          ForEach(PDFFloatMode.allCases) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier("pdf-mode")
+        if mode == .flip {
+          pageField("From page", input: $firstInput, focus: .first, identifier: "flip-first-page")
+          pageField("To page", input: $lastInput, focus: .last, identifier: "flip-last-page")
+          if flipRange == nil {
+            Text("Choose 2 to \(Slideshow.maximumImages) pages between 1 and \(reference.pageCount).")
+              .foregroundStyle(.red).accessibilityIdentifier("pdf-flip-validation")
+          }
+        } else if autoScroll {
           pageField("From page", input: $firstInput, focus: .first, identifier: "scroll-first-page")
           pageField("To page", input: $lastInput, focus: .last, identifier: "scroll-last-page")
           if scrollRange == nil {
@@ -106,6 +148,24 @@ struct PDFReferenceView: View {
           Text("Only the selected page is rendered. Your original PDF isn't changed.")
             .font(.footnote).foregroundStyle(.secondary)
         }
+      } header: {
+        Text("Pages")
+      } footer: {
+        if mode == .flip {
+          Text("Opens paused on the first page. Use the floating window's skip buttons to go back or forward one page. Press play to turn pages automatically.")
+        }
+      }
+      if mode == .flip {
+        Section("Window") {
+          FloatWindowShapePicker(selection: Binding(
+            get: { flipShape ?? flipPreview.map { FloatWindowShape.closest(to: $0.size) } ?? .tall },
+            set: { flipShape = $0 }))
+        }
+        Section {
+          LabeledContent("When playing, next page every", value: "\(Int(flipInterval)) s")
+          Slider(value: $flipInterval, in: Slideshow.intervalRange, step: 1)
+            .accessibilityLabel("Seconds per page")
+        }
       }
       if autoScroll {
         ReferenceScrollOptions(speed: $speed, position: $position, reference: scrolling)
@@ -120,13 +180,20 @@ struct PDFReferenceView: View {
         Button("Done") { focusedPage = nil }
       }
     }
-    .onChange(of: autoScroll) { _, enabled in
+    .onChange(of: mode) { _, newMode in
       focusedPage = nil
       errorMessage = nil
-      if enabled, let page = selectedPageIndex {
+      if newMode == .scroll, let page = selectedPageIndex {
         firstInput = String(page + 1)
         lastInput = String(page + 1)
       }
+    }
+    .task(id: mode == .flip ? firstInput : nil) {
+      guard mode == .flip, let first = PDFPageSelection.index(firstInput, count: reference.pageCount) else {
+        flipPreview = nil
+        return
+      }
+      flipPreview = try? reference.image(pageIndex: first, maximumEdge: 900)
     }
     .onReceive(
       NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)
@@ -141,8 +208,8 @@ struct PDFReferenceView: View {
           from: field.beginningOfDocument, to: field.endOfDocument)
       }
     }
-    .task(id: autoScroll ? nil : selectedPageIndex) {
-      guard !autoScroll, let index = selectedPageIndex else { return }
+    .task(id: mode == .page ? selectedPageIndex : nil) {
+      guard mode == .page, let index = selectedPageIndex else { return }
       do {
         image = try reference.image(pageIndex: index)
         renderedPageIndex = index
@@ -177,7 +244,54 @@ struct PDFReferenceView: View {
   private var scrollRange: PDFScrollRange? {
     .init(first: firstInput, last: lastInput, pageCount: reference.pageCount)
   }
+  private var flipRange: PDFScrollRange? {
+    guard let range = scrollRange, range.last - range.first + 1 >= 2,
+      range.last - range.first + 1 <= Slideshow.maximumImages
+    else { return nil }
+    return range
+  }
+  private var floatTitle: String {
+    switch mode {
+    case .page: return "Float Page"
+    case .flip: return "Float Pages"
+    case .scroll: return "Float Scrolling Pages"
+    }
+  }
+  private var floatIdentifier: String {
+    switch mode {
+    case .page: return "float-pdf-page"
+    case .flip: return "float-pdf-pages"
+    case .scroll: return "float-scrolling-reference"
+    }
+  }
+
+  /// Renders the range as an image set that opens paused; the floating
+  /// window's skip buttons then turn one page at a time.
+  private func floatPages(_ range: PDFScrollRange) {
+    // Ask before rendering pages that couldn't float anyway.
+    guard coordinator.unlocks(.pdf) else { return }
+    preparing = true
+    defer { preparing = false }
+    do {
+      let pages = try (range.first...range.last).map { number in
+        try autoreleasepool { try reference.image(pageIndex: number - 1, maximumEdge: CGFloat(Slideshow.storedEdge)) }
+      }
+      var config = FloatingToolConfiguration(kind: .slideshow)
+      config.slideNames = try Slideshow.store(pages)
+      config.slideInterval = flipInterval
+      config.startsPaused = true
+      config.setName = "\(reference.name) · \(range.first)–\(range.last)"
+      config.windowShape = flipShape ?? FloatWindowShape.closest(to: pages[0].size)
+      config.interfaceStyle = coordinator.currentInterfaceStyle
+      let created = FloatingToolSession(configuration: config)
+      session = created
+      errorMessage = nil
+      coordinator.floatTool(created, feature: .pdf)
+    } catch { errorMessage = error.localizedDescription }
+  }
+
   private var canFloat: Bool {
+    if mode == .flip { return !preparing && flipRange != nil }
     if autoScroll {
       return !preparing && scrolling != nil && scrollRange != nil && preparedRange == scrollRange
     }

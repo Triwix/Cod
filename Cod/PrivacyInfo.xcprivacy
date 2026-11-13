@@ -19,6 +19,13 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array><string>35F9.1</string></array>
         </dict>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+            <!-- System Monitor's Free Storage reading, shown to the user. -->
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array><string>85F4.1</string></array>
+        </dict>
     </array>
 </dict>
 </plist>

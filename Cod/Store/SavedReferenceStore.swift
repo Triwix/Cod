@@ -26,7 +26,7 @@ enum SavedReferenceError: LocalizedError {
     case .invalidContent: return "This reference couldn't be saved. Check its content and settings."
     case .missing:
       return
-        "This reference was removed. Choose another saved reference or favorite in your Shortcut or control."
+        "This reference was removed. Choose another saved reference or starred item in your Shortcut or control."
     }
   }
 }

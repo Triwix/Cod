@@ -129,3 +129,39 @@ private struct NativeFloatingColorPicker: UIViewControllerRepresentable {
     }
   }
 }
+
+/// Wide, square or tall floating windows. Picture in Picture takes its shape
+/// from the frames Cod draws; people can still resize and move the window.
+struct FloatWindowShapePicker: View {
+  @Binding var selection: FloatWindowShape
+
+  var body: some View {
+    HStack(spacing: 8) {
+      ForEach(FloatWindowShape.allCases) { shape in
+        let selected = shape == selection
+        Button {
+          selection = shape
+        } label: {
+          VStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+              .strokeBorder(selected ? Color.codActionBackground : Color.secondary, lineWidth: 2)
+              .background(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                  .fill(selected ? Color.codActionBackground.opacity(0.18) : Color.clear))
+              .aspectRatio(shape.size.width / shape.size.height, contentMode: .fit)
+              .frame(width: 34, height: 34)
+            Text(shape.ratio).font(.caption2.weight(.semibold)).monospacedDigit()
+              .foregroundStyle(selected ? Color.codActionBackground : Color.secondary)
+          }
+          .frame(maxWidth: .infinity, minHeight: 56)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(shape.title), \(shape.ratio)")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier("window-shape-\(shape.rawValue)")
+      }
+    }
+    .padding(.vertical, 2)
+  }
+}

@@ -17,8 +17,8 @@ final class SnapStore: ObservableObject {
         case damagedIndex, encoding
         var errorDescription: String? {
             switch self {
-            case .damagedIndex: return "Cod couldn't read the Library index. Existing files are unchanged and Library edits are paused. Try loading it again or reopen Cod. Delete Everything can reset it, but only choose that if you want to remove all saved Library items."
-            case .encoding: return "Cod couldn't encode this Library image."
+            case .damagedIndex: return "Cod couldn't read the Recents index. Existing files are unchanged and changes are paused. Try loading it again or reopen Cod. Delete Everything can reset it, but only choose that if you want to remove everything saved in Recents."
+            case .encoding: return "Cod couldn't save this image in Recents."
             }
         }
     }
@@ -153,6 +153,16 @@ final class SnapStore: ObservableObject {
         guard !indexNeedsRecovery else { return }
         guard let index = snaps.firstIndex(where: { $0.id == snapID }) else { return }
         snaps[index].recognizedText = text
+        persistIndex()
+    }
+
+    /// Floating an item again moves it to the top of Recents instead of saving
+    /// a duplicate, and keeps it inside the history limit.
+    func touch(_ id: Snap.ID) {
+        guard !indexNeedsRecovery, let index = snaps.firstIndex(where: { $0.id == id }) else { return }
+        var snap = snaps.remove(at: index)
+        snap.lastUsedAt = Date()
+        snaps.insert(snap, at: 0)
         persistIndex()
     }
 
@@ -317,7 +327,7 @@ final class SnapStore: ObservableObject {
 
     private func publishFavorites() {
         let entries = favorites.map {
-            SavedReferenceSummary(id: $0.id, name: "\($0.isVideo ? "Video" : "Image") · \($0.createdAt.formatted(date: .abbreviated, time: .shortened))", detail: "Library favorite")
+            SavedReferenceSummary(id: $0.id, name: "\($0.isVideo ? "Video" : "Image") · \($0.createdAt.formatted(date: .abbreviated, time: .shortened))", detail: "Starred in Recents")
         }
         guard entries != lastPublishedFavorites else { return }
         do {
@@ -364,7 +374,7 @@ final class SnapStore: ObservableObject {
     private func reportStorageFailure(generation: Int) {
         DispatchQueue.main.async { [weak self] in
             guard let self, generation == self.historyGeneration else { return }
-            self.storageIssue = "Some Library changes couldn't be saved or removed. Check available device storage and try again. Don't rely on a new Library item until it is available after reopening Cod. Originals in Photos and Files are unchanged."
+            self.storageIssue = "Some changes to Recents couldn't be saved or removed. Check available device storage and try again. Don't rely on a new item until it is available after reopening Cod. Originals in Photos and Files are unchanged."
         }
     }
 }
