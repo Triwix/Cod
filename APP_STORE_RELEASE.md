@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (32)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (33)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,12 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 33 fixes pre-launch audit items: OCR follows the device's languages,
+  "Temperature" is now "Thermal State", Speedometer GPS accuracy is lower,
+  and the reviewer notes explain the PiP host view and background location.
+  Open owner decisions: the App Store name, and whether to keep the
+  Speedometer's background location in 1.0. See
+  [build-33 notes](docs/audit-fixes-33.md).
 - Build 32 adds Cod Pro (StoreKit 2): `cod.pro.yearly` and `cod.pro.monthly`
   with a 7-day free trial, and `cod.pro.lifetime`. Create them in App Store
   Connect with the same IDs and Family Sharing, and submit them with the app.

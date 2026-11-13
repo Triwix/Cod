@@ -28,7 +28,7 @@ enum HistoryRetentionPolicy {
 
 /// What happens the moment a capture arrives.
 enum ArrivalMode: String, CaseIterable, Identifiable, Codable {
-    /// Drop straight into the crop surface (Snapper's normal mode).
+    /// Drop straight into the crop surface.
     case selection
     /// Skip selection and fire the instant action on the whole image.
     case instant
@@ -90,7 +90,8 @@ final class AppSettings: ObservableObject {
         self.enabledActions = (defaults.decode(Set<SnapAction>.self, forKey: Keys.enabledActions) ?? SnapAction.defaultEnabled).intersection(SnapAction.availableCases)
         self.historyLimit = defaults.decode(HistoryLimit.self, forKey: Keys.historyLimit) ?? .ten
         self.ocrAccuracy = defaults.decode(OCRAccuracy.self, forKey: Keys.ocrAccuracy) ?? .accurate
-        self.ocrLanguages = defaults.decode([String].self, forKey: Keys.ocrLanguages) ?? ["en-US"]
+        self.ocrLanguages = defaults.decode([String].self, forKey: Keys.ocrLanguages)
+            ?? Self.defaultOCRLanguages(supported: Recognizer.supportedLanguages)
         self.ocrLanguageCorrection = defaults.object(forKey: Keys.ocrLanguageCorrection) as? Bool ?? true
         self.keepOtherAudioPlaying = defaults.object(forKey: Keys.keepOtherAudioPlaying) as? Bool ?? true
         self.captureDelay = defaults.object(forKey: Keys.captureDelay) as? Double ?? 0
@@ -167,6 +168,34 @@ final class AppSettings: ObservableObject {
     // MARK: - Recognition
 
     @Published var ocrAccuracy: OCRAccuracy { didSet { defaults.encode(ocrAccuracy, forKey: Keys.ocrAccuracy) } }
+    /// Text recognition languages until the person picks their own: the
+    /// device's preferred languages that Vision can read (up to three), so
+    /// OCR works outside English without a trip to Settings. Recomputed each
+    /// launch, so it follows a change of device language.
+    static func defaultOCRLanguages(
+        preferred: [String] = Locale.preferredLanguages, supported: [String]
+    ) -> [String] {
+        func parts(_ identifier: String) -> (language: String, script: String?, region: String?) {
+            let given = Locale.Language(identifier: identifier)
+            // Fill in the implied script, so zh-TW matches zh-Hant.
+            let full = Locale.Language(identifier: given.maximalIdentifier)
+            return (full.languageCode?.identifier ?? identifier, full.script?.identifier, given.region?.identifier)
+        }
+        var chosen: [String] = []
+        for identifier in preferred {
+            let wanted = parts(identifier)
+            let matches = supported.filter {
+                let candidate = parts($0)
+                return candidate.language == wanted.language
+                    && (candidate.script == nil || wanted.script == nil || candidate.script == wanted.script)
+            }
+            let best = matches.first { parts($0).region == wanted.region } ?? matches.first
+            if let best, !chosen.contains(best) { chosen.append(best) }
+            if chosen.count == 3 { break }
+        }
+        return chosen.isEmpty ? ["en-US"] : chosen
+    }
+
     @Published var ocrLanguages: [String] { didSet { defaults.encode(ocrLanguages, forKey: Keys.ocrLanguages) } }
     @Published var ocrLanguageCorrection: Bool { didSet { defaults.set(ocrLanguageCorrection, forKey: Keys.ocrLanguageCorrection) } }
 

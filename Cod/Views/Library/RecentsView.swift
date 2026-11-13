@@ -354,7 +354,7 @@ struct SnapDetailView: View {
                 VStack(spacing: 16) {
                     if let image {
                         // Live Text makes the snippet's contents selectable
-                        // right here, the way Snapper's OCR view does.
+                        // right here, next to the image.
                         LiveTextImageView(image: image)
                             .aspectRatio(image.size.width / max(image.size.height, 1), contentMode: .fit)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))

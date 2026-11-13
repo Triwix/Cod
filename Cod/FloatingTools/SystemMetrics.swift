@@ -326,7 +326,9 @@ final class SystemMetricsSampler: NSObject, CLLocationManagerDelegate, @unchecke
     guard location == nil else { return }
     let manager = CLLocationManager()
     manager.delegate = self
-    manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
+    // GPS-grade accuracy is enough for speed; the navigation level is meant
+    // for a plugged-in device and costs more battery.
+    manager.desiredAccuracy = kCLLocationAccuracyBest
     manager.activityType = .otherNavigation
     location = manager
     switch manager.authorizationStatus {

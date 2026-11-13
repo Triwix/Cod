@@ -83,14 +83,14 @@ final class CaptureCoordinator: ObservableObject {
         store: SnapStore,
         settings: AppSettings,
         pip: PiPPinController,
-        pro: ProStore = .shared,
+        pro: ProStore? = nil,
         sharedInbox: SharedImageInbox = .shared,
         quickHandoff: QuickFloatHandoff = .shared
     ) {
         self.store = store
         self.settings = settings
         self.pip = pip
-        self.pro = pro
+        self.pro = pro ?? .shared
         self.sharedInbox = sharedInbox
         self.quickHandoff = quickHandoff
         observePiPStatus()

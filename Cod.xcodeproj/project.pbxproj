@@ -53,6 +53,7 @@
 		47DE7A3249F2C76F88DD3F29 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54274FECD14B5E0D244A3C41 /* RootView.swift */; };
 		48B8B04FDA3FC3B2611BAE76 /* SavedReferenceIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B010E3DD59DEFF2C0B9C79B7 /* SavedReferenceIntent.swift */; };
 		49DF333AADE9998C1487E825 /* RouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7306D1C76118D1B3C738898 /* RouteView.swift */; };
+		4A25E3F8A823818B8E663430 /* Build33Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F127BC45FEE269B2ECE7766 /* Build33Tests.swift */; };
 		4A374E7DB1047F2AA7567D42 /* SavedReferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15E687C08C2D3F6B93EDEBB /* SavedReferencesView.swift */; };
 		4A6EAAEE6B142D4D71CFB047 /* SavedReferenceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5BD064506003E1FE0C324C /* SavedReferenceCatalog.swift */; };
 		4BFA0FF4C3E3EA15C4EC67DC /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 3C24F7C11676A94D3DB2AC7B /* content.js */; };
@@ -340,6 +341,7 @@
 		8B9970A110885EF934CC5E17 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
 		8BA86CE9F40AB066F187AFCE /* Redesign21UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Redesign21UITests.swift; sourceTree = "<group>"; };
 		8E1A69AC90327DD549C57FC2 /* FloatingLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingLaunchView.swift; sourceTree = "<group>"; };
+		8F127BC45FEE269B2ECE7766 /* Build33Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Build33Tests.swift; sourceTree = "<group>"; };
 		90AE09AA1853D2F404764B38 /* VideoReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReference.swift; sourceTree = "<group>"; };
 		936E5D575F764091F4514631 /* PiPPinController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPPinController.swift; sourceTree = "<group>"; };
 		93DECC961B6DD22C6A3E7E56 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -577,6 +579,7 @@
 			isa = PBXGroup;
 			children = (
 				E30E325BB522256A787ACE5E /* Build28Tests.swift */,
+				8F127BC45FEE269B2ECE7766 /* Build33Tests.swift */,
 				BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */,
 				9E9E5FBBDF8B3ECD746A987D /* Features16Tests.swift */,
 				54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */,
@@ -1236,6 +1239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A6056B251C087EC35EB57A06 /* Build28Tests.swift in Sources */,
+				4A25E3F8A823818B8E663430 /* Build33Tests.swift in Sources */,
 				0C1EBE269B6DA4FACFE92531 /* CropInteractionTests.swift in Sources */,
 				C8C68E3C5233B72BBB8793F4 /* Features16Tests.swift in Sources */,
 				B334299C114CD8E46DFD7DE8 /* FloatEntryPointTests.swift in Sources */,
@@ -1455,7 +1459,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 32;
+				CURRENT_PROJECT_VERSION = 33;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1651,7 +1655,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 32;
+				CURRENT_PROJECT_VERSION = 33;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;

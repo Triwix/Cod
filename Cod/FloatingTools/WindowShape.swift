@@ -59,7 +59,7 @@ enum SystemMetric: String, CaseIterable, Identifiable, Codable {
   var title: String {
     switch self {
     case .battery: return "Battery"
-    case .temperature: return "Temperature"
+    case .temperature: return "Thermal State"
     case .download: return "Download"
     case .upload: return "Upload"
     case .connection: return "Connection"
@@ -73,7 +73,7 @@ enum SystemMetric: String, CaseIterable, Identifiable, Codable {
   /// Short label drawn in the floating window.
   var label: String {
     switch self {
-    case .temperature: return "Temp"
+    case .temperature: return "Thermal"
     case .storage: return "Storage"
     case .lowPower: return "Low Power"
     default: return title

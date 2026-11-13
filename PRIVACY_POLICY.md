@@ -99,7 +99,7 @@ the floating window and immediately discards it. Locations are never stored,
 logged or sent. Closing the Speedometer stops location updates; iOS shows its
 location indicator while they run.
 
-System Monitor shows only the readings you turn on: battery, device temperature,
+System Monitor shows only the readings you turn on: battery, thermal state (how warm iOS rates the device),
 download and upload rate, connection type, free storage, memory in use, CPU use
 and Low Power Mode. They are read on the iPhone once a second for display only
 and are never stored or sent. For network rates Cod reads byte counts, never the

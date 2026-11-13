@@ -7,6 +7,14 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Audit fixes · 1.0 (33)
+
+Text recognition now defaults to the device's languages instead of English
+only. System Monitor's "Temperature" is now "Thermal State", which is what iOS
+actually reports. The Speedometer uses standard GPS accuracy, and the reviewer
+notes cover the PiP host view and background location. See
+[build-33 notes](docs/audit-fixes-33.md).
+
 ## Cod Pro · 1.0 (32)
 
 Cod Pro unlocks live tools, the teleprompter and text cards, videos and GIFs,

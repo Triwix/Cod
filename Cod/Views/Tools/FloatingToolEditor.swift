@@ -594,7 +594,7 @@ struct FloatingToolPlaybackControls: View {
   }
 }
 
-/// Floathing-style row of sibling tools at the top of an editor.
+/// A row of sibling tools at the top of an editor.
 struct ToolCategorySwitcher: View {
   let kinds: [FloatingToolKind]
   @Binding var selection: FloatingToolKind

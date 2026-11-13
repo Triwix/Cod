@@ -64,7 +64,7 @@ Don't use other apps' names.)
 > Notes and teleprompter scripts, PDFs you can flip through page by page, image
 > sets, videos and GIFs. A timer, stopwatch, Pomodoro, a countdown to any date,
 > a clock and a world clock. A system monitor with the readings you pick:
-> battery, temperature, network speed, storage, memory and CPU. A speedometer.
+> battery, thermal state, network speed, storage, memory and CPU. A speedometer.
 > Make the floating window wide, square or tall, and save setups for widgets
 > and Control Center.
 >
@@ -147,11 +147,12 @@ show content in the Simulator.
 - **Live tools, scrolling text and PDF pages:** Cod draws timestamped frames into AVSampleBufferDisplayLayer and uses AVKit's documented sample-buffer playback delegate. Play/pause and skip control the tool (for example, skip turns PDF pages).
 - **Imported videos:** ordinary AVPlayer playback.
 - **Controls:** Cod adds no custom buttons to the window and hides no system controls.
+- **Host view:** AVKit needs the player layer in Cod's view hierarchy before Picture in Picture can start, so Cod adds a small, nearly transparent view behind its content to hold it. The view has no controls and isn't used to hide anything.
 - **No private APIs:** no private APIs, automatic app switching or app suspension.
 
 **Background modes:**
 - **Audio:** keeps an active floating window playing.
-- **Location:** used only by the Speedometer tool while it's open or floating. iOS shows the location indicator, and Speedometer asks for permission the first time it's opened.
+- **Location:** used only by the Speedometer tool while it's open or floating, because floating means Cod is in the background. Cod asks for When In Use permission only, shows the background location indicator, and stops updates when the Speedometer closes. Speed is shown and discarded; locations are never stored or sent.
 
 **Extensions:**
 - **Share extension:** it saves the image to an App Group. Then the user opens Cod or taps an optional local notification. It never launches Cod itself.

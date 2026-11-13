@@ -116,7 +116,7 @@ final class NewToolsTests: XCTestCase {
     metrics.memoryTotal = 8 * 1_073_741_824
     metrics.connection = "Wi-Fi"
     var rows = config.snapshot(elapsed: 0, date: Date(), metrics: metrics).rows
-    XCTAssertEqual(rows.map(\.label), ["Battery", "Temp", "Download", "Upload"])
+    XCTAssertEqual(rows.map(\.label), ["Battery", "Thermal", "Download", "Upload"])
     XCTAssertFalse(rows.contains { $0.label == "Speed" }, "Speed is its own tool now")
     config.systemMetrics = [.cpu, .battery, .storage, .memory, .connection]
     XCTAssertEqual(config.systemMetrics, [.battery, .connection, .storage, .memory, .cpu])
