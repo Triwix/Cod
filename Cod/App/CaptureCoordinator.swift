@@ -204,6 +204,9 @@ final class CaptureCoordinator: ObservableObject {
             finishQuickRequest(success: false)
             lastExternalImageSize = payload.image.pixelSize
             quickRequestID = payload.id
+            // Shared text arrives as a rendered card, which is a Pro feature
+            // in either mode (cropping it would float it as an image).
+            if payload.isText, !unlocks(.textCards) { return true }
             CodDiagnosticLog.record("quick share claimed id=\(payload.id) elapsed=\(Int(Date().timeIntervalSince(payload.createdAt) * 1_000))ms")
             if payload.mode == .float {
                 floatImmediately(image: payload.image, minimalUI: true, reusePreparedPlayback: false)

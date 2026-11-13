@@ -13,6 +13,9 @@ final class QuickFloatHandoff {
         let image: UIImage
         let mode: Mode
         let createdAt: Date
+        /// Shared text rendered to an image. Text cards are a Pro feature,
+        /// so the app checks before floating; the extension can't.
+        var isText = false
     }
     private struct Record: Codable {
         let id: UUID
@@ -20,6 +23,8 @@ final class QuickFloatHandoff {
         let mode: Mode
         let createdAt: Date
         var state: State
+        /// Missing in records written before build 34.
+        var isText: Bool?
     }
     private let container: () -> URL?
     init(container: @escaping () -> URL? = {
@@ -29,9 +34,10 @@ final class QuickFloatHandoff {
     }) { self.container = container }
 
     @discardableResult
-    func store(_ image: UIImage, mode: Mode = .float, now: Date = Date()) throws -> UUID {
+    func store(_ image: UIImage, mode: Mode = .float, isText: Bool = false, now: Date = Date()) throws -> UUID {
         guard let encoded = Self.encoded(image) else { throw SharedImageInbox.InboxError.tooLarge }
-        let record = Record(id: UUID(), png: encoded, mode: mode, createdAt: now, state: .pending)
+        let record = Record(id: UUID(), png: encoded, mode: mode, createdAt: now, state: .pending,
+                            isText: isText ? true : nil)
         try coordinate { url in try self.write(record, to: url) }
         CodDiagnosticLog.record("quick share stored id=\(record.id) bytes=\(encoded.count) mode=\(mode)")
         return record.id
@@ -117,7 +123,8 @@ final class QuickFloatHandoff {
 
     private func payload(_ record: Record) throws -> Payload {
         guard let image = UIImage(data: record.png) else { throw SharedImageInbox.InboxError.unreadable }
-        return Payload(id: record.id, image: image, mode: record.mode, createdAt: record.createdAt)
+        return Payload(id: record.id, image: image, mode: record.mode, createdAt: record.createdAt,
+                       isText: record.isText ?? false)
     }
     private func read(_ url: URL) throws -> Record? {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }

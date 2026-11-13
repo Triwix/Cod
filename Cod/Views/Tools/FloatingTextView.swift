@@ -272,7 +272,7 @@ struct FloatingTextView: View {
       do {
         let data = try await selectedPhoto.loadTransferable(type: Data.self)
         try Task.checkCancellation()
-        let image = try VisualFileImport.image(from: data)
+        let image = try await VisualFileImport.decodedImage(from: data)
         await readPhoto(
           image,
           confirm: !draft.configuration.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

@@ -9,6 +9,8 @@ final class ShareViewController: UIViewController {
     private var hosting: UIHostingController<ShareRootView>?
     private let state = ShareFloatState()
     private var sharedImage: UIImage?
+    /// The shared item was text, rendered to an image here.
+    private var sharedIsText = false
     private var imageToFloat: UIImage?
     private var oneTapFloat = false
     private var useFloatNotification = false
@@ -123,6 +125,7 @@ final class ShareViewController: UIViewController {
                 do {
                     guard let text else { throw FloatingTextError.empty }
                     let image = try FloatingText.render(text)
+                    self.sharedIsText = true
                     self.completeImageLoad(image, requestID: requestID)
                 } catch {
                     self.imageLoadID = nil
@@ -233,11 +236,12 @@ final class ShareViewController: UIViewController {
         state.phase = .opening
         handoffTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            let isText = self.sharedIsText
             if self.useFloatNotification {
                 var imageWasSaved = false
                 do {
                     let id = try await Task.detached(priority: .userInitiated) {
-                        try QuickFloatHandoff.shared.store(image, mode: .float)
+                        try QuickFloatHandoff.shared.store(image, mode: .float, isText: isText)
                     }.value
                     imageWasSaved = true
                     try await ShareFloatNotifications().schedule(id)
@@ -256,7 +260,7 @@ final class ShareViewController: UIViewController {
             do {
                 let mode: QuickFloatHandoff.Mode = self.oneTapFloat ? .float : .crop
                 _ = try await Task.detached(priority: .userInitiated) {
-                    try QuickFloatHandoff.shared.store(image, mode: mode)
+                    try QuickFloatHandoff.shared.store(image, mode: mode, isText: isText)
                 }.value
                 self.handoffTask = nil
                 guard !self.completed else { return }

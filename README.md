@@ -7,6 +7,19 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Audit fixes A1–A12 · 1.0 (34)
+
+Fixes found in a second audit:
+- Subscribers upgrading to Lifetime now get the right plan.
+- Text shared from the Share sheet is Pro.
+- The trial length comes from the App Store.
+- Both verifiers cover the Safari extension and need no extra tools.
+- The Privacy screen is complete.
+- File imports run off the main thread.
+- The Safari script is lighter, and the controls extension has its own entitlements.
+
+See [build-34 notes](docs/audit-fixes-34.md).
+
 ## Audit fixes · 1.0 (33)
 
 Text recognition now defaults to the device's languages instead of English

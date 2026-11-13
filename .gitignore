@@ -29,3 +29,6 @@ build/
 *.key
 *.mobileprovision
 *.provisionprofile
+
+# Private launch notes (pricing, competitors). The repository is public.
+docs/launch-plan-1.0.md

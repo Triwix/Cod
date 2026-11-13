@@ -22,6 +22,14 @@ struct PrivacyView: View {
                 Text("Optional Shortcuts use the image you share or a screenshot you explicitly trigger. You approve installing them in Shortcuts. Optional local float notifications contain only a request identifier, with no image preview.")
                 Text("Text and PDF Shortcut actions use only the input you supply. Timers measure elapsed time locally; no timing data is sent anywhere. On iOS 26 or later, enabling Alarm when finished asks permission to schedule a local system alarm. Cod stores its identifier and finish time locally so you can cancel it even after reopening the app. A native countdown Live Activity also lets you cancel the timer. Keep running when PiP closes is on by default; turning it off makes closing PiP cancel that timer's alarm.")
             }
+            Section("Location, device readings and Safari") {
+                Text("The Speedometer uses your location only while it's open or floating, after you allow it. Cod reads your speed, shows it and discards it; locations are never stored or sent. iOS shows its location indicator while updates run, and closing the Speedometer stops them.")
+                Text("System Monitor shows only the readings you turn on: battery, thermal state, download and upload rate, connection type, free storage, memory, CPU and Low Power Mode. They're read on your iPhone for display and never stored or sent. Network rates come from byte counts, never the content or destination of your traffic.")
+                Text("The Float Video with Cod Safari extension runs only after you turn it on in iPhone Settings. It looks for videos on pages so it can show a Float button, and doesn't read, store or send page content or browsing history.")
+            }
+            Section("Cod Pro purchases") {
+                Text("Apple handles Cod Pro purchases, subscriptions and payment details. Cod receives only the App Store's signed record of what you bought, to unlock Pro, and remembers that on this iPhone. Manage or cancel a subscription in iPhone Settings → your name → Subscriptions.")
+            }
             if let policyURL {
                 Section {
                     Link("Privacy policy and contact", destination: policyURL)

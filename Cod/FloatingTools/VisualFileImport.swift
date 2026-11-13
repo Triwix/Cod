@@ -31,7 +31,18 @@ enum VisualFileImport {
     return image
   }
 
-  @MainActor static func open(_ url: URL) async throws -> Content {
+  /// Decodes picked image data off the main thread; large photos can take a
+  /// noticeable moment to decode.
+  static func decodedImage(from data: Data?) async throws -> UIImage {
+    let image = try await Task.detached(priority: .userInitiated) { try image(from: data) }.value
+    try Task.checkCancellation()
+    return image
+  }
+
+  /// Not main-actor isolated: reading and decoding a PDF (up to 40 MB) or
+  /// image (up to 50 MB) runs off the main thread. Callers keep their own
+  /// cancellation and stale-input checks after it returns.
+  static func open(_ url: URL) async throws -> Content {
     try Task.checkCancellation()
     guard url.isFileURL else { throw ImportError.unsupported }
     let accessing = url.startAccessingSecurityScopedResource()

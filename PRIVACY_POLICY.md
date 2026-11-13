@@ -1,6 +1,6 @@
 # Cod privacy policy — release draft
 
-Last updated: November 3, 2026.
+Last updated: November 13, 2026.
 
 Publication requires the developer's approved identity/contact details below.
 This draft describes Cod 1.0's supported-only configuration. Unsupported launch,
@@ -131,6 +131,12 @@ Safari to play that video in Picture in Picture. The extension does not read,
 store or send page content, browsing history or form data, and it doesn't
 communicate with the Cod app or the developer. It saves only your Show Float
 button preference in Safari's extension storage.
+
+Cod Pro is sold through Apple's App Store. Apple processes the purchase,
+subscription and payment details; the developer never receives them. Cod reads
+only the App Store's signed transaction record to decide whether Pro is
+unlocked, and stores that result on the device. You can manage or cancel a
+subscription in iPhone Settings → your name → Subscriptions.
 
 Image sets copy the photos you pick into Cod's private storage on this iPhone.
 Sets that no saved reference uses are deleted the next time Cod opens.

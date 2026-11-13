@@ -361,7 +361,10 @@ final class PiPPinController: NSObject, ObservableObject {
         configureAudioSession()
         let requestID = UUID()
         preparationID = requestID
-        prepareTask = Task { @MainActor in
+        prepareTask = Task { @MainActor [weak self] in
+            // The task doesn't keep the controller alive before it starts;
+            // once running it holds it, as before.
+            guard let self else { return }
             defer {
                 if preparationID == requestID { preparationID = nil; prepareTask = nil }
             }

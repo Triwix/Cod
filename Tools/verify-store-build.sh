@@ -45,14 +45,15 @@ for workflow in 'Float with Cod' 'Screenshot and Float with Cod' 'Screenshot and
 done
 private_patterns='LSApplicationWorkspace|suspendReturningToLastApp|_systemNavigationAction|setControlsStyle:|controlsStyle|ShareSourceContext|SourceAppReturn|BSProcessHandle|_FBSScene|SSEnvironmentDescription|com\.josh\.cod\.float-image|openThroughResponderChain|responder-chain|api\.imgur\.com'
 
-for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.appex"; do
+for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.appex" "$app_path/PlugIns/CodSafari.appex"; do
     executable_name=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$bundle_path/Info.plist")
     bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle_path/Info.plist")
-    if [[ "$bundle_id" != com.josh.cod.store && "$bundle_id" != com.josh.cod.store.share && "$bundle_id" != com.josh.cod.store.controls ]]; then
+    if [[ "$bundle_id" != com.josh.cod.store && "$bundle_id" != com.josh.cod.store.share && "$bundle_id" != com.josh.cod.store.controls && "$bundle_id" != com.josh.cod.store.safari ]]; then
         print -u2 "Not the store configuration: $bundle_id"
         exit 1
     fi
-    if [[ "$bundle_id" != com.josh.cod.store.controls ]]; then
+    # Only the app and the Share extension carry the share launch policy.
+    if [[ "$bundle_id" == com.josh.cod.store || "$bundle_id" == com.josh.cod.store.share ]]; then
         launch_policy=$(/usr/libexec/PlistBuddy -c 'Print :CodShareLaunchPolicy' "$bundle_path/Info.plist")
         [[ "$launch_policy" == manual-open ]] || {
             print -u2 'The Share extension must use user-mediated app opening.'
@@ -106,9 +107,17 @@ for bundle_path in "$app_path" "$extension_path" "$app_path/PlugIns/CodControls.
         }
     done
     /usr/bin/plutil -lint "$bundle_path/PrivacyInfo.xcprivacy"
-    if [[ "$bundle_id" != com.josh.cod.store.controls ]]; then
+    if [[ "$bundle_id" == com.josh.cod.store || "$bundle_id" == com.josh.cod.store.share ]]; then
         reason=$(/usr/libexec/PlistBuddy -c 'Print :NSPrivacyAccessedAPITypes:0:NSPrivacyAccessedAPITypeReasons:0' "$bundle_path/PrivacyInfo.xcprivacy")
         [[ "$reason" == CA92.1 ]] || { print -u2 'Missing own-preferences declaration'; exit 1; }
+    fi
+    if [[ "$bundle_id" == com.josh.cod.store.safari ]]; then
+        # Safari runs the web extension from these files; it shares nothing with the app.
+        for web_file in manifest.json content.js; do
+            [[ -s "$bundle_path/$web_file" ]] || { print -u2 "Missing Safari extension file: $web_file"; exit 1; }
+        done
+        print "Checked $bundle_id: privacy resource present; known private methods absent."
+        continue
     fi
     group_id=$(/usr/libexec/PlistBuddy -c 'Print :CodAppGroup' "$bundle_path/Info.plist")
     [[ "$group_id" == group.com.josh.cod.store ]] || { print -u2 'Incorrect App Group configuration'; exit 1; }

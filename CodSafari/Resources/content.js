@@ -113,14 +113,25 @@
       `translate(${Math.round(rect.left + scrollX + 10)}px, ${Math.round(rect.top + scrollY + 10)}px)`;
   }
 
+  // A live collection: reading its length is cheap, so pages without
+  // videos cost almost nothing.
+  const videoElements = document.getElementsByTagName("video");
+  let timer = null;
+
   function scan() {
-    for (const video of document.querySelectorAll("video")) {
-      if (!buttons.has(video) && supportsPiP(video)) buttons.set(video, makeButton(video));
+    if (enabled) {
+      for (const video of videoElements) {
+        if (!buttons.has(video) && supportsPiP(video)) buttons.set(video, makeButton(video));
+      }
     }
     for (const [video, host] of buttons) {
       if (!video.isConnected) { host.remove(); buttons.delete(video); continue; }
       place(video, host);
     }
+    // Poll for layout changes only while there are buttons to keep in place.
+    const needsTimer = enabled && buttons.size > 0;
+    if (needsTimer && timer === null) timer = setInterval(schedule, 1500);
+    if (!needsTimer && timer !== null) { clearInterval(timer); timer = null; }
   }
 
   let scheduled = false;
@@ -133,10 +144,11 @@
   if (api && api.storage && api.storage.local) {
     api.storage.local.get({ showButton: true }).then((value) => {
       enabled = value.showButton !== false;
+      updateObserver();
       schedule();
     }).catch(() => {});
     api.storage.onChanged.addListener((changes) => {
-      if (changes.showButton) { enabled = changes.showButton.newValue !== false; schedule(); }
+      if (changes.showButton) { enabled = changes.showButton.newValue !== false; updateObserver(); schedule(); }
     });
   }
 
@@ -153,11 +165,27 @@
     });
   }
 
-  new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
-  addEventListener("scroll", schedule, { passive: true });
-  addEventListener("resize", schedule);
-  document.addEventListener("fullscreenchange", schedule);
-  document.addEventListener("webkitpresentationmodechanged", schedule, true);
-  setInterval(schedule, 1500); // catch layout changes the observers miss
-  schedule();
+  // Only do work when it can matter: Float is on and the page has videos
+  // (or buttons to hide).
+  function scheduleIfRelevant() {
+    if ((enabled && videoElements.length > 0) || buttons.size > 0) schedule();
+  }
+
+  let observer = null;
+  function updateObserver() {
+    if (enabled && observer === null) {
+      observer = new MutationObserver(scheduleIfRelevant);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    } else if (!enabled && observer !== null) {
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  addEventListener("scroll", scheduleIfRelevant, { passive: true });
+  addEventListener("resize", scheduleIfRelevant);
+  document.addEventListener("fullscreenchange", scheduleIfRelevant);
+  document.addEventListener("webkitpresentationmodechanged", scheduleIfRelevant, true);
+  updateObserver();
+  scheduleIfRelevant();
 })();

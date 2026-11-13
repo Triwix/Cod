@@ -353,7 +353,7 @@ struct SettingsView: View {
             } else {
                 Button { coordinator.proPrompt = .init(feature: nil) } label: {
                     CodRowLabel("Cod Pro", systemImage: "sparkles",
-                                detail: pro.isTrialEligible ? "Try it free for 7 days" : "Float tools, text, videos and PDFs")
+                                detail: pro.trial.map { "Try it free for \($0.phrase)" } ?? "Float tools, text, videos and PDFs")
                 }
                 .accessibilityIdentifier("settings-pro")
                 Button(isRestoring ? "Restoring…" : "Restore Purchases") {

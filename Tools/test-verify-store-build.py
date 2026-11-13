@@ -144,8 +144,10 @@ class StoreVerifierTests(unittest.TestCase):
         tools.mkdir(parents=True)
         guard = tools / "verify-supported-source.sh"
         shutil.copyfile(self.verifier.with_name(guard.name), guard)
-        for name in ["Cod", "CodShare", "CodControls", "CodTests", "CodLaunchUITests", "Cod.xcodeproj"]:
+        for name in ["Cod", "CodShare", "CodControls", "CodSafari", "CodTests", "CodLaunchUITests",
+                     "Cod.xcodeproj", "Cod.xcodeproj/xcshareddata"]:
             (root / name).mkdir()
+        (root / "Cod.xcodeproj" / "project.pbxproj").write_text("// fixture\n")
         (root / "project.yml").write_text("name: Fixture\n")
         fixture = root / "Cod" / "Fixture.swift"
         for marker in ["controlsStyle", "_FBSScene", "BSProcessHandle"]:
@@ -154,13 +156,28 @@ class StoreVerifierTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("unsupported entry point", result.stderr)
 
-    def test_source_guard_also_rejects_a_missing_search_tool(self):
+    def test_source_guard_runs_with_only_stock_tools(self):
         environment = os.environ.copy()
         environment["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"
         result = subprocess.run(["/bin/zsh", "-f", str(self.verifier.with_name("verify-supported-source.sh"))],
             capture_output=True, text=True, timeout=30, env=environment)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_source_guard_scans_the_safari_extension(self):
+        root = self.directory / "Source"
+        tools = root / "Tools"
+        tools.mkdir(parents=True)
+        guard = tools / "verify-supported-source.sh"
+        shutil.copyfile(self.verifier.with_name(guard.name), guard)
+        for name in ["Cod", "CodShare", "CodControls", "CodSafari", "CodTests", "CodLaunchUITests",
+                     "Cod.xcodeproj", "Cod.xcodeproj/xcshareddata"]:
+            (root / name).mkdir()
+        (root / "Cod.xcodeproj" / "project.pbxproj").write_text("// fixture\n")
+        (root / "project.yml").write_text("name: Fixture\n")
+        (root / "CodSafari" / "Handler.swift").write_text("UIApplication.shared\n")
+        result = subprocess.run(["/bin/zsh", "-f", str(guard)], capture_output=True, text=True, timeout=30)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Required source-audit tool is unavailable", result.stderr)
+        self.assertIn("unsupported entry point", result.stderr)
 
     def test_source_guard_accepts_the_current_source(self):
         result = subprocess.run(["/bin/zsh", "-f", str(self.verifier.with_name("verify-supported-source.sh"))],
@@ -173,9 +190,11 @@ class StoreVerifierTests(unittest.TestCase):
         tools.mkdir(parents=True)
         source_guard = tools / "verify-supported-source.sh"
         shutil.copyfile(self.verifier.with_name(source_guard.name), source_guard)
-        # Missing CodShare is a real rg input error, not a clean no-match result.
-        for directory in ["Cod", "CodControls", "CodTests", "CodLaunchUITests", "Cod.xcodeproj"]:
+        # Missing CodShare is a real input error, not a clean no-match result.
+        for directory in ["Cod", "CodControls", "CodSafari", "CodTests", "CodLaunchUITests",
+                          "Cod.xcodeproj", "Cod.xcodeproj/xcshareddata"]:
             (root / directory).mkdir()
+        (root / "Cod.xcodeproj" / "project.pbxproj").write_text("// fixture\n")
         (root / "project.yml").write_text("name: Fixture\n")
         result = subprocess.run(["/bin/zsh", "-f", str(source_guard)],
             capture_output=True, text=True, timeout=30)

@@ -10,7 +10,8 @@ struct ProView: View {
   @ObservedObject private var pro = ProStore.shared
   @Environment(\.dismiss) private var dismiss
   @Environment(\.purchase) private var purchase
-  @State private var plan: ProPlan = .yearly
+  /// The plan the person tapped; `plan` falls back to an offered one.
+  @State private var chosen: ProPlan?
   @State private var isPurchasing = false
   @State private var isRestoring = false
   @State private var message: String?
@@ -122,10 +123,10 @@ struct ProView: View {
     } else {
       VStack(spacing: 10) {
         ForEach(availablePlans) { option in planRow(option) }
-        if let product = pro.products[plan] {
+        if let plan, let product = pro.products[plan] {
           Button { Task { await buy(product) } } label: {
             Group {
-              if isPurchasing { ProgressView() } else { Text(buyTitle) }
+              if isPurchasing { ProgressView() } else { Text(buyTitle(plan)) }
             }
             .frame(maxWidth: .infinity, minHeight: 36)
           }
@@ -133,7 +134,7 @@ struct ProView: View {
           .disabled(isPurchasing || isRestoring)
           .accessibilityIdentifier("pro-purchase")
           .padding(.top, 4)
-          Text(disclosure(for: product))
+          Text(disclosure(for: product, plan: plan))
             .font(.footnote).foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("pro-disclosure")
@@ -159,13 +160,14 @@ struct ProView: View {
 
   /// A subscriber only sees Lifetime as an upgrade.
   private var availablePlans: [ProPlan] {
-    let all = ProPlan.allCases.filter { pro.products[$0] != nil }
-    return pro.hasActiveSubscription ? all.filter { $0 == .lifetime } : all
+    ProPlan.offered(loaded: Set(pro.products.keys), hasActiveSubscription: pro.hasActiveSubscription)
   }
+
+  private var plan: ProPlan? { ProPlan.selection(chosen: chosen, offered: availablePlans) }
 
   private func planRow(_ option: ProPlan) -> some View {
     let selected = plan == option
-    return Button { plan = option; message = nil } label: {
+    return Button { chosen = option; message = nil } label: {
       HStack(spacing: 12) {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
           .font(.title3).foregroundStyle(selected ? Color.codActionBackground : Color.secondary)
@@ -173,8 +175,8 @@ struct ProView: View {
         VStack(alignment: .leading, spacing: 2) {
           HStack(spacing: 6) {
             Text(option.title).font(.headline)
-            if option.isSubscription, pro.isTrialEligible {
-              Text("7 days free")
+            if option.isSubscription, let trial = pro.trial {
+              Text("\(trial.phrase) free")
                 .font(.caption2.weight(.bold))
                 .padding(.horizontal, 7).padding(.vertical, 2)
                 .foregroundStyle(Color.codActionBackground)
@@ -224,22 +226,22 @@ struct ProView: View {
     }
   }
 
-  private var buyTitle: String {
+  private func buyTitle(_ plan: ProPlan) -> String {
     switch plan {
     case .lifetime: return "Buy Lifetime"
-    case .yearly, .monthly: return pro.isTrialEligible ? "Start 7-Day Free Trial" : "Subscribe"
+    case .yearly, .monthly: return pro.trial.map { "Start \($0.title) Free Trial" } ?? "Subscribe"
     }
   }
 
-  private func disclosure(for product: Product) -> String {
+  private func disclosure(for product: Product, plan: ProPlan) -> String {
     let renewal = "Renews automatically until you cancel. Cancel anytime in Settings at least 24 hours before the end of the period."
     switch plan {
     case .lifetime:
       return "One payment of \(product.displayPrice). Pro stays unlocked on your devices and works with Family Sharing."
     case .yearly, .monthly:
       let period = plan == .yearly ? "year" : "month"
-      if pro.isTrialEligible {
-        return "Free for 7 days, then \(product.displayPrice) a \(period). \(renewal) If you cancel during the trial, you won't be charged."
+      if let trial = pro.trial {
+        return "Free for \(trial.phrase), then \(product.displayPrice) a \(period). \(renewal) If you cancel during the trial, you won't be charged."
       }
       return "\(product.displayPrice) a \(period). \(renewal)"
     }

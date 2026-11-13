@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (33)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (34)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,10 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 34 fixes audit items A1–A12 (see MVP_CHECKLIST.md). Check on the phone:
+  the Lifetime upgrade from a subscription, shared text on the free tier, and
+  the Safari extension on real pages. Check CodControls' entitlements in the
+  signed build. See [build-34 notes](docs/audit-fixes-34.md).
 - Build 33 fixes pre-launch audit items: OCR follows the device's languages,
   "Temperature" is now "Thermal State", Speedometer GPS accuracy is lower,
   and the reviewer notes explain the PiP host view and background location.

@@ -62,6 +62,7 @@
 		4F865AF9166FE1A675E3046C /* LiveFloatSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099B71C7829EB6246B9AE3AA /* LiveFloatSource.swift */; };
 		50A90C9879D9FDBE3300E343 /* FloatingAppearancePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D471184653F65B0F5C3E5 /* FloatingAppearancePicker.swift */; };
 		51A2BE01D25C9A74004850A9 /* ScrollingReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6DDDC519F0393067ADD402 /* ScrollingReference.swift */; };
+		51CCF7195A7810536B5522F7 /* Build34Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EAFF0328F32488A3AB8E33 /* Build34Tests.swift */; };
 		527868A76C06AABE9772E088 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F72C93AA097A39E6C25280E9 /* PrivacyInfo.xcprivacy */; };
 		534E209B214C4F65EDA0FEA7 /* Polish15Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E8E132FDFB584547E8B833 /* Polish15Tests.swift */; };
 		550FE9D49E0CE61ACA4A161E /* FloatingText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27043B7F49B64F0E0A3ED285 /* FloatingText.swift */; };
@@ -264,6 +265,7 @@
 		143174E4AA57F6AEC56F9FCF /* FloatingEditorLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingEditorLayout.swift; sourceTree = "<group>"; };
 		15C8E41F359131CC83F9FED0 /* SelectionGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionGeometryTests.swift; sourceTree = "<group>"; };
 		164A85EFAB1FFD9489BC7E93 /* FloatNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatNotificationDelegate.swift; sourceTree = "<group>"; };
+		18EAFF0328F32488A3AB8E33 /* Build34Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Build34Tests.swift; sourceTree = "<group>"; };
 		199549F9AEC602E9555201C7 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		1B9B674FF0EBB8E701857430 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = images; path = CodSafari/Resources/images; sourceTree = SOURCE_ROOT; };
 		1BEBBA3103BFE3EFB0360C62 /* CodShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CodShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -406,6 +408,7 @@
 		F748A97FCF187E270B1B5D1E /* Recognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recognizer.swift; sourceTree = "<group>"; };
 		F7DC4235F451367B3B9CD6A5 /* FloatingVideoPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingVideoPlayback.swift; sourceTree = "<group>"; };
 		F925D3523C1BCC98F8B90555 /* FloatingTimerAlarms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingTimerAlarms.swift; sourceTree = "<group>"; };
+		FBE8F1B5633EEDFBD5D00FAD /* CodControls.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CodControls.entitlements; sourceTree = "<group>"; };
 		FC3AE2F4B8162DAE1F917763 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -519,6 +522,7 @@
 		756477B3B8015B4F159183AF /* CodControls */ = {
 			isa = PBXGroup;
 			children = (
+				FBE8F1B5633EEDFBD5D00FAD /* CodControls.entitlements */,
 				7CACB40C2BF2CBF2DC7855BE /* CodControls.swift */,
 				5477D427976402ECE9F75A13 /* CodTimerActivity.swift */,
 				3B4A21E8B5136C82D591BCF1 /* Info.plist */,
@@ -580,6 +584,7 @@
 			children = (
 				E30E325BB522256A787ACE5E /* Build28Tests.swift */,
 				8F127BC45FEE269B2ECE7766 /* Build33Tests.swift */,
+				18EAFF0328F32488A3AB8E33 /* Build34Tests.swift */,
 				BDF2879F271A3E97E2DBF284 /* CropInteractionTests.swift */,
 				9E9E5FBBDF8B3ECD746A987D /* Features16Tests.swift */,
 				54E704EFC885E7307D3DCAD1 /* FloatEntryPointTests.swift */,
@@ -1240,6 +1245,7 @@
 			files = (
 				A6056B251C087EC35EB57A06 /* Build28Tests.swift in Sources */,
 				4A25E3F8A823818B8E663430 /* Build33Tests.swift in Sources */,
+				51CCF7195A7810536B5522F7 /* Build34Tests.swift in Sources */,
 				0C1EBE269B6DA4FACFE92531 /* CropInteractionTests.swift in Sources */,
 				C8C68E3C5233B72BBB8793F4 /* Features16Tests.swift in Sources */,
 				B334299C114CD8E46DFD7DE8 /* FloatEntryPointTests.swift in Sources */,
@@ -1401,7 +1407,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CodControls/CodControls.entitlements;
 				COD_APP_GROUP = group.com.josh.cod.store;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CodControls/Info.plist;
@@ -1459,7 +1465,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1497,7 +1503,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = Cod/StoreRelease.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CodControls/CodControls.entitlements;
 				COD_APP_GROUP = group.com.josh.cod.store;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CodControls/Info.plist;
@@ -1655,7 +1661,7 @@
 				COD_PRIVACY_POLICY_URL = "";
 				COD_SHARE_LAUNCH_POLICY = "manual-open";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 33;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UE492DNA6V;
 				ENABLE_NS_ASSERTIONS = NO;

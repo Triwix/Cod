@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Widgets and controls read the saved-reference catalog from the App
+         Group. They never touch the share-settings keychain group. -->
+    <key>com.apple.security.application-groups</key>
+    <array><string>$(COD_APP_GROUP)</string></array>
+</dict>
+</plist>

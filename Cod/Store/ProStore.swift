@@ -90,6 +90,64 @@ enum ProPlan: String, CaseIterable, Identifiable {
   }
 }
 
+extension ProPlan {
+  /// Plans the Pro screen offers: all loaded ones, or only Lifetime as an
+  /// upgrade for someone with an active subscription or trial.
+  static func offered(loaded: Set<ProPlan>, hasActiveSubscription: Bool) -> [ProPlan] {
+    let all = allCases.filter(loaded.contains)
+    return hasActiveSubscription ? all.filter { $0 == .lifetime } : all
+  }
+
+  /// The plan the purchase button acts on: the tapped one if it's offered,
+  /// otherwise the first offered plan. Never a plan that isn't shown.
+  static func selection(chosen: ProPlan?, offered: [ProPlan]) -> ProPlan? {
+    if let chosen, offered.contains(chosen) { return chosen }
+    return offered.first
+  }
+}
+
+/// A free trial's length, worded for the Pro screen. Weeks read as days
+/// ("7 days"), the way trials are usually described.
+struct TrialLength: Equatable {
+  enum Unit: Equatable {
+    case day, week, month, year
+
+    init(_ unit: Product.SubscriptionPeriod.Unit) {
+      switch unit {
+      case .day: self = .day
+      case .week: self = .week
+      case .month: self = .month
+      case .year: self = .year
+      @unknown default: self = .day
+      }
+    }
+  }
+
+  var value: Int
+  var unit: Unit
+
+  private var normalized: (count: Int, word: String) {
+    switch unit {
+    case .day: return (value, "day")
+    case .week: return (value * 7, "day")
+    case .month: return (value, "month")
+    case .year: return (value, "year")
+    }
+  }
+
+  /// "7 days", "1 month"
+  var phrase: String {
+    let (count, word) = normalized
+    return "\(count) \(word)\(count == 1 ? "" : "s")"
+  }
+
+  /// "7-Day", for "Start 7-Day Free Trial"
+  var title: String {
+    let (count, word) = normalized
+    return "\(count)-\(word.prefix(1).uppercased())\(word.dropFirst())"
+  }
+}
+
 /// One verified transaction from StoreKit, reduced to what decides access.
 struct ProEntitlement: Equatable {
   var plan: ProPlan
@@ -159,7 +217,10 @@ final class ProStore: ObservableObject {
 
   @Published private(set) var access: ProAccess
   @Published private(set) var products: [ProPlan: Product] = [:]
-  @Published private(set) var isTrialEligible = false
+  /// The free trial this Apple Account can still start, from App Store
+  /// Connect's introductory offer; nil when there's none or it was used.
+  @Published private(set) var trial: TrialLength?
+  var isTrialEligible: Bool { trial != nil }
   @Published private(set) var isLoadingProducts = false
   @Published private(set) var productsError: String?
 
@@ -198,7 +259,9 @@ final class ProStore: ObservableObject {
         await self?.refresh()
       }
     }
-    Task { await refresh() }
+    // Load products too, so Settings can offer the trial before the Pro
+    // screen has ever been opened.
+    Task { await refresh(); await loadProducts() }
   }
 
   func refresh() async {
@@ -259,11 +322,12 @@ final class ProStore: ObservableObject {
   /// plan's eligibility answers for both subscriptions.
   private func updateTrialEligibility() async {
     guard let subscription = (products[.yearly] ?? products[.monthly])?.subscription,
-          subscription.introductoryOffer?.paymentMode == .freeTrial else {
-      isTrialEligible = false
+          let offer = subscription.introductoryOffer, offer.paymentMode == .freeTrial else {
+      trial = nil
       return
     }
-    isTrialEligible = await subscription.isEligibleForIntroOffer
+    let length = TrialLength(value: offer.period.value, unit: .init(offer.period.unit))
+    trial = await subscription.isEligibleForIntroOffer ? length : nil
   }
 
   #if DEBUG && targetEnvironment(simulator)

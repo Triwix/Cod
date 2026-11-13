@@ -172,7 +172,7 @@ struct HomeView: View {
                 coordinator.route = .init(kind: .video(video))
                 return
             }
-            let image = try VisualFileImport.image(from: data)
+            let image = try await VisualFileImport.decodedImage(from: data)
             if crop { coordinator.restoreFloatingSelection(image, origin: .imported) }
             else { coordinator.floatImmediately(image: image, origin: .imported) }
         } catch {
@@ -194,7 +194,7 @@ struct HomeView: View {
                     throw VisualFileImport.ImportError.unavailable
                 }
                 try Task.checkCancellation()
-                images.append(try VisualFileImport.image(from: data))
+                images.append(try await VisualFileImport.decodedImage(from: data))
             }
             guard imports.accepts(request) else { return }
             if images.count == 1 { coordinator.floatImmediately(image: images[0], origin: .imported) }
