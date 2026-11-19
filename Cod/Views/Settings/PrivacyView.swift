@@ -14,6 +14,8 @@ struct PrivacyView: View {
                 Text("History stores recent images, imported video copies and recognized text separately. Starred items survive history limits, Off and Clear Recents. Clear Recents also offers Delete Everything, Including Starred, after confirmation. History may be included in your device's normal backup. Original media in Photos or Files, saved Photos copies and images you send to other apps aren't deleted by clearing Cod's Recents.")
                 Text("Text and teleprompter drafts are saved locally between visits. Delete their text in the editor to clear a draft. Clearing image history doesn't clear these drafts. Selected PDFs are read to render pages; Cod doesn't keep a separate copy of the original PDF.")
                 Text("Animated GIFs are converted locally into temporary videos for playback. Video cropping creates a temporary edited copy and does not modify the original. Scrolling references render only the selected image or bounded PDF page range locally.")
+                Text("Word, PowerPoint, Excel and iWork documents are laid out on your iPhone and turned into PDF pages; text, Markdown and RTF files open as editable text. Nothing is uploaded.")
+                Text("Video from a Link opens the page you choose in a private web view that keeps no cookies or history after it closes. A link shared to Cod waits in Cod's local container for up to 5 minutes, until you open Cod.")
             }
             Section("Permissions and sharing") {
                 Text("The photo picker lets you choose an image or video without giving Cod access to your whole library. Reading the latest screenshot requires Photos permission. Saving to Photos asks for permission when needed.")

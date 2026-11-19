@@ -90,10 +90,15 @@ struct HomeView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.buttonStyle(.plain)
                         .accessibilityIdentifier("choose-file")
+                    Button { coordinator.openWebVideo() } label: {
+                        CodRowLabel("Video from a Link", systemImage: "link", detail: "Open a YouTube or web video page, then float its video")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.plain)
+                        .accessibilityIdentifier("open-web-video")
                 } header: {
                     Text("Crop & float")
                 } footer: {
-                    Text("Files can be images, videos, animated GIFs or PDFs")
+                    Text("Files can be images, videos, animated GIFs, PDFs, Word, PowerPoint, Excel, Pages and Keynote documents, or text, Markdown and RTF")
                 }
                 .disabled(coordinator.isWorking || isLoadingPhoto)
                 if !recents.items.isEmpty {
@@ -246,6 +251,7 @@ struct HomeView: View {
             case .image(let image): coordinator.restoreFloatingSelection(image, origin: .imported)
             case .video(let reference): coordinator.route = .init(kind: .video(reference))
             case .pdf(let reference): coordinator.route = .init(kind: .pdf(reference))
+            case .text(let text): coordinator.route = .init(kind: .text(text))
             }
         } catch { if !Task.isCancelled { imports.fail(error, for: request) } }
     }

@@ -193,8 +193,11 @@ struct RecentsView: View {
         .disabled(coordinator.isWorking)
         .contextMenu {
             Button("Float", systemImage: "pip.enter") { coordinator.floatRecent(item.configuration) }
-            Button("Edit Before Floating", systemImage: "slider.horizontal.3") {
-                coordinator.route = .init(kind: .editor(item.configuration))
+            // Auto-scroll documents have no editor; reopen the file to change them.
+            if item.configuration.kind != .document {
+                Button("Edit Before Floating", systemImage: "slider.horizontal.3") {
+                    coordinator.route = .init(kind: .editor(item.configuration))
+                }
             }
             Button(item.isStarred ? "Unstar" : "Star", systemImage: item.isStarred ? "star.slash" : "star") {
                 tools.toggleStar(item.id)

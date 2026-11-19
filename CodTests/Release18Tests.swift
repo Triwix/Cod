@@ -110,7 +110,8 @@ final class Release18Tests: XCTestCase {
   {
     let folder = try temporaryFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
-    let text = folder.appendingPathComponent("reference.txt")
+    // Text files are supported since build 36; an archive isn't.
+    let text = folder.appendingPathComponent("reference.zip")
     try Data("Reference".utf8).write(to: text)
     for url in [folder, text, URL(string: "https://example.com/photo.png")!] {
       do {

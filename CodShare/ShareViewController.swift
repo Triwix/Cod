@@ -72,6 +72,10 @@ final class ShareViewController: UIViewController {
         let attachments = item.attachments ?? []
         diagnostic("received \(attachments.count) attachment(s)")
         guard let provider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.image.identifier) }) else {
+            if let linkProvider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.url.identifier) }) {
+                loadSharedLink(from: linkProvider)
+                return
+            }
             if let textProvider = attachments.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) }) {
                 loadSharedText(from: textProvider)
                 return
@@ -106,6 +110,32 @@ final class ShareViewController: UIViewController {
         }
     }
 
+    /// A web link (for example from a video app) waits for Cod's web video
+    /// screen. The extension can't open Cod, so it says to open Cod next.
+    private func loadSharedLink(from provider: NSItemProvider) {
+        provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] object, _ in
+            let url = (object as? URL) ?? (object as? Data).flatMap { URL(dataRepresentation: $0, relativeTo: nil) }
+            DispatchQueue.main.async {
+                guard let self, !self.completed else { return }
+                guard let url, let link = WebVideoLink.url(from: url.absoluteString) else {
+                    self.state.phase = .failed("Cod can open web links (http or https) to float their video.")
+                    return
+                }
+                self.queueLink(link)
+            }
+        }
+    }
+
+    private func queueLink(_ link: URL) {
+        do {
+            try SharedLinkHandoff.shared.store(link)
+            diagnostic("link queued; showing open-Cod instructions")
+            state.phase = .ready(.openCodForLink)
+        } catch {
+            state.phase = .failed(error.localizedDescription)
+        }
+    }
+
     private func loadSharedText(from provider: NSItemProvider) {
         let requestID = UUID()
         imageLoadID = requestID
@@ -122,6 +152,13 @@ final class ShareViewController: UIViewController {
             else { text = nil }
             DispatchQueue.main.async {
                 guard let self, !self.completed, self.imageLoadID == requestID else { return }
+                if let text, let link = WebVideoLink.loneLink(in: text) {
+                    self.imageLoadID = nil
+                    self.imageLoadTimeout?.cancel()
+                    self.imageLoadTimeout = nil
+                    self.queueLink(link)
+                    return
+                }
                 do {
                     guard let text else { throw FloatingTextError.empty }
                     let image = try FloatingText.render(text)

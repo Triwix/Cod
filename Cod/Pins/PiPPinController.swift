@@ -55,6 +55,7 @@ final class PiPPinController: NSObject, ObservableObject {
     private var videoPlayback: FloatingVideoPlayback?
     private var videoRepeats = FloatingVideoPlayback.defaultRepeats
     private var videoSound = false
+    private var videoOptions = FloatingVideoOptions()
     private var liveSource: LiveFloatSource?
     private var restorationState = PiPRestorationState()
 
@@ -128,6 +129,12 @@ final class PiPPinController: NSObject, ObservableObject {
         guard videoReference?.id == id else { return }
         videoRepeats = enabled
         videoPlayback?.setRepeats(enabled)
+    }
+
+    func setVideoSpeed(_ speed: Float, for id: UUID) {
+        guard videoReference?.id == id else { return }
+        videoOptions.speed = speed
+        videoPlayback?.setSpeed(speed)
     }
 
     // MARK: - Public
@@ -343,7 +350,8 @@ final class PiPPinController: NSObject, ObservableObject {
         }
     }
 
-    func float(video reference: VideoReference, sound: Bool, repeats: Bool = FloatingVideoPlayback.defaultRepeats) {
+    func float(video reference: VideoReference, sound: Bool, repeats: Bool = FloatingVideoPlayback.defaultRepeats,
+               options: FloatingVideoOptions = .init()) {
         guard isSupported else { status = .unsupported; return }
         controller?.stopPictureInPicture()
         teardown(keepStatus: true)
@@ -356,6 +364,7 @@ final class PiPPinController: NSObject, ObservableObject {
         completedVideoLoops = 0
         videoRepeats = repeats
         videoSound = sound
+        videoOptions = options
         status = .preparing
         startedAt = CFAbsoluteTimeGetCurrent()
         configureAudioSession()
@@ -369,7 +378,8 @@ final class PiPPinController: NSObject, ObservableObject {
                 if preparationID == requestID { preparationID = nil; prepareTask = nil }
             }
             guard !Task.isCancelled, preparationID == requestID else { return }
-            let playback = FloatingVideoPlayback(reference: reference, sound: videoSound, repeats: videoRepeats)
+            let playback = FloatingVideoPlayback(reference: reference, sound: videoSound, repeats: videoRepeats,
+                                                 options: videoOptions)
             videoPlayback = playback
             playback.onRepeat = { [weak self, weak playback] count in
                 guard let self, let playback, self.videoPlayback === playback else { return }
@@ -391,7 +401,7 @@ final class PiPPinController: NSObject, ObservableObject {
             // Prepare the first frame, then hold the video at its beginning
             // while AVKit opens. A short clip mustn't finish during setup.
             queue.pause()
-            await queue.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+            await queue.seek(to: playback.startTime, toleranceBefore: .zero, toleranceAfter: .zero)
             guard !Task.isCancelled, preparationID == requestID else { return }
             makeController()
             startWhenPossible()

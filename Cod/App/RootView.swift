@@ -99,6 +99,7 @@ struct RootView: View {
                     case .image(let image): coordinator.receiveExternalImage(image)
                     case .video(let video): coordinator.route = .init(kind: .video(video))
                     case .pdf(let pdf): coordinator.route = .init(kind: .pdf(pdf))
+                    case .text(let text): coordinator.route = .init(kind: .text(text))
                     }
                 } catch {
                     guard !Task.isCancelled, inputID == coordinator.explicitInputID else { return }
@@ -195,6 +196,7 @@ struct RootView: View {
             // this view existed.
             if inbox.pendingReference != nil {
                 receiveReference()
+            } else if coordinator.receiveSharedLink() {
             } else if let image = inbox.pendingFloatImage {
                 inbox.pendingFloatImage = nil
                 coordinator.receiveFloatIntentImage(image)
@@ -222,6 +224,7 @@ struct RootView: View {
             if phase == .active, settings.enabledActions.contains(.float) {
                 coordinator.pip.prewarm()
             }
+            if phase == .active, inbox.pendingReference == nil { _ = coordinator.receiveSharedLink() }
             if phase == .active {
                 coordinator.refreshSharedImages()
                 coordinator.refreshQuickSharePreview()
@@ -274,6 +277,8 @@ struct RootView: View {
                 coordinator.receiveFloatIntentImage(image)
             case .saved(let id):
                 coordinator.floatSavedReference(id)
+            case .link(let url):
+                coordinator.openWebVideo(url)
             case .animated(let data):
                 guard coordinator.unlocks(.video) else { return }
                 Task {

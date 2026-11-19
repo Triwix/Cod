@@ -7,6 +7,14 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Video links, speed and documents · 1.0 (36)
+
+Recents no longer duplicates setups and now includes image sets, PDF pages and
+auto-scroll documents. Videos get a speed setting and a repeatable section.
+Video from a Link floats web videos (YouTube and others) through an in-app web
+view. Word, PowerPoint, Excel and iWork files float as pages; text, Markdown
+and RTF open as editable text. See [build-36 notes](docs/features-36.md).
+
 ## Swipe the preview to choose a shape · 1.0 (35)
 
 - In the tool, teleprompter and PDF Flip Pages editors, swipe the preview to choose the window's shape. Neighbouring shapes show faded on either side, and the Window row still works.

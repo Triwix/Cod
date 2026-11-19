@@ -138,6 +138,15 @@ only the App Store's signed transaction record to decide whether Pro is
 unlocked, and stores that result on the device. You can manage or cancel a
 subscription in iPhone Settings → your name → Subscriptions.
 
+Documents (Word, PowerPoint, Excel, Pages, Keynote, Numbers, text, Markdown
+and RTF) are converted on the device; Cod doesn't upload them. Video from a Link
+loads the web page you choose in a private web view with no persistent cookies
+or history; the website handles your visit under its own policy. A link shared
+to Cod's Share extension is kept in Cod's local container for up to five
+minutes, until you open Cod, and is then deleted. Auto-scroll documents,
+image sets and PDF pages you float are kept as images in Cod's private storage
+while they're listed in Recents.
+
 Image sets copy the photos you pick into Cod's private storage on this iPhone.
 Sets that no saved reference uses are deleted the next time Cod opens.
 

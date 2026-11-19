@@ -15,17 +15,27 @@ struct FloatingVideoView: View {
   @State private var isCropping = false
   @State private var cropError: String?
   @State private var cropTask: Task<Void, Never>?
+  @State private var speed: Float = 1
+  @State private var usesSection = false
+  @State private var sectionStart: Double = 0
+  @State private var sectionEnd: Double = 0
   private var activeReference: VideoReference { cropped ?? reference }
+  private var duration: Double { max(0, activeReference.duration) }
+  private var options: FloatingVideoOptions {
+    FloatingVideoOptions(
+      speed: speed,
+      section: usesSection ? FloatingVideoOptions.clampedSection(sectionStart...max(sectionStart, sectionEnd), duration: duration) : nil)
+  }
 
   var body: some View {
     FloatingEditorLayout {
       VideoPreview(reference: activeReference, pip: pip) {
         guard autoFloat, !autoStarted else { return }
         autoStarted = true
-        Task { @MainActor in coordinator.floatVideo(activeReference, sound: sound, repeats: repeats) }
+        Task { @MainActor in coordinator.floatVideo(activeReference, sound: sound, repeats: repeats, options: options) }
       }.id(activeReference.id)
       Button {
-        coordinator.floatVideo(activeReference, sound: sound, repeats: repeats)
+        coordinator.floatVideo(activeReference, sound: sound, repeats: repeats, options: options)
       } label: {
         Label("Float Video", systemImage: "pip.enter").frame(maxWidth: .infinity, minHeight: 36)
       }
@@ -43,6 +53,29 @@ struct FloatingVideoView: View {
         Text(message).foregroundStyle(.secondary)
       }
     } settings: {
+      Section {
+        Picker("Speed", selection: $speed) {
+          ForEach(FloatingVideoOptions.speeds, id: \.self) { Text(FloatingVideoOptions.speedTitle($0)).tag($0) }
+        }
+        .accessibilityIdentifier("video-speed")
+        if duration > FloatingVideoOptions.minimumSection * 2 {
+          Toggle("Play one section", isOn: $usesSection).accessibilityIdentifier("video-section")
+          if usesSection {
+            LabeledContent("Start", value: FloatingToolConfiguration.time(sectionStart, roundingUp: false))
+            Slider(value: $sectionStart, in: 0...(duration - FloatingVideoOptions.minimumSection))
+              .accessibilityLabel("Section start")
+              .accessibilityIdentifier("video-section-start")
+            LabeledContent("End", value: FloatingToolConfiguration.time(sectionEnd, roundingUp: true))
+            Slider(value: $sectionEnd, in: FloatingVideoOptions.minimumSection...duration)
+              .accessibilityLabel("Section end")
+              .accessibilityIdentifier("video-section-end")
+          }
+        }
+      } header: {
+        Text("Playback")
+      } footer: {
+        Text("Speed changes right away while floating. A section plays from Start to End; with Repeat on it repeats just that part. Section changes apply the next time you float.")
+      }
       Section {
         Button("Crop Video Region", systemImage: "crop") { selectingCrop = true }
           .disabled(coordinator.isWorking || isCropping || pip.isActive).accessibilityIdentifier("crop-video-region")
@@ -66,6 +99,18 @@ struct FloatingVideoView: View {
     .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Close") { dismiss() } } }
     .onChange(of: sound) { _, value in pip.setVideoSound(value, for: activeReference.id) }
     .onChange(of: repeats) { _, value in pip.setVideoRepeats(value, for: activeReference.id) }
+    .onChange(of: speed) { _, value in pip.setVideoSpeed(value, for: activeReference.id) }
+    .onChange(of: sectionStart) { _, value in
+      if sectionEnd < value + FloatingVideoOptions.minimumSection {
+        sectionEnd = min(duration, value + FloatingVideoOptions.minimumSection)
+      }
+    }
+    .onChange(of: sectionEnd) { _, value in
+      if sectionStart > value - FloatingVideoOptions.minimumSection {
+        sectionStart = max(0, value - FloatingVideoOptions.minimumSection)
+      }
+    }
+    .onAppear { if sectionEnd == 0 { sectionEnd = duration } }
     .fullScreenCover(isPresented: $selectingCrop) {
       SelectionView(image: activeReference.poster, availableActions: [.float], smartRegionsEnabled: false,
         onCancel: { selectingCrop = false }, onAction: { _, _, rect in

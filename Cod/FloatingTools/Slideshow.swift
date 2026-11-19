@@ -39,11 +39,30 @@ enum Slideshow {
     }
   }
 
-  /// At launch, nothing is floating yet, so only saved presets need their
-  /// images. Anything else is left over from an earlier session.
+  /// Stores rendered pages of an auto-scroll document (one or more).
+  static func storePages(_ images: [UIImage]) throws -> [String] {
+    guard !images.isEmpty else { throw SlideshowError.empty }
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return try images.map { image in
+      guard let data = image.jpegData(compressionQuality: 0.88) else { throw SlideshowError.unreadable }
+      let name = UUID().uuidString + ".jpg"
+      try data.write(to: directory.appendingPathComponent(name), options: .atomic)
+      return name
+    }
+  }
+
+  /// Full-size stored page (not bounded to the slide edge).
+  static func page(named name: String) -> UIImage? {
+    guard !name.contains("/") else { return nil }
+    return UIImage(contentsOfFile: directory.appendingPathComponent(name).path)
+  }
+
+  /// At launch, nothing is floating yet, so only saved presets and Recents
+  /// need their images. Anything else is left over from an earlier session.
   @MainActor static func removeUnusedAtLaunch() {
-    let kept = Set(SavedReferenceStore.shared.items.compactMap(\.tool).flatMap(\.slideNames))
-    removeUnused(keeping: kept)
+    let configurations = SavedReferenceStore.shared.items.compactMap(\.tool)
+      + RecentFloats.shared.items.map(\.configuration)
+    removeUnused(keeping: Set(configurations.flatMap { $0.slideNames + $0.documentPages }))
   }
 
   /// Removes stored sets that no saved reference or live float still uses.

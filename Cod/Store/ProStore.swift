@@ -38,8 +38,8 @@ enum ProFeature: String, Identifiable, CaseIterable {
     case .tools: return "Timers, clocks, Pomodoro, Countdown To, System Monitor and Speedometer, in any window shape"
     case .teleprompter: return "Scripts that scroll, or step by word or line"
     case .textCards: return "Notes and text read from photos"
-    case .video: return "Float, crop and loop videos and animated GIFs"
-    case .pdf: return "One page, flip through pages, or auto-scroll"
+    case .video: return "Videos, GIFs and web video links: crop, change speed, repeat a section"
+    case .pdf: return "PDFs, Word, PowerPoint, Excel and iWork files: one page, flip pages or auto-scroll"
     case .imageSets: return "Step through several photos"
     case .savedCards: return "One tap from widgets, Control Center and Shortcuts"
     }

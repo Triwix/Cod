@@ -144,6 +144,9 @@ struct FloatingToolConfiguration: Codable, Equatable {
   var storedSystemMetrics: [SystemMetric]?
   var storedStartsPaused: Bool?
   var storedSetName: String?
+  // Added in build 36: an auto-scroll document's rendered pages, stored with
+  // the image sets so Recents can float it again.
+  var storedDocumentPages: [String]?
 
   /// Page-like content (PDF pages, image sets) can open paused, so the
   /// floating window's skip buttons turn one page at a time.
@@ -199,6 +202,10 @@ struct FloatingToolConfiguration: Codable, Equatable {
   var slideNames: [String] {
     get { storedSlideNames ?? [] }
     set { storedSlideNames = newValue }
+  }
+  var documentPages: [String] {
+    get { storedDocumentPages ?? [] }
+    set { storedDocumentPages = newValue }
   }
   var slideInterval: Double {
     get { storedSlideInterval ?? 5 }

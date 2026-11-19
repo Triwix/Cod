@@ -215,11 +215,12 @@ final class Polish11Tests: XCTestCase {
       return XCTFail("Expected PDF")
     }
     XCTAssertEqual(reference.pageCount, 1)
-    let text = root.appendingPathComponent("test.txt")
+    // Text files open in the Text editor since build 36; an archive doesn't.
+    let text = root.appendingPathComponent("test.zip")
     try Data("not an image".utf8).write(to: text)
     do {
       _ = try await VisualFileImport.open(text)
-      XCTFail("Text isn't a supported visual document")
+      XCTFail("An archive isn't a supported document")
     } catch { XCTAssertTrue(error is VisualFileImport.ImportError) }
     let corrupt = root.appendingPathComponent("bad.png")
     try Data("corrupt".utf8).write(to: corrupt)

@@ -14,7 +14,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "35"
+    CURRENT_PROJECT_VERSION: "36"
     DEVELOPMENT_TEAM: UE492DNA6V
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -36,6 +36,9 @@ targets:
           - Resources/Shortcuts
       - path: Cod/Resources/Shortcuts
         type: folder
+        buildPhase: resources
+      # The Safari extension's Float button script, reused in the web video screen.
+      - path: CodSafari/Resources/content.js
         buildPhase: resources
     settings:
       base:
@@ -151,8 +154,13 @@ targets:
     platform: iOS
     sources:
       - path: CodTests
+        excludes:
+          - Fixtures
       # Local App Store products for StoreKit tests; never shipped in the app.
       - path: StoreKit/CodPro.storekit
+        buildPhase: resources
+      - path: CodTests/Fixtures
+        type: folder
         buildPhase: resources
     dependencies:
       - target: Cod

@@ -120,8 +120,10 @@ struct RecentFloatsStrip: View {
           .accessibilityLabel("Float \(item.title) again" + (item.detail.isEmpty ? "" : ", \(item.detail)"))
           .accessibilityIdentifier("recent-\(item.configuration.kind.rawValue)")
           .contextMenu {
-            Button("Edit Before Floating", systemImage: "slider.horizontal.3") {
-              coordinator.route = .init(kind: .editor(item.configuration))
+            if item.configuration.kind != .document {
+              Button("Edit Before Floating", systemImage: "slider.horizontal.3") {
+                coordinator.route = .init(kind: .editor(item.configuration))
+              }
             }
             Button(item.isStarred ? "Unstar" : "Star", systemImage: item.isStarred ? "star.slash" : "star") {
               recents.toggleStar(item.id)

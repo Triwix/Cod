@@ -46,6 +46,13 @@ struct RouteView: View {
             }
         case let .saved(reference):
             NavigationStack { SavedReferenceEditor(reference: reference) }
+        case let .web(url):
+            NavigationStack { WebVideoView(initialURL: url) }
+        case let .text(text):
+            NavigationStack {
+                FloatingTextView(initialText: text)
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } } }
+            }
 
         }
     }

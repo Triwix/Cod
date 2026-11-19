@@ -1,5 +1,31 @@
 import AVFoundation
 
+/// Speed and an optional section to play (and repeat) instead of the whole
+/// video, for practice and tutorials.
+struct FloatingVideoOptions: Equatable {
+  static let speeds: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 2]
+  static let minimumSection: Double = 1
+
+  var speed: Float = 1
+  /// Seconds into the video. Nil plays the whole video.
+  var section: ClosedRange<Double>?
+
+  /// A section that fits a video of this length, or nil when it covers
+  /// (almost) all of it.
+  static func clampedSection(_ section: ClosedRange<Double>?, duration: Double) -> ClosedRange<Double>? {
+    guard let section, duration.isFinite, duration > minimumSection else { return nil }
+    let start = min(max(0, section.lowerBound), duration - minimumSection)
+    let end = min(duration, max(section.upperBound, start + minimumSection))
+    guard start > 0.05 || end < duration - 0.05 else { return nil }
+    return start...end
+  }
+
+  static func speedTitle(_ speed: Float) -> String {
+    let text = speed == speed.rounded() ? String(Int(speed)) : String(format: "%g", speed)
+    return "\(text)×"
+  }
+}
+
 /// Repeat the real movie, not a still-image clip. Keeping one item also keeps
 /// native seeking meaningful when Repeat is changed during playback.
 @MainActor final class FloatingVideoPlayback {
@@ -13,11 +39,22 @@ import AVFoundation
   private var repeatTask: Task<Void, Never>?
   private var revision = 0
   private var active = false
+  private(set) var options: FloatingVideoOptions
+  /// Where playback starts and each repeat returns to.
+  var startTime: CMTime { CMTime(seconds: options.section?.lowerBound ?? 0, preferredTimescale: 600) }
 
-  init(reference: VideoReference, sound: Bool = false, repeats: Bool = defaultRepeats) {
+  init(reference: VideoReference, sound: Bool = false, repeats: Bool = defaultRepeats,
+       options: FloatingVideoOptions = .init()) {
     self.reference = reference
     self.repeats = repeats
+    self.options = options
     let item = AVPlayerItem(url: reference.url)
+    // The end of a section counts as the end of the video, so Repeat and
+    // Repeat Off both work on the section.
+    if let end = options.section?.upperBound {
+      item.forwardPlaybackEndTime = CMTime(seconds: end, preferredTimescale: 600)
+    }
+    item.audioTimePitchAlgorithm = .timeDomain
     player = AVQueuePlayer(playerItem: item)
     player.isMuted = !sound
     player.preventsDisplaySleepDuringVideoPlayback = false
@@ -36,7 +73,15 @@ import AVFoundation
 
   func activate() {
     active = true
+    // PiP's own Play button uses the default rate, so the speed sticks.
+    player.defaultRate = options.speed
     player.play()
+  }
+
+  func setSpeed(_ speed: Float) {
+    options.speed = speed
+    player.defaultRate = speed
+    if player.rate != 0 { player.rate = speed }
   }
 
   func setRepeats(_ value: Bool) {
@@ -65,7 +110,7 @@ import AVFoundation
     repeatTask = Task { @MainActor [weak self] in
       guard let self else { return }
       let finished = await self.player.seek(
-        to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+        to: self.startTime, toleranceBefore: .zero, toleranceAfter: .zero)
       guard finished, !Task.isCancelled, self.active, self.repeats, revision == self.revision else {
         return
       }

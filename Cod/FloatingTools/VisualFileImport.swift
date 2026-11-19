@@ -2,11 +2,13 @@ import UIKit
 import UniformTypeIdentifiers
 
 enum VisualFileImport {
-  static let contentTypes: [UTType] = [.image, .movie, .pdf]
+  static let contentTypes: [UTType] = [.image, .movie, .pdf] + DocumentImport.officeTypes + DocumentImport.textTypes
   static let maximumImageBytes = 50 * 1_024 * 1_024
 
   enum Content {
     case image(UIImage), video(VideoReference), pdf(PDFReference)
+    /// Text from a text, Markdown or RTF file, for the Text editor.
+    case text(String)
   }
 
   enum ImportError: LocalizedError, Equatable {
@@ -53,6 +55,8 @@ enum VisualFileImport {
     else { throw ImportError.unsupported }
     if type.conforms(to: .pdf) { return .pdf(try PDFReference(url: url)) }
     if type.conforms(to: .movie) { return .video(try await VideoReference.copy(from: url)) }
+    if DocumentImport.isOffice(type) { return .pdf(try await DocumentImport.pdf(from: url)) }
+    if DocumentImport.isText(type) { return .text(try DocumentImport.text(at: url, type: type)) }
     guard type.conforms(to: .image) else { throw ImportError.unsupported }
     guard let bytes = values.fileSize, bytes <= maximumImageBytes else {
       throw ImportError.imageTooLarge

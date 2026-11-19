@@ -50,9 +50,23 @@ struct RecentFloat: Codable, Identifiable, Equatable {
   var starred: Bool?
   var isStarred: Bool { starred ?? false }
 
-  var title: String { configuration.kind.title }
+  var title: String {
+    switch configuration.kind {
+    case .slideshow: return configuration.setName ?? "Image Set"
+    case .document: return configuration.text.isEmpty ? configuration.kind.title : configuration.text
+    default: return configuration.kind.title
+    }
+  }
 
+  /// The setup's own detail, plus the window shape when it isn't the
+  /// default, so two setups never look identical in the list.
   var detail: String {
+    let shape = configuration.windowShape == .wide || configuration.kind == .document
+      ? nil : configuration.windowShape.ratio
+    return [baseDetail, shape].compactMap { $0?.isEmpty == false ? $0 : nil }.joined(separator: " · ")
+  }
+
+  private var baseDetail: String? {
     switch configuration.kind {
     case .countdown: return FloatingToolConfiguration.time(configuration.duration, roundingUp: true)
     case .pomodoro: return "\(Int(configuration.focusDuration / 60)) / \(Int(configuration.breakDuration / 60)) min"
@@ -66,7 +80,11 @@ struct RecentFloat: Codable, Identifiable, Equatable {
       let count = configuration.systemMetrics.count
       return count == 1 ? configuration.systemMetrics[0].title : "\(count) readings"
     case .speedometer: return configuration.usesMetricSpeed ? "km/h" : "mph"
-    default: return ""
+    case .stopwatch: return configuration.showsHundredths ? "Hundredths" : nil
+    case .slideshow:
+      let count = configuration.slideNames.count
+      return configuration.startsPaused ? "\(count) pages" : "\(count) images · every \(Int(configuration.slideInterval)) s"
+    case .document: return "Auto-scroll · \(configuration.documentPages.count) pages"
     }
   }
 }
@@ -82,17 +100,38 @@ final class RecentFloats: ObservableObject {
 
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
-    items = defaults.data(forKey: Self.key)
+    let saved = defaults.data(forKey: Self.key)
       .flatMap { try? JSONDecoder().decode([RecentFloat].self, from: $0) } ?? []
+    // Lists saved before build 36 could hold the same setup twice, once per
+    // light/dark mode. Keep the newest, and its star if either had one.
+    var merged: [RecentFloat] = []
+    for var item in saved {
+      item.configuration = Self.normalized(item.configuration)
+      if let index = merged.firstIndex(where: { $0.configuration == item.configuration }) {
+        if item.isStarred { merged[index].starred = true }
+      } else {
+        merged.append(item)
+      }
+    }
+    items = merged
+  }
+
+  /// What makes two setups the same. Light/dark mode is applied when a setup
+  /// floats, so it isn't part of the setup.
+  static func normalized(_ configuration: FloatingToolConfiguration) -> FloatingToolConfiguration {
+    var stored = configuration
+    stored.usesSampleText = false
+    stored.interfaceStyle = .unspecified
+    return stored
   }
 
   /// One entry per tool setup; floating it again moves it to the front and
-  /// keeps its star.
+  /// keeps its star. Image sets, PDF pages and auto-scroll documents are
+  /// included; their images live with the image sets.
   func record(_ configuration: FloatingToolConfiguration) {
-    var stored = configuration
-    // Documents carry generated content that doesn't belong in a recents list.
-    guard stored.kind != .document, stored.kind != .slideshow else { return }
-    stored.usesSampleText = false
+    let stored = Self.normalized(configuration)
+    if stored.kind == .document, stored.documentPages.isEmpty { return }
+    if stored.kind == .slideshow, stored.slideNames.isEmpty { return }
     let wasStarred = items.contains { $0.configuration == stored && $0.isStarred }
     items.removeAll { $0.configuration == stored }
     items.insert(RecentFloat(configuration: stored, starred: wasStarred ? true : nil), at: 0)

@@ -28,6 +28,10 @@ final class CaptureCoordinator: ObservableObject {
             case saved(SavedReference)
             /// A tool editor opened with prepared settings, such as a new image set.
             case editor(FloatingToolConfiguration)
+            /// The web video screen, optionally opening a link.
+            case web(URL?)
+            /// The Text editor with text read from a document.
+            case text(String)
         }
 
         let id = UUID()
@@ -114,6 +118,25 @@ final class CaptureCoordinator: ObservableObject {
         finishQuickRequest(success: false)
         proPrompt = .init(feature: feature)
         return false
+    }
+
+    // MARK: - Web video
+
+    /// Opens the web video screen. Floating web video is part of Videos & GIFs
+    /// in Pro; Safari's own extension stays free.
+    func openWebVideo(_ url: URL? = nil) {
+        prioritizeExplicitInput()
+        guard unlocks(.video) else { return }
+        dismissSelection()
+        floatOnlyLaunch = false
+        route = .init(kind: .web(url))
+    }
+
+    /// A link shared to Cod's Share extension in the last few minutes.
+    func receiveSharedLink(_ handoff: SharedLinkHandoff = .shared) -> Bool {
+        guard let url = handoff.claim() else { return false }
+        openWebVideo(url)
+        return true
     }
 
     // MARK: - Ingestion
@@ -615,7 +638,8 @@ final class CaptureCoordinator: ObservableObject {
 
     private var archivedVideoIDs: Set<UUID> = []
 
-    func floatVideo(_ reference: VideoReference, sound: Bool = false, repeats: Bool = FloatingVideoPlayback.defaultRepeats) {
+    func floatVideo(_ reference: VideoReference, sound: Bool = false, repeats: Bool = FloatingVideoPlayback.defaultRepeats,
+                    options: FloatingVideoOptions = .init()) {
         prioritizeExplicitInput()
         guard unlocks(.video) else { return }
         pip.stop()
@@ -624,7 +648,7 @@ final class CaptureCoordinator: ObservableObject {
         isAwaitingFloatResult = true
         dismissSelectionOnFloatSuccess = false
         isWorking = true
-        pip.float(video: reference, sound: sound, repeats: repeats)
+        pip.float(video: reference, sound: sound, repeats: repeats, options: options)
         if settings.historyLimit != .off, !archivedVideoIDs.contains(reference.id) {
             archivedVideoIDs.insert(reference.id)
             Task {
@@ -666,7 +690,11 @@ final class CaptureCoordinator: ObservableObject {
         dismissSelectionOnFloatSuccess = false
         isWorking = true
         pip.float(tool: session)
-        if session.document == nil { RecentFloats.shared.record(session.configuration) }
+        if let document = session.document {
+            recordDocument(document, configuration: session.configuration)
+        } else {
+            RecentFloats.shared.record(session.configuration)
+        }
     }
 
     /// Floats an image or video from Recents again and moves it to the top,
@@ -682,10 +710,46 @@ final class CaptureCoordinator: ObservableObject {
         store.touch(snap.id)
     }
 
+    /// Stores an auto-scroll document's rendered pages so Recents can float
+    /// it again, off the main thread.
+    private func recordDocument(_ document: ScrollingReference, configuration: FloatingToolConfiguration) {
+        // Floated again from Recents: its pages are already stored.
+        guard configuration.documentPages.isEmpty else {
+            RecentFloats.shared.record(configuration)
+            return
+        }
+        let pages = document.pages
+        Task {
+            guard let names = try? await Task.detached(priority: .utility, operation: {
+                try Slideshow.storePages(pages)
+            }).value else { return }
+            var stored = configuration
+            stored.text = document.name
+            stored.documentPages = names
+            RecentFloats.shared.record(stored)
+        }
+    }
+
+    /// Rebuilds a stored auto-scroll document for floating again.
+    static func document(for configuration: FloatingToolConfiguration) -> ScrollingReference? {
+        let pages = configuration.documentPages.compactMap(Slideshow.page(named:))
+        guard !pages.isEmpty, pages.count == configuration.documentPages.count else { return nil }
+        return try? ScrollingReference(images: pages, name: configuration.text)
+    }
+
     /// Recents float straight away. Alarm timers still ask for permission first.
     func floatRecent(_ configuration: FloatingToolConfiguration) {
         var config = configuration
         config.interfaceStyle = currentInterfaceStyle
+        if config.kind == .document {
+            guard let document = Self.document(for: config) else {
+                toast = .failure("Couldn't float this document", "Its pages are no longer stored. Open the file again.")
+                return
+            }
+            config.duration = document.duration(speed: config.scrollSpeed)
+            floatTool(.init(configuration: config, document: document))
+            return
+        }
         if config.hasTimerAlarm {
             Task {
                 do { try await FloatingTimerAlarms.shared.authorize(); floatTool(.init(configuration: config)) }

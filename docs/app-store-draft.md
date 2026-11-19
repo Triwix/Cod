@@ -61,6 +61,8 @@ Don't use other apps' names.)
 >   what you use most.
 >
 > MORE THINGS TO FLOAT WITH COD PRO
+> Video from a link at the speed you want, or one section on repeat. Word,
+> PowerPoint and Keynote files flipped page by page.
 > Notes and teleprompter scripts, PDFs you can flip through page by page, image
 > sets, videos and GIFs. A timer, stopwatch, Pomodoro, a countdown to any date,
 > a clock and a world clock. A system monitor with the readings you pick:
@@ -199,7 +201,7 @@ On the signed release build, on a physical iPhone:
   - Confirm the final answers against the signed build and the hosted policy.
 - **Notifications:** optional, local only, carrying an ID and no image.
 - **Third-party code:** no third-party SDKs and no custom encryption. The owner answers the export-compliance questions (`ITSAppUsesNonExemptEncryption` is false).
-- **Age rating:** complete the questionnaire. There's no user-generated feed, chat, ads or unrestricted web browser; content comes from the user.
+- **Age rating:** complete the questionnaire. Since build 36, Video from a Link opens any web page, so answer **Yes to Unrestricted Web Access**. That raises the rating (PiP – Picture in Picture is 16+ for this reason). There's no user-generated feed, chat or ads.
 - **Accessibility:** don't claim full VoiceOver or Voice Control support until the gesture-based crop editor has been checked.
 
 ## Screenshots

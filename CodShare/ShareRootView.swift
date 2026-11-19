@@ -15,6 +15,8 @@ final class ShareFloatState: ObservableObject {
     case openCod(crop: Bool)
     /// Notification mode saved the image but couldn't schedule the banner.
     case notificationUnavailable
+    /// A web link waits for Cod's web video screen.
+    case openCodForLink
   }
 
   @Published var phase: Phase = .loading
@@ -74,12 +76,14 @@ struct ShareRootView: View {
           .tint(.codActionBackground).foregroundStyle(.white)
       case .ready(let reason):
         Image(systemName: "checkmark.circle.fill").font(.largeTitle).foregroundStyle(.green)
-        Text("Image ready").font(.headline)
+        Text(reason == .openCodForLink ? "Link ready" : "Image ready").font(.headline)
           .accessibilityIdentifier("share-image-ready")
         Group {
           switch reason {
           case .openCod(let crop):
             Text("Tap Done, then open Cod to \(crop ? "crop and float" : "float") it.")
+          case .openCodForLink:
+            Text("Tap Done, then open Cod within 5 minutes. The page opens there; start the video and tap Float.")
           case .notificationUnavailable:
             Text(
               "Your image is saved, but notifications are off or unavailable. Tap Done, then open Cod manually to float it."
@@ -89,7 +93,9 @@ struct ShareRootView: View {
         .multilineTextAlignment(.center)
         .accessibilityIdentifier("share-ready-instructions")
         Text(
-          "The Cod icon in Share prepares the image; iOS doesn't let this Share extension open the app. The Float with Cod Shortcut can open it directly."
+          reason == .openCodForLink
+            ? "iOS doesn't let this Share extension open the app, so open Cod yourself."
+            : "The Cod icon in Share prepares the image; iOS doesn't let this Share extension open the app. The Float with Cod Shortcut can open it directly."
         )
         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
       case .selecting:

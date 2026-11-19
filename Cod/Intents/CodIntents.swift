@@ -15,7 +15,7 @@ final class IntentInbox: ObservableObject {
     @Published var wantsFloatLatest = false
     @Published var pendingQuickFloatRequestID: UUID?
     struct ReferenceInput: Identifiable {
-        enum Content { case text(String), pdf(Data, page: Int), saved(UUID), animated(Data) }
+        enum Content { case text(String), pdf(Data, page: Int), saved(UUID), animated(Data), link(URL) }
         let id = UUID()
         let content: Content
     }
@@ -65,6 +65,26 @@ struct FloatTextWithCodIntent: AppIntent {
     @MainActor func perform() async throws -> some IntentResult {
         _ = try FloatingText.render(text) // Fail with a useful message before handoff.
         IntentInbox.shared.deliverReference(.text(text))
+        return .result()
+    }
+}
+
+/// Opens a video page in Cod's web video screen, for a Share Sheet Shortcut
+/// from YouTube or Safari. The person starts the video and taps Float.
+struct OpenVideoLinkWithCodIntent: AppIntent {
+    static var title: LocalizedStringResource = "Open Video Link With Cod"
+    static var description = IntentDescription("Open a web page with a video in Cod so you can float the video.", categoryName: "Floating")
+    static var openAppWhenRun: Bool = true
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .foreground(.immediate) }
+    @Parameter(title: "Link", inputConnectionBehavior: .connectToPreviousIntentResult)
+    var link: URL
+    static var parameterSummary: some ParameterSummary { Summary("Open \(\.$link) with Cod") }
+    @MainActor func perform() async throws -> some IntentResult {
+        guard let url = WebVideoLink.url(from: link.absoluteString) else {
+            throw $link.needsValueError("Choose a web link (http or https).")
+        }
+        IntentInbox.shared.deliverReference(.link(url))
         return .result()
     }
 }
