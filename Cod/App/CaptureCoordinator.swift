@@ -425,6 +425,9 @@ final class CaptureCoordinator: ObservableObject {
             if force { restoreFloatingSelection(hit.image, origin: .screenshot) }
             else { present(image: hit.image, origin: .screenshot) }
         } catch {
+            // Checking on its own when Cod opens isn't a request. Only report
+            // a failure the person asked for.
+            guard force else { return }
             toast = .failure("Couldn't load screenshot", error.localizedDescription)
         }
     }

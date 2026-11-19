@@ -22,6 +22,7 @@ struct FloatingTextView: View {
   @State private var readingPhoto = false
   @State private var loaded = false
   @State private var preview: UIImage?
+  @State private var shapePreviews: [FloatWindowShape: UIImage] = [:]
   @State private var validation: String?
   @State private var errorMessage: String?
   @State private var confirmsOriginalText = false
@@ -55,9 +56,15 @@ struct FloatingTextView: View {
   var body: some View {
     FloatingEditorLayout {
       if let preview {
-        FloatingPreviewImage(
-          image: preview,
-          label: draft.teleprompterEnabled ? "Tool preview" : "Floating text preview")
+        if !usesImageLayout, draft.teleprompterEnabled, !shapePreviews.isEmpty {
+          ShapeCarousel(selection: $draft.configuration.windowShape, label: "Tool preview") { shape in
+            shapePreviews[shape] ?? preview
+          }
+        } else {
+          FloatingPreviewImage(
+            image: preview,
+            label: draft.teleprompterEnabled ? "Tool preview" : "Floating text preview")
+        }
       }
       if readingPhoto { ProgressView("Preparing photo text…") }
       if let validation { Text(validation).foregroundStyle(.secondary) }
@@ -323,6 +330,7 @@ struct FloatingTextView: View {
   }
   private func updatePreview() {
     do {
+      if !draft.teleprompterEnabled || usesImageLayout { shapePreviews = [:] }
       if usesImageLayout {
         guard let imageScroll else {
           preview = nil
@@ -337,6 +345,15 @@ struct FloatingTextView: View {
         try config.validate()
         preview = FloatingToolRenderer.render(
           configuration: config, elapsed: config.prompterStartDelay, date: .now)
+        // Every window shape, so the preview can be swiped to choose one.
+        var shaped: [FloatWindowShape: UIImage] = [:]
+        for shape in FloatWindowShape.allCases {
+          var variant = config
+          variant.windowShape = shape
+          shaped[shape] = FloatingToolRenderer.render(
+            configuration: variant, elapsed: config.prompterStartDelay, date: .now)
+        }
+        shapePreviews = shaped
       } else {
         preview = try draft.stillImage(for: style)
       }

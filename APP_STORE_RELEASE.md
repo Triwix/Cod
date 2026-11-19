@@ -1,6 +1,6 @@
 # App Store release gates
 
-Current candidate: **1.0 (34)**, Cod scheme, Debug/Release only. Public Release
+Current candidate: **1.0 (35)**, Cod scheme, Debug/Release only. Public Release
 display name is **Cod**; development device builds explicitly use **Cod Test**
 and keep the separate `com.josh.cod.store` installation identity.
 Unsupported automatic extension launch, private return/navigation, hidden
@@ -9,6 +9,9 @@ There is no separate experimental/personal scheme or opt-in audit bypass.
 
 ## Remaining before submission
 
+- Build 35 adds a swipeable shape preview to the tool, teleprompter and PDF
+  Flip Pages editors and stops the launch-time screenshot error. Check the
+  swipe and haptic on the phone. See [build-35 notes](docs/shape-preview-35.md).
 - Build 34 fixes audit items A1–A12 (see MVP_CHECKLIST.md). Check on the phone:
   the Lifetime upgrade from a subscription, shared text on the free tier, and
   the Safari extension on real pages. Check CodControls' entitlements in the

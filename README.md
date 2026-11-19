@@ -7,6 +7,13 @@ Design inspiration: the Snapper jailbreak tweak. This credits the inspiration,
 not an affiliation or endorsement. Cod uses documented Apple APIs on standard iOS.
 Keep this development credit separate from App Store branding and listing copy.
 
+## Swipe the preview to choose a shape · 1.0 (35)
+
+- In the tool, teleprompter and PDF Flip Pages editors, swipe the preview to choose the window's shape. Neighbouring shapes show faded on either side, and the Window row still works.
+- Cod no longer shows "Couldn't load screenshot" when it checks for a new screenshot on its own and finds none.
+
+See [build-35 notes](docs/shape-preview-35.md).
+
 ## Audit fixes A1–A12 · 1.0 (34)
 
 Fixes found in a second audit:

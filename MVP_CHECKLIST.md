@@ -1,6 +1,6 @@
 # MVP checklist
 
-Current candidate **Cod Test 1.0 (34)**, iPhone-only. On November 13, 2026 the
+Current candidate **Cod Test 1.0 (35)**, iPhone-only. On November 13, 2026 the
 Debug build, all 294 unit tests (3 StoreKit tests skip on the simulator), the
 Build31/Build32/Release18 UI tests, the unsigned Release build, both verifiers
 and the verifier's own 17 tests passed with Xcode 27.2. The
@@ -199,6 +199,9 @@ Owner decisions raised by the audit (not for Opus):
 
 ## Completed items
 
+- Build 35: swipeable shape preview in the tool, teleprompter and PDF Flip
+  Pages editors (the Window row stays), and no screenshot error when Cod checks
+  on its own. Build 34's design is unchanged. See [build 35](docs/shape-preview-35.md).
 - Build 34: fixed the build-33 audit items A1–A12: the Pro screen's plan
   choice for subscribers, Pro for shared text, the trial length from the App
   Store offer, stock-tool and Safari coverage in both verifiers, the Privacy

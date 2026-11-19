@@ -357,14 +357,19 @@ struct FloatingToolEditor: View {
     } catch { errorMessage = error.localizedDescription }
   }
 
+  /// Swipe the preview to change the window's shape; the Window row below
+  /// does the same.
   private func preview(at date: Date) -> some View {
     let config = preparedConfiguration
-    return FloatingPreviewImage(
-      image: FloatingToolRenderer.render(
-        configuration: config,
-        elapsed: 0, date: date),
+    return ShapeCarousel(
+      selection: $configuration.windowShape,
       label: "Tool preview",
-      value: config.kind == .clock ? config.snapshot(elapsed: 0, date: date).value : nil)
+      value: config.kind == .clock ? config.snapshot(elapsed: 0, date: date).value : nil
+    ) { shape in
+      var shaped = config
+      shaped.windowShape = shape
+      return FloatingToolRenderer.render(configuration: shaped, elapsed: 0, date: date)
+    }
   }
 
   private var systemSamplingKey: String {

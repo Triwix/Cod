@@ -88,3 +88,99 @@ private struct FittedPreviewLayout: Layout {
                          proposal: ProposedViewSize(width: fitted.width, height: fitted.height))
   }
 }
+
+/// The floating window's preview, drawn in every shape side by side. Swipe
+/// it to choose the window's shape: the one in the middle is what floats,
+/// and the shapes on either side show faded so it's clear you can swipe.
+struct ShapeCarousel: View {
+  @Binding var selection: FloatWindowShape
+  let label: String
+  var value: String? = nil
+  let render: (FloatWindowShape) -> UIImage
+  @State private var position: FloatWindowShape?
+  @Environment(\.floatingPreviewHeight) private var height
+
+  /// The middle preview takes most of the width; the rest shows neighbours.
+  private static let itemShare: CGFloat = 0.6
+  /// Pulls neighbours in so about half of each one is visible.
+  private static let overlap: CGFloat = -36
+  /// The editor pads its header; let the strip run to the screen edges.
+  private static let bleed: CGFloat = 20
+
+  var body: some View {
+    VStack(spacing: 8) {
+      GeometryReader { geometry in
+        let itemWidth = geometry.size.width * Self.itemShare
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: Self.overlap) {
+            ForEach(FloatWindowShape.allCases) { shape in
+              let selected = shape == selection
+              FloatingPreviewImage(
+                image: render(shape),
+                label: selected ? label : "\(shape.title) window",
+                value: selected ? value : nil)
+                .padding(.horizontal, 8)
+                .frame(width: itemWidth, height: height)
+                .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                  content
+                    .opacity(phase.isIdentity ? 1 : 0.4)
+                    .scaleEffect(phase.isIdentity ? 1 : 0.78)
+                }
+                .onTapGesture {
+                  withAnimation(.snappy) { position = shape }
+                  selection = shape
+                }
+                .accessibilityHidden(!selected)
+                .id(shape)
+            }
+          }
+          .scrollTargetLayout()
+        }
+        .contentMargins(.horizontal, (geometry.size.width - itemWidth) / 2, for: .scrollContent)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $position, anchor: .center)
+        .accessibilityIdentifier("window-shape-carousel")
+      }
+      .frame(height: height)
+      .padding(.horizontal, -Self.bleed)
+      caption
+    }
+    .onAppear { position = selection }
+    .onChange(of: position) { _, shape in
+      if let shape, shape != selection { selection = shape }
+    }
+    .onChange(of: selection) { _, shape in
+      if position != shape { withAnimation(.snappy) { position = shape } }
+    }
+    .sensoryFeedback(.selection, trigger: selection)
+  }
+
+  private var caption: some View {
+    HStack(spacing: 10) {
+      Text("\(selection.ratio) · \(selection.title)")
+        .font(.footnote.weight(.semibold)).monospacedDigit()
+        .foregroundStyle(.secondary)
+      HStack(spacing: 5) {
+        ForEach(FloatWindowShape.allCases) { shape in
+          Circle()
+            .fill(shape == selection ? Color.primary : Color.secondary.opacity(0.4))
+            .frame(width: 6, height: 6)
+        }
+      }
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Window shape")
+    .accessibilityValue("\(selection.title), \(selection.ratio)")
+    .accessibilityHint("Swipe the preview, or swipe up or down here, to change it")
+    .accessibilityAdjustableAction { direction in
+      let all = FloatWindowShape.allCases
+      guard let index = all.firstIndex(of: selection) else { return }
+      switch direction {
+      case .increment: if index + 1 < all.count { selection = all[index + 1] }
+      case .decrement: if index > 0 { selection = all[index - 1] }
+      @unknown default: break
+      }
+    }
+    .accessibilityIdentifier("window-shape-caption")
+  }
+}

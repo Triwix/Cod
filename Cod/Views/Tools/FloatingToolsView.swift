@@ -24,6 +24,30 @@ struct PDFReferenceView: View {
   @State private var flipInterval = 10.0
   @State private var flipShape: FloatWindowShape?
   @State private var flipPreview: UIImage?
+  /// The first page drawn in each window shape, for the swipeable preview.
+  @State private var flipShapes: [FloatWindowShape: UIImage] = [:]
+
+  private var flipShapeSelection: Binding<FloatWindowShape> {
+    Binding(
+      get: { flipShape ?? flipPreview.map { FloatWindowShape.closest(to: $0.size) } ?? .tall },
+      set: { flipShape = $0 })
+  }
+
+  /// A page fitted inside a window of the given shape, as the image set shows it.
+  static func letterbox(_ page: UIImage, in shape: FloatWindowShape) -> UIImage {
+    let canvas = CGSize(width: shape.size.width / 2, height: shape.size.height / 2)
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    format.opaque = true
+    return UIGraphicsImageRenderer(size: canvas, format: format).image { context in
+      UIColor.black.setFill()
+      context.fill(CGRect(origin: .zero, size: canvas))
+      let scale = min(canvas.width / page.size.width, canvas.height / page.size.height)
+      let size = CGSize(width: page.size.width * scale, height: page.size.height * scale)
+      page.draw(in: CGRect(x: (canvas.width - size.width) / 2, y: (canvas.height - size.height) / 2,
+                           width: size.width, height: size.height))
+    }
+  }
   @State private var firstInput = "1"
   @State private var lastInput = "1"
   @State private var speed = 32.0
@@ -57,7 +81,15 @@ struct PDFReferenceView: View {
         }
         if preparing { ProgressView("Preparing pages…") }
       } else if mode == .flip {
-        if let flipPreview { FloatingPreviewImage(image: flipPreview, label: "First page preview") }
+        if let flipPreview {
+          if flipShapes.isEmpty {
+            FloatingPreviewImage(image: flipPreview, label: "First page preview")
+          } else {
+            ShapeCarousel(selection: flipShapeSelection, label: "First page preview") { shape in
+              flipShapes[shape] ?? flipPreview
+            }
+          }
+        }
       } else if let image {
         FloatingPreviewImage(image: image, label: "PDF page preview")
       }
@@ -157,9 +189,7 @@ struct PDFReferenceView: View {
       }
       if mode == .flip {
         Section("Window") {
-          FloatWindowShapePicker(selection: Binding(
-            get: { flipShape ?? flipPreview.map { FloatWindowShape.closest(to: $0.size) } ?? .tall },
-            set: { flipShape = $0 }))
+          FloatWindowShapePicker(selection: flipShapeSelection)
         }
         Section {
           LabeledContent("When playing, next page every", value: "\(Int(flipInterval)) s")
@@ -191,9 +221,14 @@ struct PDFReferenceView: View {
     .task(id: mode == .flip ? firstInput : nil) {
       guard mode == .flip, let first = PDFPageSelection.index(firstInput, count: reference.pageCount) else {
         flipPreview = nil
+        flipShapes = [:]
         return
       }
-      flipPreview = try? reference.image(pageIndex: first, maximumEdge: 900)
+      let page = try? reference.image(pageIndex: first, maximumEdge: 900)
+      flipPreview = page
+      flipShapes = page.map { image in
+        Dictionary(uniqueKeysWithValues: FloatWindowShape.allCases.map { ($0, Self.letterbox(image, in: $0)) })
+      } ?? [:]
     }
     .onReceive(
       NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)
