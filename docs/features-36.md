@@ -14,7 +14,7 @@ November 19, 2026.
 ## B. Video from a Link
 - Home row "Video from a Link", the Share extension (a shared link or a text that's only a link), and a new "Open Video Link With Cod" Shortcut action open a private web view. Start the video, tap Float (or the Float button on the video). WebKit's own PiP plays it; keep the screen open.
 - Pro (Videos & GIFs). Safari Video stays free.
-- **Age rating:** this is unrestricted web access, which raises the rating (see app-store-draft.md).
+- **Age rating:** this is unrestricted web access, so Cod is rated 16+; the owner accepted that to keep the in-app browser (see app-store-draft.md).
 
 ## C. Documents
 - Word, PowerPoint, Excel, Pages, Keynote and Numbers files are laid out by WebKit and printed to Letter PDF pages, then use the PDF screen (one page, Flip Pages, Auto-scroll).

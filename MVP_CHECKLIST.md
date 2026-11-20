@@ -174,7 +174,10 @@ Owner decisions raised by the audit (not for Opus):
     them), or raise the minimum. Do a VoiceOver pass on the crop editor before
     making accessibility claims.
 11. Owner: decide the App Store name before creating the App Store Connect
-    record, and whether the Speedometer's background location stays in 1.0.
+    record. Decided 2026-11-20: the Speedometer keeps background location in
+    1.0 (if App Review rejects it under 2.5.4, pull the Speedometer to 1.1
+    rather than ship one that freezes), and Cod accepts a 16+ rating to keep
+    the in-app browser for Video from a Link.
 12. Confirm distribution signing for the publishing team, bundle IDs and App
     Groups; regenerate the three signed Shortcuts if the app/team identity
     changes.

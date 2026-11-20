@@ -201,7 +201,7 @@ On the signed release build, on a physical iPhone:
   - Confirm the final answers against the signed build and the hosted policy.
 - **Notifications:** optional, local only, carrying an ID and no image.
 - **Third-party code:** no third-party SDKs and no custom encryption. The owner answers the export-compliance questions (`ITSAppUsesNonExemptEncryption` is false).
-- **Age rating:** complete the questionnaire. Since build 36, Video from a Link opens any web page, so answer **Yes to Unrestricted Web Access**. That raises the rating (PiP – Picture in Picture is 16+ for this reason). There's no user-generated feed, chat or ads.
+- **Age rating:** complete the questionnaire. Since build 36, Video from a Link opens any web page, so answer **Yes to Unrestricted Web Access**. Cod will be rated **16+** (decided 2026-11-20: keep the in-app browser; opening links in Safari instead would allow 4+). There's no user-generated feed, chat or ads.
 - **Accessibility:** don't claim full VoiceOver or Voice Control support until the gesture-based crop editor has been checked.
 
 ## Screenshots
