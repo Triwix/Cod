@@ -24,8 +24,9 @@ final class Redesign21UITests: XCTestCase {
         }
         capture("21 - Home - actions first")
         selectTab("Recents")
-        XCTAssertTrue(cod.buttons["saved-references"].waitForExistence(timeout: 5))
-        XCTAssertTrue(cod.segmentedControls["library-filter"].exists)
+        XCTAssertTrue(cod.segmentedControls["library-filter"].waitForExistence(timeout: 5))
+        // Saved cards sit below Recents, which can be long after other tests.
+        reveal(cod.buttons["saved-references"])
         capture("21 - Recents - starred, recent and saved references")
 
         selectTab("Settings")

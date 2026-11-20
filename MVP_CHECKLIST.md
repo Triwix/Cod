@@ -1,6 +1,6 @@
 # MVP checklist
 
-Current candidate **Cod Test 1.0 (35)**, iPhone-only. On November 13, 2026 the
+Current candidate **Cod Test 1.0 (36)**, iPhone-only. On November 13, 2026 the
 Debug build, all 294 unit tests (3 StoreKit tests skip on the simulator), the
 Build31/Build32/Release18 UI tests, the unsigned Release build, both verifiers
 and the verifier's own 17 tests passed with Xcode 27.2. The
@@ -198,6 +198,11 @@ Owner decisions raised by the audit (not for Opus):
 17. Submit for App Review and address any review feedback before publishing.
 
 ## Completed items
+
+- Build 36: Recents fixes (no light/dark duplicates; image sets, PDF pages and
+  documents listed), video speed and sections, Video from a Link, Office/iWork
+  and text documents. 307 unit tests; full UI suite 83 tests (4 PiP skips, the
+  expected iPad failure). See [build 36](docs/features-36.md).
 
 - Build 35: swipeable shape preview in the tool, teleprompter and PDF Flip
   Pages editors (the Window row stays), and no screenshot error when Cod checks

@@ -24,4 +24,5 @@ November 19, 2026.
 ## Verification
 - 307 unit tests pass (3 StoreKit skips). Build36Tests cover all of the above, including a real .docx converted to 2+ pages with visible text.
 - Build36UITests (video speed/section, link screen) pass; release build and all verifiers pass.
+- Full UI suite (first run since build 30): 83 tests, 4 skipped (no PiP in the simulator), 2 failures. The iPad screenshot test fails as expected (1.0 is iPhone-only). Redesign21's Recents check needed to scroll now that Recents lists more kinds of floats; fixed, and the class passes.
 - Simulator: Float on a web video starts it (simulator shows full screen; real PiP needs the phone). Not checked: PowerPoint/Keynote layout quality, PiP from the web view on a phone.
